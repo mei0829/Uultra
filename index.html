@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#5F8672">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="新人名單">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>新人名單與組織（我的）</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF1EC;--card:#fff;--ink:#1D2A23;--sub:#6F7B73;--line:#DCE2DA;--acc:#5F8672;--ok:#6B9A7C;--bad:#D64545;
+box-sizing:border-box;padding-top:0;padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121815;--card:#1B2420;--ink:#EBF1EC;--sub:#93A39A;--line:#2B3830;--acc:#9DBFAB}}
+:root[data-theme="dark"]{--bg:#121815;--card:#1B2420;--ink:#EBF1EC;--sub:#93A39A;--line:#2B3830;--acc:#9DBFAB}
+:root[data-tskin="forest"]{--bg:#EEF1EC;--card:#fff;--ink:#1D2A23;--sub:#6F7B73;--line:#DCE2DA;--acc:#4E7A62;--ok:#6B9A7C}
+:root[data-tskin="rose"]{--bg:#F6EEEA;--card:#FFFCFA;--ink:#3A2826;--sub:#8C746F;--line:#E9D8D1;--acc:#A8625F;--ok:#B07A72}
+:root[data-tskin="blue"]{--bg:#E9EEF3;--card:#fff;--ink:#1E2935;--sub:#697686;--line:#D3DCE5;--acc:#4F6F8C;--ok:#6E8CA6}
+:root[data-tskin="olive"]{--bg:#F5F1E1;--card:#FFFEF6;--ink:#2D2E1B;--sub:#7A795C;--line:#E3DEC2;--acc:#7A8450;--ok:#8E9A62}
+*{box-sizing:border-box}
+html{scroll-padding-top:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Noto Sans TC","PingFang TC",-apple-system,"Microsoft JhengHei",sans-serif}
+#app{max-width:520px;margin:0 auto;padding:16px 14px 96px}
+h1{font-size:26px;margin:4px 2px 12px;font-weight:700}
+h2{font-size:14px;margin:16px 2px 8px;color:var(--sub);font-weight:500}
+.card{background:var(--card);border-radius:16px;padding:12px 14px;margin-bottom:10px;border:1px solid var(--line)}
+.row{display:flex;align-items:center;gap:10px}.sp{flex:1;min-width:0}
+.sub{color:var(--sub);font-size:13px}.late{color:var(--bad);font-weight:700}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:5}
+nav button{flex:1;border:0;background:none;color:var(--sub);font:inherit;font-size:12px;padding:6px 0;cursor:pointer}
+nav button b{display:block;font-size:20px;line-height:1.2;font-weight:400}nav button.on{color:var(--acc);font-weight:700}
+input,select,textarea,button.go{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0;width:100%}
+textarea{resize:vertical}
+button.go{background:var(--acc);color:#fff;border:0;font-weight:700;cursor:pointer;width:auto;padding:9px 14px}
+button.go.g{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+button.go.q{background:var(--bg);color:var(--acc);border:1px solid var(--line);font-weight:600;padding:7px 10px;font-size:13px;flex:none}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:20px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}
+.chip.on{background:var(--acc);color:#fff;border-color:transparent}
+.chip.v{background:#3F5A6B;color:#CDE5CF;border-color:transparent}
+.chips.one{flex-wrap:nowrap;gap:4px}.chips.one .chip{padding:5px 8px;font-size:12px;white-space:nowrap}
+.fs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px}.fs .chip{flex:none}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.grid .w{grid-column:1/3}
+.fl{display:block}.fl span{display:block;font-size:12px;color:var(--sub);margin-bottom:2px}
+.pill{font-size:11px;padding:1px 8px;border-radius:10px;border:1px solid var(--line);color:var(--sub)}.pill.y{background:var(--ok);color:#fff;border-color:transparent}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:var(--acc)}
+.x{border:0;background:none;color:var(--sub);font-size:18px;cursor:pointer;padding:0 4px}
+.stk,#lfix{position:fixed;top:0;left:50%;transform:translateX(-50%);width:min(100%,520px);z-index:7;background:var(--bg);display:flex;align-items:center;gap:10px;margin:0;padding:6px 52px 6px 14px;border-bottom:1px solid var(--line)}
+#lfix{z-index:6;display:none;font-weight:700;font-size:16px;padding-top:10px;padding-bottom:10px}
+.stkgap{height:46px}
+.stk h1{margin:0;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stk .back{margin:0;flex:none}
+.stkl{position:sticky;top:0;z-index:6;background:var(--card);padding:6px 0}
+.back{border:0;background:none;color:var(--acc);font:inherit;font-weight:700;cursor:pointer;padding:4px 0;margin-bottom:4px}
+.tree ul{list-style:none;margin:0;padding-left:18px;border-left:2px solid var(--line)}.tree>ul{border:0;padding:0}
+.node{display:flex;align-items:center;gap:8px;padding:7px 10px;margin:5px 0;background:var(--card);border:1px solid var(--line);border-radius:12px;cursor:pointer}
+.av{width:30px;height:30px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700;flex:none}
+.log{border-left:3px solid var(--line);padding:1px 0 1px 10px;margin:6px 0}
+.note{font-size:12px;color:var(--sub);background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:8px 12px;margin:8px 0}
+.done{text-decoration:line-through;opacity:.5}
+.pg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ph{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;background:var(--line);cursor:pointer;display:block}
+.add{display:grid;place-items:center;aspect-ratio:1;border:1.5px dashed var(--line);border-radius:10px;color:var(--acc);font-size:28px;cursor:pointer}
+.mini{display:flex;gap:4px;margin-top:4px}.mini .ph{width:52px;flex:none}
+#lb{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))}
+#lb img{max-width:100%;max-height:75%;border-radius:10px;object-fit:contain}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:20px;font-size:13px;z-index:15;display:none}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.cal span{text-align:center;font-size:12px;color:var(--sub)}
+.cal button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font:inherit;padding:5px 0;cursor:pointer;line-height:1.2}
+.cal button small{display:block;font-size:10px;color:var(--acc);min-height:12px}.cal button.on{background:var(--acc);color:#fff}.cal button.on small{color:#fff}.cal button.td{border-color:var(--acc)}
+.mini{flex-wrap:wrap}.mini-add{width:52px;height:52px;aspect-ratio:auto;font-size:22px}
+#app>.row:first-child{padding-right:44px}
+#app>h1,#app>.row:first-child{position:sticky;top:0;z-index:5;background:var(--bg);padding-top:10px;padding-bottom:8px;margin:-16px 0 6px}
+#tipx{position:fixed;top:10px;right:56px;z-index:8}
+#fab{position:fixed;top:10px;right:14px;z-index:8}
+.fabb{width:34px;height:34px;border-radius:50%;border:1.5px solid var(--acc);background:var(--card);color:var(--acc);font-size:21px;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0;box-shadow:0 1px 6px rgba(0,0,0,.12)}
+.fabp{position:absolute;right:0;top:42px;width:min(86vw,320px);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+.hl{border-left:6px solid #C58FA6;background:#F4E6EC}
+.cal button.hl:not(.on){background:#EBD6DE;border-color:#C58FA6}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hl{background:#3A2A32}:root:not([data-theme="light"]) .cal button.hl:not(.on){background:#4A3640}}
+:root[data-theme="dark"] .hl{background:#3A2A32}:root[data-theme="dark"] .cal button.hl:not(.on){background:#4A3640}
+input:not([type=checkbox]):not([type=file]):not([type=radio]),select{height:38px;max-width:100%}
+input[type=date],input[type=time]{-webkit-appearance:none;appearance:none;display:block;min-width:0;line-height:1.2;text-align:left}
+textarea{max-width:100%}
+.grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.row>*{min-width:0}.card{overflow-wrap:anywhere}
+.stp{width:34px;height:34px;border-radius:50%;border:1.5px solid var(--line);background:var(--card);color:var(--sub);font:inherit;font-weight:700;cursor:pointer;padding:0;flex:none}
+.stp.done{background:var(--acc);color:#fff;border-color:transparent}.stp.part{border-color:var(--acc);color:var(--acc)}.stp.sel{outline:2px solid var(--acc);outline-offset:2px}
+.stp.mini{width:20px;height:20px;font-size:11px;cursor:default;display:inline-grid;place-items:center}
+.an{background:var(--bg);border-radius:12px;padding:10px 12px;margin-top:8px}.an-t{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:700;font-size:14px}.an-r{font-weight:400;color:var(--sub);font-size:12px;text-align:right}.an-s{cursor:pointer;color:var(--acc);font-weight:700;font-size:13px;margin-top:8px}.an-b{font-size:13px;line-height:1.65;margin-top:4px}.an .fl{margin-top:6px}
+.wk{display:grid;grid-template-columns:26px repeat(7,1fr);font-size:11px}.wk .hd{text-align:center;padding:2px 0 4px;border-bottom:1px solid var(--line);cursor:pointer;color:var(--sub);line-height:1.3}.wk .hd b{color:var(--ink);font-size:13px}.wk .hd.tdh b{background:var(--acc);color:#fff;border-radius:50%;display:inline-block;width:20px;line-height:20px}.wk .hr{color:var(--sub);font-size:9px;text-align:right;padding-right:3px;box-sizing:border-box;border-top:1px solid var(--line);margin-top:-1px;line-height:1}.wk .col{position:relative;border-left:1px solid var(--line);background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 39px,var(--line) 39px,var(--line) 40px)}.wk .col.tdc{background-color:rgba(127,150,120,.12)}.wk .ev{position:absolute;box-sizing:border-box;border-radius:5px;padding:1px 2px;font-size:10px;line-height:1.2;overflow:hidden;color:#fff;cursor:pointer;border:1px solid var(--card)}
+.rail{position:fixed;left:max(3px,calc(50% - 258px));top:50%;transform:translateY(-50%);z-index:5;display:flex;flex-direction:column;gap:4px}.rail button{width:34px;padding:7px 0;font:inherit;font-size:12px;line-height:1.1;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--acc);font-weight:700;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08)}.rail button:active{background:var(--acc);color:#fff}
+</style>
+</head>
+<body>
+<div id="app"></div><nav id="nav"></nav><div id="lb"></div><div id="toast"></div><div id="fab"></div><div id="tipx"></div><div id="lfix"></div>
+<script>
+let NDO=['直銷通路','336','直安超','四個換','五福臨門','層次圖','六個圈圈','月結獎金','加碼獎金','九種十八項','安麗小學','新人啟動六步驟','成功三要','海外旅遊','六不講'];
+let MG=['健管班','形管班','創業班'];const TAGS=['線上運動','線上唱歌','團隊出遊','運動聚會','桌遊聚會'];
+const iso=d=>{const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())},addD=n=>{const d=new Date();d.setDate(d.getDate()+n);return iso(d)},today=()=>iso(new Date());
+const dleft=s=>s?Math.round((new Date(s+'T00:00:00')-new Date(today()+'T00:00:00'))/864e5):999;
+const E=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $=id=>document.getElementById(id);
+function newP(name,id){return{id,name,nannies:[],no:'',ig:'',line:'',nat:'台灣🇹🇼',age:'',gender:'',job:'',zodiac:'',blood:'',life:'',namology:'',mbti:'',live:'',family:'',live2:'',hobby:'',dream:'',money:'',joined:false,room:false,broke:false,attitude:'',met:today(),team:'',status:'',help:'',backer:'',up:0,mentor:{nanny:'',coach:'',teacher:''},camp:{},phone:false,mentorL:{},list:false,mg:{},ndo:{},every:false,courses:'',acts:[],photos:[],tags:{},next:addD(2),log:[]}}
+const DEF={tab:'today',view:null,q:'',flt:'all',me:'我',people:[Object.assign(newP('示範：王小明',1),{joined:true,room:true,broke:true,job:'設計師',up:0,next:addD(-1),log:[{date:addD(-3),text:'聊了健康管理，對營養有興趣'}]}),Object.assign(newP('示範：林小姐',2),{job:'護理師',next:addD(0),status:'剛認識，約下週喝咖啡'})]};
+let S=DEF;try{const r=localStorage.getItem('roster-v2');if(r)S=Object.assign({},DEF,JSON.parse(r))}catch(e){}
+const CL={st:'☁︎ 連線中…',last:{},LT0:0,HAS0:false};try{CL.LT0=+localStorage.getItem('roster-t')||0;CL.HAS0=!!localStorage.getItem('roster-v2')}catch(e){}
+const save=()=>{try{localStorage.setItem('roster-v2',JSON.stringify(S));localStorage.setItem('roster-t',String(Date.now()))}catch(e){}cloudQ()};
+const P=id=>S.people.find(x=>x.id===id);
+const WD=['日','一','二','三','四','五','六'];
+S.six=S.six||{};S.six.mg=S.six.mg||MG.slice();S.six.ndo=S.six.ndo||NDO.slice();S.six.t=S.six.t||['拜三師','密切聯繫/電話通','列名單','管理班','NDO','每會必到'];MG=S.six.mg;NDO=S.six.ndo;S.plans=S.plans||{};S.cm=S.cm||today().slice(0,7);S.cf=null;S.side=S.side||[];S.lv='list';S.fb=S.fs=S.fl=S.fc='all';S.pn=null;S.watch=S.watch||'美蓁';S.promos=S.promos||[];S.groups=S.groups||groupSeed();S.cat=S.cat||catSeed();if((S.catV||0)<2){const cu=S.cat.find(x=>x.n==='自訂品項');S.cat=catSeed();if(cu&&cu.items.length)S.cat.push(cu);S.catV=2}try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(x){}S.obj=S.obj||[];S.meI=S.meI||{lv:'',note:''};S.av=S.av||'log';S.aq='';S.pkg=-1;if(S.myBd===undefined)S.myBd='1995-08-29';S.leaders=S.leaders||[];S.events=S.events||[];S.traits=S.traits||{};S.ndesc=S.ndesc||{};S.pd=today();
+const get=(o,p)=>p.split('.').reduce((a,k)=>a==null?a:a[k],o);
+const set=(o,p,v)=>{const k=p.split('.');let a=o;while(k.length>1){const n=k.shift();a=a[n]=a[n]||{}}a[k[0]]=v};
+function prog(p){const a=[...Object.values(p.mentor).map(Boolean),p.phone,p.list,...MG.map(k=>p.mg[k]),...NDO.map(k=>p.ndo[k]),p.every];return Math.round(a.filter(Boolean).length/a.length*100)}
+const last=p=>p.log[0]?p.log[0].date:'';
+const due=p=>{const n=dleft(p.next);return n<0?`<span class="late">逾期 ${-n} 天</span>`:n===0?'<b>今天</b>':p.next?`${n} 天後`:'未排'};
+const pills=p=>[['broke','破題'],['room','進教室'],['joined','加入']].map(([k,n])=>`<span class="pill ${p[k]?'y':''}">${n}</span>`).join('');
+
+
+const shiftD=(s,n)=>{const d=new Date(s+'T00:00:00');d.setDate(d.getDate()+n);return iso(d)};
+const plan=()=>S.plans[S.pd]||(S.plans[S.pd]={ids:[],acts:{},done:{}});
+function sug(p){
+ const a=[{k:'talk',t:'聯絡關心近況'}];
+ if(!p.joined&&!p.broke)a.push({k:'broke',t:'破題：了解需求與想法',path:'broke'});
+ if(!p.joined&&p.broke&&!p.room)a.push({k:'room',t:'邀請進教室',path:'room'});
+ if(!p.joined&&p.room)a.push({k:'join',t:'確認加入意願',path:'joined'});
+ if(p.joined){
+  const mm=[['nanny','保母'],['coach','教練'],['teacher','老師']].filter(([k])=>!p.mentor[k]).map(x=>x[1]);
+  if(mm.length)a.push({k:'mentor',t:'拜三師：還缺'+mm.join('、')});
+  if(!p.phone)a.push({k:'phone',t:'密切聯繫／電話通',path:'phone'});
+  if(!p.list)a.push({k:'list',t:'協助列名單',path:'list'});
+  MG.filter(k=>!p.mg[k]).slice(0,1).forEach(k=>a.push({k:'m'+k,t:'安排'+k,path:'mg.'+k}));
+  NDO.filter(k=>!p.ndo[k]).slice(0,2).forEach(k=>a.push({k:'n'+k,t:'NDO：講解「'+k+'」',path:'ndo.'+k}));
+  if(!p.every)a.push({k:'every',t:'提醒每會必到',path:'every'});
+ }
+ if(p.help)a.push({k:'help',t:'團隊支援：'+p.help});
+ if(!p.log.length)a.push({k:'first',t:'還沒有跟進紀錄，聊完記一筆'});
+ else{const g=-dleft(p.log[0].date);if(g>=7)a.push({k:'gap',t:'已 '+g+' 天沒聯絡'})}
+ return a.slice(0,8);
+}
+function addToPlan(id){const pl=plan(),p=P(id);if(p&&!pl.ids.includes(id)){pl.ids.push(id);pl.acts[id]=sug(p)}}
+function evNext(){const t0=today(),t1=addDs(t0,13),nw=new Date(),hm=pad2(nw.getHours())+':'+pad2(nw.getMinutes()),l=S.events.filter(e=>e.date>=t0&&e.date<=t1&&!(e.date===t0&&e.end&&e.end<=hm)).sort((a,b)=>(a.date+(a.start||'')).localeCompare(b.date+(b.start||'')));
+ const row=e=>{const w=e.who.filter(P),sl=w.filter(id=>((e.inv||{})[id]||0)<0).length,dr=w.length-sl,dd=new Date(e.date+'T00:00:00');return `<div class="row" data-hev="${e.id}" style="padding:8px 0;border-top:1px solid var(--line);cursor:pointer;align-items:flex-start"><div style="flex:none;text-align:center"><span class="pill">${+e.date.slice(5,7)}/${+e.date.slice(8)}（${WD[dd.getDay()]}）</span>${e.start?`<div class="sub" style="font-size:12px;margin-top:2px">${e.start}</div>`:''}</div><div class="sp" style="min-width:0"><b>${E(e.title)}</b> <span style="color:var(--acc);font-size:12px;white-space:nowrap">約 ${dr} 人／旁線 ${sl} 人</span></div></div>`};
+ return `<div style="margin:6px 0 12px"><div class="row" style="margin-bottom:2px"><b class="sp">接下來兩週的活動</b><span class="sub">${l.length} 場</span></div>${l.map(row).join('')||'<div class="sub" style="margin-top:4px">接下來兩週還沒有活動</div>'}</div>`}
+function today_v(){
+ const pl=plan(),ids=pl.ids.filter(P),wd=WD[new Date(S.pd+'T00:00:00').getDay()];
+ const dueIds=S.people.filter(p=>dleft(p.next)<=0&&!ids.includes(p.id)).length;
+ let tot=0,dn=0;
+ const cards=ids.map(id=>{const p=P(id),acts=pl.acts[id]||[];
+  const rows=acts.map(a=>{const c=a.path?!!get(p,a.path):!!pl.done[id+'|'+a.k];tot++;if(c)dn++;return `<label class="row" style="margin:7px 0;cursor:pointer"><input type="checkbox" style="width:20px;height:20px;flex:none" ${c?'checked':''} data-pa="${id}|${a.k}"><span class="sp ${c?'done':''}">${E(a.t)}</span></label>`}).join('');
+  return `<div class="card"><div class="row"><b class="sp" data-open="${id}" style="cursor:pointer">${nm(p)} ›</b><span class="sub">${due(p)}</span><button class="x" data-pt="${id}">×</button></div>
+  <div class="sub">${E(p.job)}${p.status?'・'+E(p.status):''}</div>${ldb(p)?'<div style="margin-top:4px">'+ldb(p)+'</div>':''}${rows}
+  <div class="row" style="margin-top:6px"><input id="lg${id}" placeholder="跟進後記一筆"><button class="go q" data-pl="${id}">記錄</button></div>
+  <div class="chips" style="margin-top:8px"><span class="sub" style="align-self:center">下次跟進</span>${[[1,'明天'],[3,'3 天後'],[7,'一週後']].map(([n,l])=>`<button class="chip ${p.next===shiftD(S.pd,n)?'on':''}" data-nx="${id}|${n}">${l}</button>`).join('')}</div></div>`}).join('');
+ return `<h1>跟進計畫</h1>${bkWarn()}${promoCard()}${evCard()}${rnHome()}${pfCard()}${bdCard()}
+ <div class="row" style="margin-bottom:8px"><button class="go g" data-pd="-1">‹</button><div class="sp" style="text-align:center"><b>${S.pd}（週${wd}）</b>${S.pd===today()?'':' <button class="chip" data-pd="0">回今天</button>'}</div><button class="go g" data-pd="1">›</button></div>
+ ${todoCard()}
+ ${evNext()}
+ <h2>點名字選人，下方會列出該做的事</h2>
+ <div class="chips">${S.people.slice().sort(byNo).map(p=>`<button class="chip ${ids.includes(p.id)?'on':''}" data-pt="${p.id}">${nm(p)}</button>`).join('')||'<span class="sub">先到「新人」新增人</span>'}</div>
+ <div style="margin-top:12px">${cards||'<div class="card sub">還沒選人。點上方名字，就會出現這個人現在該做的事。</div>'}</div>`}
+
+const inp=(p,path,label,type,cls)=>`<label class="fl ${cls||''}"><span>${label}</span><input type="${type||'text'}" data-p="${path}" value="${E(get(p,path))}"></label>`;
+
+const LIFE={"1": {"n": "冥王星", "h": "死而重生", "t": ["在埃及的棺材蓋子上會出現這個，子宮形狀，透明的是原神", "像原子一樣極具能量，有非常有自信，一切都從你開始。不要卑微，不要懷疑自己，要改掉這個習慣。寶寶要成行了，創造力強，走得快跑得快。直覺是什麼就做什麼，其實自己就可以完成所有事情，有極大的影響力。小名一定很多，要為別人會羨慕嫉妒，一定會有人射你，你一定背後有箭靶，因為你跑在前面。怕你想法點子有卻不行動，否則很可惜。做錯沒關係，有很大的能量與能力重新開始。"]}, "2": {"n": "海王星", "h": "迷幻，藝術天分直覺極高", "t": ["界線模糊，容易猶豫不決，情緒豈不很大，什麼都好，只有自己會對別人寫小本本。不要看表面沒事，回家會虐待狗與貓的，都是2。倒掉：停下內心安定了，要懂得畫界線。", "資源連結者，倒掉：犧牲，害怕衝突，不好意思拒絕你。害怕衝突。", "伴侶跟好友會被掐住。會硬撐著做下去。", "可以做人力資源、作家、藝術家。"]}, "3": {"n": "土星", "h": "業力之星。如果沒有土星，人會雙腳離地", "t": ["宇宙，心想事成。投胎人最愛。宇宙之子", "許願樹可以把手機桌面換成這張。三位一體，要什麼得什麼。常常都是講一堆做很少。", "三號不要減肥，肉肉的才會有福氣。太瘦的都不會有福氣。可以吃垃圾食物！三號女生特別愛穿黑色，但穿黑色會把能量壓下來，至少要有一些浮誇的裝飾一下自己。黑色吸負能量，白色釋放能量。減肥下來，運氣不好會生病。", "牌的下方是神殿。克洛諾斯土星沒有四季，把天空之神的生殖器砍掉，所以過的很悲傷。沒有看到自己建設的神界有多豐盛⋯", "3號誕生的話，整個家的經濟會往上飄", "男生娶三號，女生娶三號，會一直有錢", "極端愛講話，極端不愛講話"]}, "4": {"n": "木星", "h": "幸運好事貴人財庫", "t": ["命運之輪一定會有成長、蓬勃發展，一定要維持。獅身人面像代表保護與正義。大自然不可能一直都是春天，右下腳是鱷魚，來破壞的。大自然：開啟、生長、結束。四號一定要學習找自己秩序、規則。穩穩的建構，就會達到社會上認為的成功定義。建立秩序是因為不能只有自己豐盛，而是大家都要豐盛才對。你是否是四號的朋友，是否有請你東西、送你東西，只會對自己重要的人分享。對他重要的家人極度慷慨。若不是的話就得不到這些福利。極度與軍公教有緣、很會標案子。", "要建立好中心否則會沒有安全感。", "要常常接觸大自然。爬山，綠色植物對四號很重要。"]}, "5": {"n": "火星", "h": "", "t": ["突破炸裂破壞改革公司，穩定儘量不要召五號，剛開開拓時可以", "跟競爭力、生存有關。一個人的性能量。", "跟夢想動力有關", "如果生下5號小孩要給他足夠的時間探索世界，前面很慢，累積很多的事情經驗才會爆發出好的結果。", "1號不拖泥帶水，5號小孩會在自助餐區繞很久，每個都摸摸看，會讓人摸不著頭緒。", "老闆開發事物：1號會不知道該怎麼回答，但如果問5號，他可以跟你分析很多的細節。", "一定鎖定一定會成功！他不會對你的過去有既定印象。", "覺得四號不自由。", "不是合作細節的事情，可以找4、6號"]}, "6": {"n": "太陽", "h": "", "t": ["生命之樹最重要的能量來源，功成名就很容易，會想當好人，不要太在意別人對你的看法（因為6會很容易在意），6的父母，來還父母恩的，來報恩的。容易被犧牲，跟十二星座都能相處的很好。感謝6號的話，一定要說出來，用真心跟別人互動的。不要以為他一定知道，要講給他聽。不熟的人都會以為他人很好。", "代表成功", "盲點：因為尋求面面俱到，所以不能接受別人的不完美", "666代表惡魔", "6、66可以"]}, "7": {"n": "金星", "h": "好運來自美好的人緣，貴人好運", "t": ["象徵愛與美麗，愛花錢，吸引戀愛的能力", "不會有金錢課題，但會有精神課題", "談事情講理性，後面再講感性", "皇后穿了褲子，不是裙子。雖然是女性卻擁有不輸男性的氣質。有人傷害的話會拿盾牌起來喔", "綜合理性與感性。", "一定會被重要他人經歷信任與背叛，沒有的話非常危險。", "人緣好、貴人多所以機會多。沒有辦法感受到真正被愛的感受。"]}, "8": {"n": "水星", "h": "", "t": ["最多老闆的人，而且不是小公司，是跨公司，明星名人的話會很容易有權力、有份量。劉德華、吳宗憲、馬英九", "商人老師行銷人員，45度角自信的感覺。自我感覺良好。", "要一直流動才不會跌倒，要一直忙，不能耍廢", "8倒過來是無限，常常覺得有一堆責任在自己身上，會自己找麻煩，也因此才能保持平衡。", "爸媽如果是八號人，退了休一定要讓他出去忙。", "商人就是東西進來要賣出去。", "常常可以點石成金，要學會掌握頭腦的思緒，小心鑽牛角尖。"]}, "9": {"n": "月亮", "h": "", "t": ["內耗，會有很多人感謝你，會成為別人的指引明燈，而且會幫別人成功。看到人有才華，會一直鼓勵對方成為有價值的人，會看到別人的天賦才華，對方也會感謝你。那些人成功後，別人會回來幫你成功～", "女生結婚後就是人生另一個開始。月亮掌管內在情緒。搜集上面的各個行星的資訊能量，所以獲得不會很順遂，非常容易受到淺意識影響。從小到大週邊及前世的人事物，都在潛意識裡。", "9號男生都讓周邊的人很辛苦。月亮本來就會吸引女生，一定會有女人緣，但卻是吸引女人為他付出奉獻，會想要一直創業還一直失敗，被很多負債，另一半會非常辛苦。", "女祭司、通靈者，2號會透過創作學習，但9號是往乩童的路走。演藝人員、導演。", "很愛抱怨。", "要學習成長，系統性的學習，換腦袋。直覺天賦的人，人生通常比較辛苦。有問題去找輔導老師。", "以上都是虛幻的"]}, "10": {"n": "地球", "h": "", "t": ["2026年的10是牡羊座，適合買房、升官宜接下，可以避免很多爛事。錢與其拿去股票，4最好的是存錢，配股配息的，反而可以賺到。"]}, "11": {"n": "天王星", "h": "象徵物：閃電", "t": ["來得非常快。革命跟創新，永遠有爆發性的點子跟未來的洞見。超越一般人的思維，但不被現在人理解。", "人生劇本是自己寫的", "來考察玩樂，沒有錢以物易物一樣可以活，為什麼6這麼有錢還不快樂呢？無法被控制的", "雖然跟他再一起很瘋狂，卻很安心。在別人眼中很怪的人。如果你說他跟別人一樣，他會不開心；如果你說跟別人不一樣，他才開心。", "不斷放下，且接受無常、打破社會定義。"]}};
+const ageOf=o=>{if(o.by&&/^\d+-\d+$/.test(o.bd||'')){const[m,d]=o.bd.split('-').map(Number),t=new Date();let a=t.getFullYear()-(+o.by);if(t.getMonth()+1<m||(t.getMonth()+1===m&&t.getDate()<d))a--;return a>0?a:0}
+ if(o.ageD!==undefined&&o.ageD!==null&&S.myBd)return myAge()+o.ageD;return +o.age||0};
+function lifeCalc(str){let n=String(str).split('').reduce((a,b)=>a+ +b,0);while(n>11)n=String(n).split('').reduce((a,b)=>a+ +b,0);return String(n)}
+const lifeNumOf=o=>{if(!o||!o.by||!/^\d+-\d+$/.test(o.bd||''))return '';const[m,d]=o.bd.split('-').map(Number);return lifeCalc(o.by+String(m).padStart(2,'0')+String(d).padStart(2,'0'))};
+const anCard=(title,right,mid,body)=>`<div class="an w"><div class="an-t"><span>${title}</span><span class="an-r">${right||''}</span></div>${mid||''}${body?`<details><summary class="an-s">展開完整解讀</summary><div class="an-b">${body}</div></details>`:''}</div>`;
+const lifeTxt=d=>`<div style="font-size:13px;line-height:1.7;margin-top:6px">${d.t.map(x=>`<div style="margin:4px 0">${E(x)}</div>`).join('')}</div>`;
+const PZO={};
+const pzOwn=k=>{const[t,i]=k.split('|');if(t==='s')return S.side.find(x=>x.id===+i);const l=S.leaders.find(x=>x.id===+i);return l&&((l.pid&&P(l.pid))||l)};
+const pz=(o,k,f,label)=>{if(!k)return sel(o,f,label);const v=o[f]||'';return `<label class="fl"><span>${label}</span><select data-pz="${k}|${f}"><option value="">未填</option>${OPT[f].map(x=>`<option ${x===v?'selected':''}>${E(x)}</option>`).join('')}</select></label>`};
+function persDet(o,k){if(!o)return '';const c=lifeNumOf(o);if(c)o.life=c;const bits=[o.life&&'靈數'+o.life,o.mbti].filter(Boolean).join('・');
+ return `<details style="margin-top:8px" ${PZO[k]?'open':''}><summary class="sub" style="cursor:pointer" data-pzt="${k}">性格分析（生命靈數・姓名學・MBTI）${bits?'：'+E(bits):''}</summary>${lifeBox(o,k)}${namo(o,k)}${mbtiBox(o,k)}</details>`}
+function lifeBox(p,k){const c=lifeNumOf(p);if(k&&c)p.life=c;const d=LIFE[p.life];if(!d)return anCard('生命靈數','',pz(p,k,'life','生命靈數'),'');
+ return anCard('生命靈數',E(p.life)+'・'+d.n+(c?'（依生日算出）':''),pz(p,k,'life','生命靈數')+(d.h?`<div style="margin-top:6px;font-size:13px">${E(d.h)}</div>`:''),lifeTxt(d))}
+function lifeView(){const keys=Object.keys(LIFE),g={},un=[];keys.forEach(k=>g[k]=[]);
+ bdAll().forEach(([t,o])=>{const k=String(o.life||lifeNumOf(o)||'');g[k]?g[k].push([t,o]):un.push([t,o])});
+ const chip=([t,o])=>`<button class="chip" data-gp="${t}|${o.id}" style="border-color:${BT[t][1]};font-size:12px;padding:3px 9px">${t==='p'?nm(o):E(o.nick||o.name)}</button>`;
+ const grp=m=>['l','p','s'].map(k=>{const a=m.filter(x=>x[0]===k);return a.length?`<div class="row" style="gap:6px;margin-top:6px;align-items:flex-start"><span style="flex:none;width:44px;font-size:12px;font-weight:700;color:${BT[k][1]};padding-top:4px">${BT[k][0]}</span><div class="chips">${a.map(chip).join('')}</div></div>`:''}).join('');
+ S.lxo=S.lxo||{};
+ return `<div class="sub" style="margin:0 2px 8px">西元生日的數字全部相加；剛好 10 就是 10，11 就是 11，超過 11 就再相加到 11 以內。</div>`+keys.map(k=>{const m=g[k],d=LIFE[k],open=!!S.lxo[k];return `<div class="card" style="border-left:6px solid var(--acc)"><div class="row"><b class="sp">${k} ${d.n} <span class="sub" style="font-weight:400;font-size:12px">${E(d.h)}</span></b><span class="sub">${m.length} 人</span></div>${grp(m)||'<div class="sub" style="font-size:12px;margin-top:6px">（目前沒有）</div>'}<button class="chip" style="margin-top:8px;font-size:12px" data-lx="${k}">${open?'收起解讀':'生命靈數解讀'}</button>${open?lifeTxt(d):''}</div>`}).join('')+
+ `<div class="card"><div class="row"><b class="sp">還沒有生命靈數</b><span class="sub">${un.length} 人</span></div>${grp(un)||'<div class="sub" style="font-size:12px;margin-top:6px">（都有了）</div>'}</div>`}
+const TIPS=[
+['首頁',['點上方名字選人，下方會列出他現在該做的事；「選取到期與逾期」一鍵帶入該聯絡的人。','「活動後待處理」列出活動結果還沒填、或還沒做後續跟進的人。','產品跟進每 14 天一次；選「暫時不分享」會在兩週後再通知。']],
+['名單與新人頁',['名單最上方可切換：新人、分類、旁線、社團、星座、靈數。','分類依 A、B、C、D、E、O、X 排列，A 在最上面。','編號只給自己的新人（1–999）；夥伴的新朋友（旁線）可用「領導人名字第一個字＋流水號」，例如「美1」。','年齡：選 +／- 代表比我大／小幾歲，我長一歲，他也會自動跟著長一歲；填了生日年份就改依生日計算，並自動算出生命靈數。','生涯規劃俱樂部 123456：點數字可勾完成、寫備註。','有興趣的產品選了之後，「分享產品」會自動打勾；點產品名稱可標記常客。']],
+['啟動新人六步驟',['步驟名稱、管理班、NDO 的項目可到「設定」統一編輯。','保母可以選多位領導人；教練、老師各一位。領導人頁面會自動顯示他是誰的保母／教練／老師。']],
+['課程與活動',['在新人頁可以直接把他約進之後的活動，並選誰幫我約的。','活動後標「有來」或「沒來」，寫下反應或沒來的原因；再寫對答案內容和後續要做的事，會同步到對答案記錄和首頁待辦。']],
+['領導人',['按住名字左邊的兩條線，拖曳可以上下排序。','新人也成為領導人時，在新人頁按「同步到領導人」，新人資訊都會保留。','「給領導人的資料」可一鍵複製，貼給領導人。']],
+['對答案與異議',['每個人的對答案會集中在「答案」頁；整理成異議後收成小標題，點開才看內容。','異議左邊的 ⠿ 按住拖到另一則上，會變成它的下一層。']],
+['星座、靈數、社團',['星座與生命靈數依生日自動歸類，並分成領導人、新人、旁線；點「解讀」看特質。','社團頁記錄誰參加過、還沒約下次的人就是「還可約」。']],
+['備份與雲端',['資料會自動同步到雲端；「設定」→「複製全部備份」是額外保險，建議定期貼到備忘錄。','照片只存在這支手機，不在雲端與備份文字裡。']]];
+function stkFix(){if(!document.querySelector)return;const h=document.querySelector('.stk'),g=document.querySelector('.stkgap');if(!h||!g)return;const hb=h.getBoundingClientRect().bottom,gt=g.getBoundingClientRect().top+(window.scrollY||0);g.style.height=Math.max(0,Math.round(hb-gt+6))+'px'}
+if(typeof window!=='undefined'&&window.addEventListener){window.addEventListener('resize',stkFix);window.addEventListener('load',stkFix)}
+function lfixUpd(){const el=$('lfix');if(!el)return;let nm2='';if(S.tab==='ld'&&!S.view&&document.querySelectorAll){const cs=document.querySelectorAll('div.card[data-lz]');for(const c of cs){const r=c.getBoundingClientRect();if(r.top<=40&&r.bottom>90){const l=S.leaders.find(x=>x.id===+c.dataset.lz);if(l)nm2=l.name;break}}}
+ if(nm2){el.style.display='flex';el.textContent='★ '+nm2}else el.style.display='none'}
+if(typeof window!=='undefined'&&window.addEventListener)window.addEventListener('scroll',lfixUpd,{passive:true});
+function tipsUI(){const el=$('tipx');if(!el)return;const f=$('fab');el.style.right=(f&&f.innerHTML)?'56px':'14px';
+ el.innerHTML=`<button class="fabb" data-tp="1" aria-label="使用說明" style="font-size:16px;font-weight:700">${S.tp?'×':'?'}</button>${S.tp?`<div class="fabp" style="right:0;max-height:70vh;overflow:auto;width:min(92vw,340px)"><b>使用說明小撇步</b>${TIPS.map(([h,a],i)=>`<details ${i===0?'open':''} style="margin-top:8px"><summary style="cursor:pointer;font-weight:600">${h}</summary>${a.map(x=>`<div class="sub" style="margin:4px 0;font-size:12.5px;line-height:1.5">• ${x}</div>`).join('')}</details>`).join('')}</div>`:''}`}
+const addMo=(ds,n)=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(ds||'');if(!m)return '';const t=new Date(+m[1],+m[2]-1+n,1),dim=new Date(t.getFullYear(),t.getMonth()+1,0).getDate();t.setDate(Math.min(+m[3],dim));return iso(t)};
+const rdOk=p=>p.joined&&/^\d{4}-\d{2}-\d{2}$/.test(p.rd||'');
+const rnList=()=>{const lim=addMo(today(),3);return S.people.filter(p=>rdOk(p)&&p.rd<=lim).map(p=>({p,rd:p.rd,dl:dleft(p.rd)})).sort((a,b)=>a.rd.localeCompare(b.rd))};
+const rnTxt=p=>{const d=dleft(p.rd);return '續約 '+p.rd.replace(/-/g,'/')+(d<0?'（已過 '+(-d)+' 天）':d===0?'（今天）':'（還有 '+d+' 天）')+'・提醒日 '+addMo(p.rd,-3).slice(5).replace('-','/')};
+const rnWhen=dl=>dl<0?'已過 '+(-dl)+' 天':dl===0?'今天':dl+' 天後';
+function rnCard(){const a=rnList();return `<div class="card" style="padding:8px 12px"><b>↻ 接下來三個月要續約（${a.length}）</b>${a.length?a.map(({p,rd,dl})=>`<div class="row" style="margin-top:4px;gap:6px"><span class="pill" style="flex:none;${dl<0?'color:var(--bad);border-color:var(--bad)':''}">${rd.slice(5).replace('-','/')}</span><b class="sp" data-open="${p.id}" style="cursor:pointer">${nm(p)}</b><span class="sub" style="flex:none;font-size:12px">${rnWhen(dl)}</span></div>`).join(''):'<div class="sub" style="margin-top:4px">目前沒有</div>'}</div>`}
+function rnDay(ds){const a=S.people.filter(rdOk).map(p=>({p,t:p.rd===ds?'續約日':addMo(p.rd,-3)===ds?'提前三個月提醒':''})).filter(x=>x.t);return a.length?`<div class="card" style="padding:8px 12px"><div class="sub">↻ 這天的續約</div>${a.map(({p,t})=>`<div class="row" style="margin-top:4px"><b class="sp" data-open="${p.id}" style="cursor:pointer">${nm(p)}</b><span class="pill" style="flex:none">${t}</span></div>`).join('')}</div>`:''}
+function rnHome(){const a=rnList();return a.length?`<div class="card" style="padding:8px 12px"><b>↻ 續約提醒（${a.length}）</b><div class="chips" style="margin-top:6px">${a.map(({p,rd,dl})=>`<button class="chip" data-open="${p.id}" style="font-size:12px;padding:3px 9px;${dl<0?'border-color:var(--bad);color:var(--bad)':''}">${nm(p)} ${rd.slice(5).replace('-','/')}</button>`).join('')}</div></div>`:''}
+const hdrSum=p=>{const a=ageOf(p),b=[p.gender,a?a+'歲':'',p.job].filter(Boolean).map(E).join('・'),m=(v,l)=>`<span style="margin-left:8px;color:${v?'var(--acc)':'var(--sub)'};font-weight:${v?700:400}">${v?'Ｖ':'Ｘ'}${l}</span>`;return b+m(p.broke,'破題')+m(p.room,'進教室')+m(p.joined,'加入')};
+const memberSec=p=>`<h2>會員資料</h2><div class="card"><div class="grid"><label class="fl"><span>會員編號</span><input data-p="mno" inputmode="numeric" value="${E(p.mno||'')}"></label><label class="fl"><span>密碼</span><div class="row" style="gap:4px"><input data-p="pw" type="${S.pwv===p.id?'text':'password'}" autocomplete="off" value="${E(p.pw||'')}"><button class="x" style="font-size:12px;color:var(--acc);flex:none" data-pwv="${p.id}">${S.pwv===p.id?'隱藏':'顯示'}</button></div></label><label class="fl"><span>加入日期</span><input type="date" data-p="jd" value="${E(p.jd||'')}"></label><label class="fl"><span>續約日期</span><input type="date" data-p="rd" value="${E(p.rd||'')}"></label></div>${rdOk(p)?`<div class="row" style="margin-top:8px;gap:8px"><span class="sub" style="font-size:12px">${rnTxt(p)}</span><button class="chip" style="font-size:12px;flex:none;margin-left:auto" data-rnw="${p.id}">已續約（延一年）</button></div>`:''}</div>`;
+const MR=[['nanny','保母'],['coach','教練'],['teacher','老師']];
+const s6done=(p,i)=>{if(p.s6&&p.s6[i]!==undefined)return !!p.s6[i];if(i===1)return !!((p.nannies||[]).length&&(p.mentorL||{}).coach&&(p.mentorL||{}).teacher);if(i===2)return !!p.phone;if(i===3)return !!p.list;if(i===4)return MG.length>0&&MG.every(k=>get(p,'mg.'+k));if(i===5)return NDO.length>0&&NDO.every(k=>get(p,'ndo.'+k));return !!p.every};
+const s6bar=p=>`<div class="sub" style="margin:12px 0 4px">啟動六步驟</div><div class="row" style="gap:4px;align-items:flex-start">${[1,2,3,4,5,6].map(i=>`<div style="flex:1;text-align:center;min-width:0"><button class="stp ${s6done(p,i)?'done':''}" data-s6="${p.id}|${i}">${s6done(p,i)?'✓':i}</button><div class="sub" style="font-size:10px;margin-top:2px;line-height:1.2">${E(T6(i))}</div></div>`).join('')}</div>`;
+const T6=i=>(S.six&&S.six.t[i-1])||['拜三師','密切聯繫/電話通','列名單','管理班','NDO','每會必到'][i-1];
+const tg2=(p,path,label)=>{const v=get(p,path);return `<button class="chip ${v?'v':''}" data-t="${path}">${v?'<span style="font-size:11px">Ｖ</span> ':''}${label}</button>`};
+const mentorRow=p=>{const ns=p.nannies||[],ls=S.leaders,sm='font-size:12px;padding:5px 6px';
+ const chip=(id,rm)=>{const l=ls.find(x=>x.id===id);return l?`<span class="pill" style="font-size:12px;padding:2px 4px 2px 8px"><b data-gp="l|${id}" style="cursor:pointer">${E(l.name)}</b> <button class="x" style="font-size:13px" ${rm}>×</button></span>`:''};
+ const grp=(lb,chips,sel,old)=>`<div class="fl" style="margin-top:6px"><span>${lb}</span><div class="chips" style="align-items:center;gap:4px">${chips}${sel}</div>${old?`<span class="sub" style="font-size:11px">原本手打：${E(old)}</span>`:''}</div>`;
+ const one=(k,lb)=>{const id=(p.mentorL||{})[k]||0,leg=p.mentor[k];return grp(lb,id?chip(id,`data-mrm="${p.id}|${k}"`):'',id?'':`<select data-mnt="${p.id}|${k}" style="width:auto;max-width:150px;${sm}"><option value="">＋ 選${lb}</option>${ls.map(l=>`<option value="${l.id}">${E(l.name)}</option>`).join('')}</select>`,!id&&leg?leg:'')};
+ const free=ls.filter(l=>!ns.includes(l.id));
+ return grp('保母（可多位）',ns.map(id=>chip(id,`data-nrm="${p.id}|${id}"`)).join(''),`<select data-nadd="${p.id}" style="width:auto;max-width:150px;${sm}"><option value="">＋ 選保母</option>${free.map(l=>`<option value="${l.id}">${E(l.name)}</option>`).join('')}</select>`,!ns.length&&p.mentor.nanny?p.mentor.nanny:'')+one('coach','教練')+one('teacher','老師')};
+const mentorHtml=l=>{const out=[];MR.forEach(([k,lb])=>{const a=S.people.filter(p=>k==='nanny'?(p.nannies||[]).includes(l.id):(p.mentorL||{})[k]===l.id).sort(byNo);if(a.length)out.push(`<div style="margin:4px 0"><span class="pill">${lb}</span> 他是這些人的${lb}：${a.map(p=>`<b data-open="${p.id}" style="cursor:pointer;color:var(--acc)">${nm(p)}</b>`).join('、')}</div>`)});
+ const me=l.pid&&P(l.pid),lk=id=>{const x=S.leaders.find(z=>z.id===id);return x?`<b data-gp="l|${id}" style="cursor:pointer;color:var(--acc)">${E(x.name)}</b>`:''},mine=me?MR.map(([k,lb])=>{const ids=k==='nanny'?(me.nannies||[]):((me.mentorL||{})[k]?[me.mentorL[k]]:[]);const t=ids.map(lk).filter(Boolean).join('、')||E(me.mentor[k]||'');return t?`<span class="pill">${lb}</span> ${t}`:''}).filter(Boolean).join('　'):'';
+ return (out.length||mine)?`<div style="margin-top:12px"><b>保母／教練／老師</b></div>${mine?`<div style="margin:4px 0">他的：${mine}</div>`:''}${out.join('')}`:''};
+function leadText(p){const ev=S.events.filter(e=>e.who.includes(p.id)&&(e.st||{})[p.id]==='有來').sort((a,b)=>a.date.localeCompare(b.date)).map(e=>e.title),acts=(p.acts||[]).map(a=>a.text),tags=TAGS.filter(k=>(p.tags||{})[k]);
+ const att=[p.courses&&('課程：'+p.courses),(ev.length||acts.length)&&('活動：'+[...ev,...acts].join('、')),tags.length&&('類型：'+tags.join('、'))].filter(Boolean).join('；');
+ const L=(a,b)=>'🌀'+a+'：'+(b||''),Y=v=>v?'⭕️':'❌',nmx=(S.me&&S.me!=='我')?S.me:(S.watch||'');
+ return [nmx+'新人資料',L('姓名',p.name),L('職業',p.job),L('年齡',ageOf(p)||p.age),L('破題',Y(p.broke)),L('進教室',Y(p.room)),L('加入',Y(p.joined)),L('參加過的課程與活動',att),'🌀其他資訊','F 家庭：'+(p.family||''),'R 休閒：'+(p.hobby||''),'M 金錢觀：'+(p.money||''),'H 健康：'+(p.health||''),'D 夢想：'+(p.dream||''),L('想請領導人協助',p.help),L('補充',p.toL)].join('\n')}
+function evPerson(e,p){const st=(e.st||{})[p.id]||'已約',iv=(e.inv||{})[p.id]||0,k=e.id+'_'+p.id,fu=(e.fu||{})[p.id],res=st==='有來'||st==='沒來'||st==='無法來';
+ const ph=st==='有來'?'他的反應（來了之後怎麼說）':(st==='沒來'||st==='無法來')?'沒來的原因':'備註';
+ return `<div style="margin:8px 0;padding-top:8px;border-top:1px solid var(--line)"><div class="row"><span class="pill">${e.date.slice(5).replace('-','/')}</span><b class="sp">${E(e.title)}</b></div><div class="sub">${[e.start?e.start+'–'+e.end:'',e.speaker?'講師 '+E(e.speaker):''].filter(Boolean).join('・')}</div>
+ <div class="chips" style="margin:6px 0">${ST.map(x=>`<button class="chip" style="${st===x?`background:${STC[x]};color:#fff;border-color:transparent`:''}" data-es="${e.id}|${p.id}|${x}">${x}</button>`).join('')}</div>
+ <select data-ei="${e.id}|${p.id}"><option value="0">誰幫我約的？</option>${invOpts(iv)}</select>
+ <input data-an="e|${e.id}|${p.id}" value="${E((e.notes||{})[p.id]||'')}" placeholder="${ph}" style="margin-top:4px">
+ ${res?`<div class="sub" style="margin-top:6px">${fu?'✔ 已記過後續跟進，還可以再記一筆':'活動後跟進'}</div><input id="el_n${k}" placeholder="對答案內容" style="margin-top:4px"><div class="row" style="margin-top:4px;gap:6px"><input id="el_t${k}" placeholder="後續要跟進的事（選填）"><button class="go q" data-evlog="${e.id}|${p.id}">送出</button></div>`:''}
+ ${(e.photos||[]).length?`<div class="mini">${e.photos.slice(0,5).map(id=>`<img class="ph" data-ph="${id}" data-own="e|${e.id}" alt="照片">`).join('')}</div>`:''}</div>`}
+function evCard(){const a=[],b=[],td=today();S.events.forEach(e=>e.who.forEach(pid=>{const p=P(pid);if(!p||e.date>td)return;const st=(e.st||{})[pid]||'已約';if(st==='已約'||st==='待確定')a.push({e,p,st});else if((st==='有來'||st==='沒來'||st==='無法來')&&!(e.fu||{})[pid])b.push({e,p,st})}));
+ if(!a.length&&!b.length)return '';const row=x=>`<button class="chip" data-open="${x.p.id}" style="margin:2px 4px 2px 0">${nm(x.p)}・${E(x.e.title)} ${x.e.date.slice(5).replace('-','/')}</button>`;
+ return `<div class="card"><b>活動後待處理</b>${a.length?`<div class="sub" style="margin-top:6px">結果還沒填（有來／沒來？）</div><div>${a.map(row).join('')}</div>`:''}${b.length?`<div class="sub" style="margin-top:6px">還沒跟進（對答案、後續行動）</div><div>${b.map(row).join('')}</div>`:''}</div>`}
+const tg=(p,path,label)=>{const v=get(p,path);return `<button class="chip ${v?'on':''}" data-t="${path}">${v?'Ｖ':'Ｘ'} ${label}</button>`};
+function detail(p){
+ const ups=[[0,S.me]].concat(S.people.filter(x=>x.joined&&x.id!==p.id).map(x=>[x.id,x.name]));
+ const SCID={'對答案記錄':'ans','基本資料':'base','認識與狀況':'know','課程與活動':'course','給領導人的資料':'tol','組織位置':'org'};
+ const sec=(t,b)=>`<h2 id="sc_${SCID[t]||''}">${t}</h2><div class="card">${b}</div>`;
+ const rail=`<style>#app{padding-left:42px}</style><div class="rail">${[['top','進度'],['ans','答案'],['base','基本'],['an','性格'],['prod','產品'],['know','認識'],['course','活動'],['tol','複製'],['org','架構']].map(([k,l])=>`<button data-sj="sc_${k}">${l}</button>`).join('')}</div>`;
+ return `<div class="stk"><button class="back" data-a="back">‹ 返回</button><div class="sp" style="min-width:0"><div style="font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.no?`<span style="color:var(--acc);margin-right:6px">${E(p.no)}</span>`:''}${E(p.nick||p.name)}</div><div id="hdrsum" class="sub" style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${hdrSum(p)}</div></div></div><div class="stkgap"></div>${rail}<div style="margin:-6px 0 10px">${ldb(p)||'<span class="sub">還沒有領導人在跟進</span>'}</div>
+ <div class="card" id="sc_top"><div class="chips one">${tg(p,'broke','破題')}${tg(p,'room','進教室')}${tg(p,'joined','加入')}${tg(p,'shared','分享產品')}</div><label class="fl" style="margin-top:8px"><span>分類</span><select data-catsel="${p.id}"><option value="">未分類</option>${Object.keys(CAT).map(k=>`<option value="${k}" ${p.cat===k?'selected':''}>${k} ${CAT[k].n}</option>`).join('')}</select></label>${stepsBar('p|'+p.id,p)}${s6bar(p)}</div>
+ <details id="sc_six" style="margin:-4px 0 12px" ${PZO['six']?'open':''}><summary class="sub" data-pzt="six" style="cursor:pointer;color:var(--acc);font-weight:700">六步驟詳細內容</summary><div class="card">${SN(p,1,'1 '+T6(1))}${mentorRow(p)}
+ ${SN(p,2,'2 '+T6(2))}<div class="chips">${tg2(p,'phone',T6(2))}</div>
+ ${SN(p,3,'3 '+T6(3))}<div class="chips">${tg2(p,'list',T6(3))}</div>
+ ${SN(p,4,'4 '+T6(4))}<div class="chips">${MG.map(k=>tg2(p,'mg.'+k,k)).join('')}</div>
+ ${SN(p,5,'5 '+T6(5))}<div class="chips">${NDO.map(k=>tg2(p,'ndo.'+k,k)).join('')}</div>
+ ${SN(p,6,'6 '+T6(6))}<div class="chips">${tg2(p,'every',T6(6))}</div></div></details>
+ ${p.joined?memberSec(p):''}
+ ${sec('對答案記錄',logForm('p|'+p.id)+logList('p|'+p.id,p)+`<label class="fl" style="margin-top:10px"><span>希望團隊幫忙什麼</span><textarea rows="2" data-p="help">${E(p.help)}</textarea></label>`)}
+ ${sec('基本資料',`<div class="grid"><label class="fl"><span>編號</span><input type="text" inputmode="numeric" maxlength="3" placeholder="例：12" data-no="1" value="${E(p.no)}"></label>${inp(p,'name','姓名')}${inp(p,'nick','綽號（有填就顯示綽號）')}${igcell(p)}${inp(p,'line','Line')}${ageCell(p)}${inp(p,'job','工作職業'+en('Occupation'))}${inp(p,'zodiac','星座')}${sel(p,'live','居住縣市')}${ds(p)}${moreLive(p)}${sel(p,'blood','血型')}${inp(p,'money','金錢觀'+en('Money'),'text','w')}${inp(p,'family','<span style="white-space:nowrap">家庭'+en('Family')+' <span style="display:inline;opacity:.7;font-size:11px">（同住、排行）</span></span>','text','w')}${inp(p,'hobby','休閒興趣'+en('Relaxation'),'text','w')}${inp(p,'health','健康狀況'+en('Health'),'text','w')}${inp(p,'dream','夢想與目標'+en('Dream'),'text','w')}${inp(p,'backer','背後的人','text','w')}</div>`)}
+ <div class="row" style="align-items:flex-end"><h2 id="sc_an" class="sp">性格分析</h2><button class="chip" data-a="rf" style="margin-bottom:6px">↻ 重新整理解讀</button></div><div class="card">${lifeBox(p)}${namo(p)}${mbtiBox(p)}</div>
+ ${prodSec(p)}
+ ${sec('認識與狀況',`<div class="grid">${inp(p,'met','認識時間','date','w')}<label class="fl w"><span>狀況</span><textarea rows="2" data-p="status">${E(p.status)}</textarea></label><div class="w"><div class="sub" style="margin-bottom:2px">認識時的照片</div>${photosMini('p|'+p.id,p.photos)}</div>${leadField(p)}</div>`)}
+ ${sec('課程與活動',`<label class="fl"><span>上過的課</span><textarea rows="2" data-p="courses">${E(p.courses)}</textarea></label><div class="chips" style="margin:8px 0">${TAGS.map(k=>tg(p,'tags.'+k,k)).join('')}</div>${attend(p)}`)}
+ ${sec('給領導人的資料',`<textarea id="tl" rows="9" readonly style="font-size:12px;margin-bottom:8px">${E(leadText(p))}</textarea><label class="fl"><span>補充（手動輸入，會一起複製）</span><textarea rows="2" data-p="toL">${E(p.toL||'')}</textarea></label><label class="fl" style="margin-top:6px"><span>想請領導人協助（手動輸入）</span><textarea rows="2" data-p="help">${E(p.help)}</textarea></label><div style="margin-top:8px"><button class="chip" style="color:var(--acc);border-color:var(--acc);font-size:13px;padding:5px 14px" data-tlcopy="${p.id}">⧉ 複製給領導人</button></div>`)}
+ ${sec('組織位置',`<label class="fl"><span>上線（加入後才會出現在架構圖）</span><select data-p="up" data-num="1">${ups.map(([i,n])=>`<option value="${i}" ${p.up===i?'selected':''}>${E(n)}</option>`).join('')}</select></label><div class="row" style="margin-top:8px;gap:8px"><span class="sub" style="font-size:13px">${isLd(p)?'已是教室領導人（新人資訊都保留）':'他也成為教室領導人了？'}</span>${isLd(p)?`<button class="chip" style="font-size:12px;flex:none" data-gp="l|${S.leaders.find(l=>l.pid===p.id).id}">看領導人頁</button>`:''}<button class="chip" style="font-size:12px;flex:none;margin-left:auto" data-mkld="${p.id}">${isLd(p)?(S.arm==='ul'+p.id?'再按取消':'取消領導人'):'＋ 同步到領導人'}</button></div>`)}
+ <button class="go g" data-a="del" style="margin-top:6px">${S.arm===p.id?'再按一次確認刪除':'刪除這個人'}</button>`}
+
+const byNo=(a,b)=>{const x=a.no?+a.no:1e9,y=b.no?+b.no:1e9;return x-y||a.id-b.id};
+const gname=n=>{n=String(n||'').trim();return /^[\u4e00-\u9fff]{2,}$/.test(n)?n.slice(1):n};
+const invOpts=iv=>S.leaders.map(l=>`<option value="${l.id}" ${l.id===iv?'selected':''}>${E(l.name)}</option><option value="${-l.id}" ${-l.id===iv?'selected':''}>${E(gname(l.name))}/旁線</option>`).join('');
+const nm=p=>(p.no?'#'+p.no+' ':'')+E(p.nick||p.name);
+const kids=id=>S.people.filter(x=>x.joined&&x.up===id).sort(byNo);
+function branch(id){const k=kids(id);return k.length?'<ul>'+k.map(n=>`<li><div class="node" data-open="${n.id}"><span class="av">${E((n.nick||n.name).replace('示範：','')[0])}</span><div class="sp"><b>${nm(n)}</b><div class="sub">${E(n.job)}${kids(n.id).length?'・下線 '+kids(n.id).length+' 人':''}・${due(n)}</div>${ldb(n)?'<div style="margin-top:3px">'+ldb(n)+'</div>':''}</div><span class="sub">${prog(n)}%</span></div>${branch(n.id)}</li>`).join('')+'</ul>':''}
+function org_v(){const j=S.people.filter(x=>x.joined).length;return `<h1>架構圖</h1><div class="sub" style="margin:-6px 2px 10px">已加入 ${j} 人・名單中尚未加入 ${S.people.length-j} 人</div>
+ <div class="tree"><ul><li><div class="node" data-tab="bk" style="border-color:var(--acc);cursor:pointer"><span class="av">我</span><div class="sp"><b>${E(S.me)} <span class="sub" style="font-size:12px">⚙ 到設定編輯</span></b><div class="sub">${S.meI.lv?E(S.meI.lv)+'・':''}直屬 ${kids(0).length} 人</div>${S.meI.note?`<div class="sub">${E(S.meI.note)}</div>`:''}</div></div>${branch(0)}</li></ul></div>`}
+
+const SKINS=[["forest", "森林鼠尾草", "#4E7A62", "#EEF1EC"], ["rose", "奶茶玫瑰", "#B9726E", "#F6EEEA"], ["blue", "霧藍灰", "#587A99", "#E9EEF3"], ["olive", "橄欖奶油", "#7F8A4F", "#F5F1E1"]];
+function applySkin(){try{document.documentElement.setAttribute('data-tskin',S.skin||'forest')}catch(e){}}
+const skinCard=()=>`<h2>外觀主題</h2><div class="card"><div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">${SKINS.map(k=>`<button class="chip ${(S.skin||'forest')===k[0]?'on':''}" data-skin="${k[0]}" style="display:flex;align-items:center;gap:8px;justify-content:flex-start;padding:8px 12px"><span style="width:18px;height:18px;border-radius:50%;background:${k[2]};flex:none;border:2px solid ${k[3]}"></span>${k[1]}</button>`).join('')}</div></div>`
+const meCard=()=>`<h2>我的資料</h2><div class="card"><div class="sub" style="margin-bottom:6px">我的資料統一在這裡改，其他頁面會自動套用。</div><div class="grid"><label class="fl"><span>名字</span><input data-mei="name" value="${E(S.me)}"></label><label class="fl"><span>生日（用來算新朋友年齡）</span><input type="date" data-mybd="1" value="${E(S.myBd||'')}"><button class="x" style="font-size:12px;color:var(--sub);text-align:left;padding:2px 0" data-mybdx="1">重設／歸零</button></label><label class="fl"><span>目前職級</span><input data-mei="lv" value="${E(S.meI.lv)}" placeholder="例：銀牌"></label><label class="fl"><span>課表標粉色的名字</span><input data-watch="1" value="${E(S.watch)}" placeholder="主持或分享時的名字"></label><label class="fl w"><span>備註／目標</span><input data-mei="note" value="${E(S.meI.note)}"></label></div></div>`;
+function back_v0(){return `<h1>設定與備份</h1>${skinCard()}${meCard()}<h2>啟動新人六步驟內容</h2><div class="card"><div class="sub" style="margin-bottom:6px">改完會套用到所有新人與旁線（已勾選的紀錄不會消失）。</div>${S.six.t.map((t,i)=>`<label class="fl"><span>步驟 ${i+1} 名稱</span><input data-six="t|${i}" value="${E(t)}"></label>`).join('')}<label class="fl" style="margin-top:6px"><span>${E(S.six.t[3])}（一行一項）</span><textarea rows="3" data-six="mg">${E(S.six.mg.join('\n'))}</textarea></label><label class="fl" style="margin-top:6px"><span>${E(S.six.t[4])}（一行一項）</span><textarea rows="7" data-six="ndo">${E(S.six.ndo.join('\n'))}</textarea></label></div><h2>備份</h2><div class="note">資料會同步到雲端；這份備份是額外保險（照片不在下方文字內，請另外留在相簿）。名單含他人個資，請定期複製下面的文字貼到自己的備忘錄或密碼保護的筆記。</div>
+ <div class="sub" style="margin-bottom:6px">${CL.msg()}（資料另存雲端，更新頁面不會消失；照片仍只存在這支手機）</div><div class="row" style="margin-bottom:6px;gap:6px"><button class="go" data-a="bkcopy">複製全部備份</button><span class="sub" style="flex:none">${S.lastBk?'上次備份 '+S.lastBk.slice(5).replace('-','/'):'還沒備份過'}</span></div><textarea id="bk" rows="9">${E(JSON.stringify({v:2,people:S.people,events:S.events,traits:S.traits,ndesc:S.ndesc,leaders:S.leaders,side:S.side,groups:S.groups,cat:S.cat,promos:S.promos,myBd:S.myBd,obj:S.obj,me:S.me,meI:S.meI,six:S.six}))}</textarea>
+ <div class="row" style="margin-top:8px"><button class="go" data-a="copy">複製</button><button class="go g" data-a="imp">用上方文字還原</button></div><div class="sub" id="bm" style="margin-top:6px"></div>`}
+
+const dbp=new Promise((res,rej)=>{try{const r=indexedDB.open('roster-photos',1);r.onupgradeneeded=()=>r.result.createObjectStore('p');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}});
+const idb=(m,fn)=>dbp.then(db=>new Promise((res,rej)=>{const t=db.transaction('p',m),q=fn(t.objectStore('p'));t.oncomplete=()=>res(q.result);t.onerror=()=>rej(t.error)}));
+const putPh=(id,b)=>idb('readwrite',s=>s.put(b,id)),getPh=id=>idb('readonly',s=>s.get(id)),delPh=id=>idb('readwrite',s=>s.delete(id)).catch(()=>{});
+const URLS={};
+const urlFor=id=>URLS[id]?Promise.resolve(URLS[id]):getPh(id).then(b=>b?(URLS[id]=URL.createObjectURL(b)):'');
+function hydrate(){document.querySelectorAll('img[data-ph]').forEach(im=>urlFor(im.dataset.ph).then(u=>{if(u)im.src=u}).catch(()=>{}))}
+function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',2600)}
+function shrink(file){return new Promise((res,rej)=>{const im=new Image(),u=URL.createObjectURL(file);im.onload=()=>{const r=Math.min(1,900/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*r);c.height=Math.round(im.height*r);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>b?res(b):rej(new Error('x')),'image/jpeg',.72)};im.onerror=()=>rej(new Error('x'));im.src=u})}
+async function upload(fs,o){o.photos=o.photos||[];let n=0;for(const f of fs){try{const b=await shrink(f),id='ph'+Date.now()+Math.random().toString(36).slice(2,6);await putPh(id,b);o.photos.push(id);n++}catch(e){toast('有照片無法儲存（可能是瀏覽器限制）')}}if(n)toast('已加入 '+n+' 張照片');render()}
+const photos=(own,ids)=>`<div class="pg">${(ids||[]).map(id=>`<img class="ph" data-ph="${id}" data-own="${own}" alt="照片">`).join('')}<label class="add">＋<input type="file" accept="image/*" multiple style="display:none" data-up="${own}"></label></div>`;
+const evOf=p=>{const l=S.events.filter(e=>e.who.includes(p.id)).sort((a,b)=>b.date.localeCompare(a.date));return l.map(e=>`<div style="margin:6px 0"><div class="row"><b class="sp">${E(e.title)}</b><span class="sub">${e.date}${e.start?' '+e.start+'–'+e.end:''}</span></div>${e.photos.length?`<div class="mini">${e.photos.slice(0,5).map(id=>`<img class="ph" data-ph="${id}" data-own="e|${e.id}" alt="照片">`).join('')}</div>`:''}</div>`).join('')||'<div class="sub">還沒有活動</div>'};
+const pad=n=>String(n).padStart(2,'0');
+const opts=(n,cur)=>Array.from({length:n},(_,i)=>`<option value="${pad(i)}" ${pad(i)===cur?'selected':''}>${pad(i)}</option>`).join('');
+const tsel=(val,idh,idm,attr)=>{const[h,m]=(val||'00:00').split(':');return `<select ${attr?`data-et="${attr}|h"`:`id="${idh}"`} style="width:70px;flex:none">${opts(24,h)}</select><b>:</b><select ${attr?`data-et="${attr}|m"`:`id="${idm}"`} style="width:70px;flex:none">${opts(60,m)}</select>`};
+function attend(p){const evs=S.events.filter(e=>e.who.includes(p.id)).sort((a,b)=>b.date.localeCompare(a.date)),td=today(),avail=S.events.filter(e=>e.date>=td&&!e.who.includes(p.id)).sort((a,b)=>a.date.localeCompare(b.date));
+ const man=p.acts.map((a,i)=>({d:a.date,t:a.text,n:a.note||'',i})).sort((a,b)=>b.d.localeCompare(a.d));
+ return `<div class="sub" style="margin:8px 0 2px">活動紀錄（約他、結果、反應、跟進）</div>`+(evs.map(e=>evPerson(e,p)).join('')+man.map(x=>`<div style="margin:8px 0;padding-top:8px;border-top:1px solid var(--line)"><div class="row"><span class="pill">${x.d}</span><b class="sp">${E(x.t)}</b><button class="x" data-ad="${x.i}">×</button></div><input data-an="a|${x.i}" value="${E(x.n)}" placeholder="參與備註" style="margin-top:4px"></div>`).join('')||'<div class="sub">還沒有紀錄</div>')+(avail.length?`<select data-eaddp="${p.id}" style="margin-top:8px;width:auto;max-width:100%;padding:4px 8px;font-size:13px;height:30px"><option value="0">＋ 可以約他參加的活動</option>${avail.map(e=>`<option value="${e.id}">${e.date.slice(5).replace('-','/')} ${E(e.title)}</option>`).join('')}</select>`:'<div class="sub" style="margin-top:8px">課表上沒有之後的活動可約</div>')+(S.ao?`<div class="sub" style="margin:12px 0 4px">補記一筆（不在課表上的活動）</div><div class="grid"><input type="date" id="ad" value="${today()}"><input id="at" placeholder="活動名稱"></div><div class="row" style="margin-top:6px"><input id="an" placeholder="參與備註"><button class="go q" data-a="act">加入</button></div>`:`<button class="chip" style="margin-top:8px;font-size:12px" data-a="actopen">＋ 補記</button>`)}
+const pad2=n=>String(n).padStart(2,'0');
+let IMP=null;
+const QDATA=[[1,'形象管理班(一)','',0,''],[2,'榮耀與傳承','林依瓊 F翡翠',0,'前導：和興'],[5,'我的未來我作主','侯胤男 F白金',0,'前導：昀葶'],[7,'秋日美妝盛典','吳綺芳 F白金',0,'主持：秝溱'],[8,'形象管理班(二)','',0,''],[9,'如何打造千年基業','陳勇濤 翡翠',0,'主持：中玉；分享：瓏恩 惠珠'],[12,'換個腦袋 出路無限','王若嘉 F白金',0,'主持：頌宜；分享：芠瑋 育妊'],[14,'健康樂活 從腸計議','林依瓊 F翡翠',0,'主持：汏鋼'],[15,'形象管理班(三)','',0,''],[16,'超越平凡、邁向成功~超凡文化的精髓','茜茜 翡翠',0,'主持：Ivan；分享：淑媛 盈昇'],[19,'環遊世界不是夢','張莉宜 F翡翠',0,'前導：瓏恩'],[21,'每一口呼吸都安心','張啟偉 F白金',0,'主持：舒芸；分享：惠珠'],[22,'形象管理班(四)','',0,''],[23,'成為解決問題的高手~如何回答異議','林依瓊 F翡翠',0,'主持：宏修；分享：維臻 翠玲'],[26,'MBTI互動攻略','陳麗宇 F白金',1,'主持：之玉'],[28,'生活中的智慧本草','Sophie F白金',0,'主持：美蓁'],[29,'形象管理班(五)','',0,''],[30,'借力使力不費力~如何做好旁組互惠','孫艾娜 白金',0,'主持：威成；分享：皓鈞 育旼']];
+const IPROMPT='這是一張俱樂部的每月活動表照片：表格，每一格有日期和活動名稱，格子下方的藍色字是講師。請只擷取：(1) 每個活動的名稱；(2) 講師，也就是藍色字裡的姓名與級別（例如「林依瓊 F翡翠」），不要國別（台灣／大陸）；沒有藍色字就留空。紅色字的課（例如「形象管理班(一)」）也算活動，講師留空。不要放進活動名稱或講師的有：前導／主持／分享（這些只放進 crew）、俱樂部名稱（輕創業俱樂部、生涯規劃俱樂部）、最右欄的輪值組別、最上方的會場標題與地址。活動名稱若分成兩行，請合併成一個名稱，保留原有的符號（例如 ~）。日期以「格子所在的星期欄位」為準：weekday 用 1=週一…7=週日；day 是格子左上角的日期數字。另外請把格子裡黑色字的前導／主持／分享人員整理成 crew（例如「主持：美蓁；分享：甲 乙」），只是用來標注，沒有就留空。只回傳 JSON（文字請用繁體中文），格式：{"year":數字,"month":數字,"events":[{"day":數字,"weekday":數字,"title":"活動名稱","speaker":"講師","crew":"主持與分享"}]}';
+function mkRows(y,m,list){const dim=new Date(y,m,0).getDate();return list.map(x=>{let day=+x.day,fix=!!x.fix;const wd=+x.weekday;
+  if(wd>=1&&wd<=7&&day>=1&&day<=dim){const act=((new Date(y,m-1,day).getDay()+6)%7)+1;if(act!==wd){let best=0,bd=99;for(let d=1;d<=dim;d++){if(((new Date(y,m-1,d).getDay()+6)%7)+1===wd&&Math.abs(d-day)<bd){bd=Math.abs(d-day);best=d}}if(best){day=best;fix=true}}}
+  if(day<1||day>dim)day=Math.min(Math.max(day||1,1),dim);
+  return{inc:true,date:y+'-'+pad2(m)+'-'+pad2(day),title:String(x.title||'').trim(),speaker:String(x.speaker||'').trim(),crew:String(x.crew||'').trim(),fix}}).filter(r=>r.title)}
+async function readPhoto(file){
+ IMP={busy:'讀取中…第一次使用會詢問是否允許 Claude 協助，請按允許（約需一分鐘）'};render();
+ try{
+  if(typeof claude==='undefined')throw {code:'none'};
+  const sm=await claude.use('sample');if(!sm)throw {code:'none'};
+  const lim=await sm.limits().catch(()=>null);if(!lim||!lim.images)throw {code:'noimg'};
+  const out=await sm.json(IPROMPT,{images:file,cache:false});
+  let y=+out.year||0,m=+out.month||0;if(y&&y<1911)y+=1911;
+  const[cy,cm]=S.cm.split('-').map(Number);if(!y)y=cy;if(m<1||m>12)m=cm;
+  const rows=mkRows(y,m,out.events||[]);if(!rows.length)throw {code:'empty'};
+  IMP={rows,note:'已讀取 '+rows.length+' 筆（'+y+' 年 '+m+' 月）'};
+ }catch(e){const c=(e&&e.code)||'';IMP={err:c==='not_granted'?'你沒有允許 Claude 協助，所以無法讀取照片。':c==='none'||c==='noimg'?'這個環境無法讓網頁讀取照片。請把照片傳到 Claude 對話，請 Claude 幫你整理；或用下方「快速匯入」。':c==='empty'?'沒有讀到活動，請換一張更清楚的照片再試。':c==='cancelled'?'已取消。':'讀取失敗，請稍後再試。'}}
+ render()}
+function impBox(){
+ const tm=`<div class="grid" style="margin-top:8px"><div class="fl"><span>開始</span><div class="row" style="gap:4px">${tsel2('19:30','imsh','imsm')}</div></div><div class="fl"><span>結束</span><div class="row" style="gap:4px">${tsel2('21:00','imeh','imem')}</div></div></div><div class="sub" style="margin:4px 0">每場都套用這個時間，匯入後仍可單獨修改</div>`;
+ if(!IMP)return `<div class="sub" style="margin-top:8px">選一張課表照片，Claude 會幫你整理，只留活動名稱和講師，輪值組、會場標題不會放進去。匯入前可以先檢查和修改。</div><label class="go" style="display:inline-block;margin-top:8px;cursor:pointer">選擇課表照片<input type="file" accept="image/*" style="display:none" data-imf="1"></label>${tm}<div style="margin-top:8px"><button class="chip" data-a="impq">快速匯入／更新：2026 年 10 月</button></div>`;
+ if(IMP.busy)return `<div style="margin-top:8px">${E(IMP.busy)}</div>`;
+ if(IMP.err)return `<div style="margin-top:8px">${E(IMP.err)}</div><button class="go g" data-a="impx" style="margin-top:8px">返回</button>`;
+ return `<div class="sub" style="margin-top:8px">${E(IMP.note||'')}　請檢查，不要的取消勾選，錯的直接改</div><label class="chip" style="display:inline-block;cursor:pointer;margin-top:6px">📷 換一張照片<input type="file" accept="image/*" style="display:none" data-imf="1"></label>${tm}${IMP.rows.map((r,i)=>`<div style="border-top:1px solid var(--line);padding:8px 0;margin-top:6px"><div class="row"><input type="checkbox" data-ipc="${i}" ${r.inc?'checked':''} style="width:20px;height:20px;flex:none"><input type="date" data-ip="${i}|date" value="${r.date}"></div><input data-ip="${i}|title" value="${E(r.title)}" style="margin-top:4px"><input data-ip="${i}|speaker" value="${E(r.speaker)}" placeholder="講師" style="margin-top:4px"><input data-ip="${i}|crew" value="${E(r.crew||'')}" placeholder="主持／分享（標注用）" style="margin-top:4px;font-size:13px">${r.fix?'<div class="sub">⚠ 照片上的日期和星期對不上，已依星期校正，請確認</div>':''}</div>`).join('')}<div class="row" style="margin-top:10px"><button class="go" data-a="impgo">匯入勾選的項目</button><button class="go g" data-a="impx">取消</button></div>`}
+const KINDS=['課程','活動','聚會'];
+
+const mon0=ds=>{const[y,m,d]=ds.split('-').map(Number),x=new Date(y,m-1,d);x.setDate(d-((x.getDay()+6)%7));return iso(x)};
+const addDs=(ds,n)=>{const[y,m,d]=ds.split('-').map(Number);return iso(new Date(y,m-1,d+n))};
+const tmin=t=>{const[h,m]=String(t||'').split(':').map(Number);return isNaN(h)?null:h*60+(m||0)};
+const hhmm=n=>Math.floor(n/60)+':'+pad2(n%60);
+function wkView(){
+ if(!S.wk)S.wk=mon0(S.cf||today());
+ const days=Array.from({length:7},(_,i)=>addDs(S.wk,i)),td=today(),HH=40;
+ const evs=S.events.filter(e=>days.includes(e.date)).sort((a,b)=>(a.start||'').localeCompare(b.start||''));
+ let H0=7,H1=23;evs.forEach(e=>{const a=tmin(e.start),b=tmin(e.end);if(a!==null)H0=Math.min(H0,Math.floor(a/60));if(b!==null)H1=Math.max(H1,Math.ceil(b/60))});H1=Math.min(H1,24);
+ const KC={'課程':'var(--acc)','活動':'#C9A27E','聚會':'#8FA9BF'};
+ const hours=Array.from({length:H1-H0},(_,i)=>`<div class="hr" style="height:${HH}px">${H0+i}</div>`).join('');
+ const cols=days.map(ds=>{const L=evs.filter(e=>e.date===ds&&tmin(e.start)!==null&&tmin(e.end)!==null&&tmin(e.end)>tmin(e.start));
+  const lane=new Map();let cl=[],ce=-1;const fin=()=>{const n=Math.max(1,...cl.map(x=>lane.get(x)+1));cl.forEach(x=>lane.set(x,[lane.get(x),n]))};
+  L.forEach(e=>{const a=tmin(e.start);if(cl.length&&a>=ce){fin();cl=[];ce=-1}const used=cl.filter(x=>tmin(x.end)>a).map(x=>lane.get(x));let k=0;while(used.includes(k))k++;lane.set(e,k);cl.push(e);ce=Math.max(ce,tmin(e.end))});if(cl.length)fin();
+  const bl=L.map(e=>{const[k,n]=lane.get(e),a=tmin(e.start),b=tmin(e.end),top=(a-H0*60)/60*HH,h=Math.max(14,(b-a)/60*HH-1),wr=watchRole(e);
+   return `<div class="ev" data-wev="${e.id}" style="top:${top}px;height:${h}px;left:calc(${k*100/n}% + 1px);width:calc(${100/n}% - 2px);background:${wr?'#B0708C':(KC[e.kind]||'var(--acc)')}">${E(e.title)}<br><span style="opacity:.85">${e.start}</span></div>`}).join('');
+  return `<div class="col ${ds===td?'tdc':''}" style="height:${(H1-H0)*HH}px">${bl}</div>`}).join('');
+ const head=days.map(ds=>`<div class="hd ${ds===td?'tdh':''}" data-wev="d${ds}">${WD[new Date(ds+'T00:00:00').getDay()]}<br><b>${+ds.slice(8)}</b></div>`).join('');
+ const F0=9*60,F1=22*60;
+ const free=days.map(ds=>{const bz=evs.filter(e=>e.date===ds&&tmin(e.start)!==null&&tmin(e.end)!==null).map(e=>[tmin(e.start),tmin(e.end)]).sort((a,b)=>a[0]-b[0]);let cur=F0;const fr=[];bz.forEach(([a,b])=>{if(a-cur>=60)fr.push([cur,Math.min(a,F1)]);cur=Math.max(cur,b)});if(F1-cur>=60)fr.push([cur,F1]);
+  const wd=WD[new Date(ds+'T00:00:00').getDay()],n=evs.filter(e=>e.date===ds).length;
+  return `<div class="row" style="margin:5px 0;align-items:flex-start;gap:8px"><span class="pill" style="flex:none;min-width:56px;text-align:center;${ds===td?'background:var(--acc);color:#fff;border-color:transparent':''}">${+ds.slice(5,7)}/${+ds.slice(8)}（${wd}）</span><span class="sp" style="font-size:13px">${fr.length?fr.map(([a,b])=>`<span class="pill" style="border-color:var(--acc);color:var(--acc)">${hhmm(a)}–${hhmm(b)}</span>`).join(' '):'<span class="sub">沒有空檔</span>'}${n?`<span class="sub" style="font-size:11px"> ・${n} 場</span>`:''}</span></div>`}).join('');
+ const lab=`${+days[0].slice(5,7)}/${+days[0].slice(8)} – ${+days[6].slice(5,7)}/${+days[6].slice(8)}`;
+ const html=`<div class="row" style="margin-bottom:8px"><button class="go g" data-wn="-1">‹</button><div class="sp" style="text-align:center"><b>${days[0].slice(0,4)} 年 ${lab}</b>${days.includes(td)?'':' <button class="chip" data-wn="0">回本週</button>'}</div><button class="go g" data-wn="1">›</button></div>
+ <div class="card" style="padding:8px 6px"><div class="wk"><div></div>${head}<div>${hours}</div>${cols}</div></div>`;
+ return {html,evs}}
+function ev_v(){
+ const wv=S.cv==='w'?wkView():null;
+ const ym=S.cm,[Y,M]=ym.split('-').map(Number),first=(new Date(Y,M-1,1).getDay()+6)%7,dn=new Date(Y,M,0).getDate();
+ const all=S.events.filter(e=>e.date.startsWith(ym)),cnt={};all.forEach(e=>cnt[e.date]=(cnt[e.date]||0)+1);
+ const td0=today(),shown=(S.cf?all.filter(e=>e.date===S.cf):all).slice().sort((a,b)=>((a.date<td0)-(b.date<td0))||(a.date+(a.start||'')).localeCompare(b.date+(b.start||'')));
+ const wcnt={};all.forEach(e=>{if(watchRole(e))wcnt[e.date]=1});const bdm=bdMonth(ym),bdc={};bdm.forEach(b=>bdc[b.d]=1);
+ const rdc={},rmc={};S.people.filter(rdOk).forEach(q=>{rdc[q.rd]=1;rmc[addMo(q.rd,-3)]=1});
+ const bdl=S.cf?bdm.filter(b=>b.d===S.cf.slice(8)):bdm;
+ const bdHtml=bdl.length?`<div class="card" style="padding:8px 12px"><div class="sub">🎂 ${S.cf?'這天生日':'本月生日'}</div>${bdl.map(b=>`<div class="row" style="margin-top:4px"><span class="pill" style="flex:none">${+ym.split('-')[1]}/${+b.d}</span><b class="sp" data-gp="${b.t}|${b.o.id}" style="cursor:pointer">${bdName(b.t,b.o)}</b><span class="pill" style="background:${BT[b.t][1]};color:#fff;border-color:transparent;flex:none">${BT[b.t][0]}</span></div>`).join('')}</div>`:'';
+ const invited=all.reduce((n,e)=>n+e.who.filter(P).length,0);
+ let cells=['一','二','三','四','五','六','日'].map(w=>`<span>${w}</span>`).join('');for(let i=0;i<first;i++)cells+='<div></div>';
+ for(let d=1;d<=dn;d++){const ds=ym+'-'+pad2(d),c=cnt[ds]||0;cells+=`<button class="${S.cf===ds?'on':''} ${ds===today()?'td':''} ${wcnt[ds]?'hl':''}" data-cday="${ds}">${d}<small>${c?'●'.repeat(Math.min(c,3)):''}${bdc[pad2(d)]?'🎂':''}${rdc[ds]?'↻':''}${rmc[ds]?'🔔':''}</small></button>`}
+ const card=e=>{const wr=watchRole(e),who=e.who.map(P).filter(Boolean).sort(byNo),dd=new Date(e.date+'T00:00:00'),avail=S.people.filter(p=>!e.who.includes(p.id)).sort(byNo);
+  return `<div class="card ${wr?'hl':''}" id="ev_${e.id}"><div class="row"><span class="pill y" style="background:var(--acc)">${e.date.slice(5).replace('-','/')}（${WD[dd.getDay()]}）</span><span class="pill">${E(e.kind||'活動')}</span><b class="sp">${E(e.title)}</b></div>
+  <div class="sub" style="margin-top:2px">${e.start?e.start+'–'+e.end:''}${e.speaker?'・講師 '+E(e.speaker):''}${e.loc?'・'+E(e.loc):''}${wr?`・<span style="color:#B0708C;font-size:11px;font-weight:700">★${E(S.watch)}${wr}</span>`:''}</div>
+  <div style="margin-top:8px"><b>約的人（${who.length}）</b> <span class="sub">${ST.map(x=>x+' '+who.filter(p=>((e.st||{})[p.id]||'已約')===x).length).join('・')}</span></div>
+  ${who.map(p=>{const st=(e.st||{})[p.id]||'已約',iv=(e.inv||{})[p.id]||0;return `<div style="margin:8px 0;padding-top:8px;border-top:1px solid var(--line)"><div class="row"><span class="sp" data-open="${p.id}" style="cursor:pointer;color:var(--acc)">${nm(p)} ›</span><button class="x" data-erm="${e.id}|${p.id}">×</button></div><div class="chips" style="margin:6px 0">${ST.map(x=>`<button class="chip" style="${st===x?`background:${STC[x]};color:#fff;border-color:transparent`:''}" data-es="${e.id}|${p.id}|${x}">${x}</button>`).join('')}</div><select data-ei="${e.id}|${p.id}"><option value="0">誰幫我約的？</option>${invOpts(iv)}</select><input data-an="e|${e.id}|${p.id}" value="${E((e.notes||{})[p.id]||'')}" placeholder="${st==='有來'?'他的反應':(st==='沒來'||st==='無法來')?'沒來的原因':'備註／新朋友的反應'}" style="margin-top:4px"></div>`}).join('')||'<div class="sub">還沒有人，從下面選</div>'}
+  ${avail.length?`<select data-eadd="${e.id}" style="margin-top:6px;width:auto;max-width:100%;padding:4px 8px;font-size:13px;height:30px"><option value="0">＋ 還可約？</option>${avail.map(p=>`<option value="${p.id}">${nm(p)}</option>`).join('')}</select>`:'<div class="sub">先到「新人」新增人</div>'}
+  <details style="margin-top:10px"><summary class="sub" style="cursor:pointer">照片 ${(e.photos||[]).length} 張・修改・刪除</summary>${photos('e|'+e.id,e.photos)}
+  <div class="grid" style="margin-top:8px"><label class="fl"><span>日期</span><input type="date" data-ef="${e.id}|date" value="${e.date}"></label><label class="fl"><span>類型</span><select data-ef="${e.id}|kind">${KINDS.map(k=>`<option ${k===(e.kind||'活動')?'selected':''}>${k}</option>`).join('')}</select></label><label class="fl w"><span>名稱</span><input data-ef="${e.id}|title" value="${E(e.title)}"></label><label class="fl w"><span>講師</span><input data-ef="${e.id}|speaker" value="${E(e.speaker||'')}"></label><label class="fl w"><span>主持／分享（用來標注）</span><input data-ef="${e.id}|crew" value="${E(e.crew||'')}" placeholder="例：主持：美蓁；分享：某某"></label><label class="fl w"><span>地點</span><input data-ef="${e.id}|loc" value="${E(e.loc||'')}"></label></div>
+  <div class="grid" style="margin-top:6px"><div class="fl"><span>開始</span><div class="row" style="gap:4px">${tsel2(e.start||'19:00','','',e.id+'|start')}</div></div><div class="fl"><span>結束</span><div class="row" style="gap:4px">${tsel2(e.end||'21:00','','',e.id+'|end')}</div></div></div>
+  <button class="go g" data-evd="${e.id}" style="margin-top:8px">${S.arm==='e'+e.id?'再按一次確認刪除':'刪除這個活動'}</button></details></div>`};
+ return `<div class="row"><h1 class="sp">俱樂部課表</h1><button class="chip ${S.pn==='imp'||IMP?'on':''}" data-pn="imp">📷 匯入</button><button class="chip ${S.pn==='add'?'on':''}" data-pn="add">＋ 新增</button></div>
+ <div class="row" style="margin-bottom:8px;gap:6px"><button class="chip ${S.cv==='w'?'':'on'}" data-cv="m">▦ 月</button><button class="chip ${S.cv==='w'?'on':''}" data-cv="w">▤ 週・看空檔</button></div>
+ ${wv?wv.html:` <div class="row" style="margin-bottom:8px"><button class="go g" data-cm="-1">‹</button><div class="sp" style="text-align:center"><b>${Y} 年 ${M} 月</b>${ym===today().slice(0,7)?'':' <button class="chip" data-cm="0">回本月</button>'}</div><button class="go g" data-cm="1">›</button></div>
+ <div class="card"><div class="cal">${cells}</div><div class="sub" style="margin-top:8px">本月 ${all.length} 場，約到 ${invited} 人次${S.cf?'・只顯示 '+S.cf.slice(5).replace('-','/')+'（再點一次取消）':'・點日期可只看那一天'}</div><div class="sub" style="margin-top:6px">粉色＝${E(S.watch)||'（未設定）'} 主持或分享的日子（名字到「設定」修改）</div></div>${bdHtml}${S.cf?rnDay(S.cf):''}${rnCard()}`}
+ ${(S.pn==='imp'||IMP)?`<div class="card"><b>📷 匯入課表照片</b>${impBox()}</div>`:''}
+ ${S.pn==='add'?`<div class="card"><b>＋ 新增課表／活動</b><div class="grid" style="margin-top:8px"><label class="fl"><span>日期</span><input type="date" id="evd" value="${S.cf||today()}"></label><label class="fl"><span>類型</span><select id="evk">${KINDS.map(k=>`<option>${k}</option>`).join('')}</select></label><div class="fl"><span>開始</span><div class="row" style="gap:4px">${tsel2('19:30','evsh','evsm')}</div></div><div class="fl"><span>結束</span><div class="row" style="gap:4px">${tsel2('21:00','eveh','evem')}</div></div><label class="fl w"><span>名稱</span><input id="evt" placeholder="例：新人說明會、週六桌遊聚會"></label><label class="fl"><span>講師（選填）</span><input id="evs"></label><label class="fl"><span>地點（選填）</span><input id="evl"></label><label class="fl w"><span>主持／分享（選填，用來標注）</span><input id="evc" placeholder="例：主持：美蓁；分享：某某"></label></div><div class="row" style="margin-top:8px;gap:8px;font-size:13px;align-items:center"><label style="display:inline-flex;gap:4px;align-items:center;margin:0"><input type="checkbox" id="evw" style="width:auto;margin:0"> 每週都有</label><span class="sub">連續</span><select id="evwn" style="width:auto;padding:3px 6px;font-size:13px;height:30px">${[4,8,12,26,52].map(n=>`<option value="${n}" ${n===12?'selected':''}>${n} 週</option>`).join('')}</select></div><button class="go q" data-a="addev" style="margin-top:10px;width:100%">新增</button></div>`:''}
+ ${(wv?wv.evs:shown).map(card).join('')||`<div class="sub" style="margin-top:8px">${wv?'這週':'這個月'}還沒有課表。按上面「＋ 新增」。</div>`}`}
+
+let LB=null,LBarm=false;
+function drawLb(){const el=$('lb');if(!LB){el.style.display='none';el.innerHTML='';return}el.style.display='flex';el.innerHTML=`<img id="lbi" alt=""><div class="row" style="margin-top:12px"><button class="go g" data-lbx="x">關閉</button><button class="go" style="background:var(--bad)" data-lbx="del">${LBarm?'再按一次刪除':'刪除照片'}</button></div>`;urlFor(LB.id).then(u=>{const i=$('lbi');if(i)i.src=u})}
+const ownerOf=k=>{const[t,id]=k.split('|');return t==='p'?P(+id):S.events.find(x=>x.id===+id)};
+const OPT={gender:['男','女','其他'],
+live:['台北市','新北市','基隆市','桃園市','新竹市','新竹縣','苗栗縣','台中市','彰化縣','南投縣','雲林縣','嘉義市','嘉義縣','台南市','高雄市','屏東縣','宜蘭縣','花蓮縣','台東縣','澎湖縣','金門縣','連江縣','海外'],
+blood:['A','B','O','AB'],life:['1','2','3','4','5','6','7','8','9','10','11'],
+mbti:['INTJ','INTP','ENTJ','ENTP','INFJ','INFP','ENFJ','ENFP','ISTJ','ISFJ','ESTJ','ESFJ','ISTP','ISFP','ESTP','ESFP']};
+const sel=(p,path,label,list)=>{const v=get(p,path)||'',l=(list||OPT[path]).slice();if(v&&!l.includes(v))l.push(v);return `<label class="fl"><span>${label}</span><select data-p="${path}"><option value="">未填</option>${l.map(o=>`<option ${o===v?'selected':''}>${E(o)}</option>`).join('')}</select></label>`};
+const DIST=Object.fromEntries(Object.entries({'台北市':'中正區 大同區 中山區 松山區 大安區 萬華區 信義區 士林區 北投區 內湖區 南港區 文山區','新北市':'板橋區 三重區 中和區 永和區 新莊區 新店區 樹林區 鶯歌區 三峽區 淡水區 汐止區 瑞芳區 土城區 蘆洲區 五股區 泰山區 林口區 深坑區 石碇區 坪林區 三芝區 石門區 八里區 平溪區 雙溪區 貢寮區 金山區 萬里區 烏來區','基隆市':'仁愛區 中正區 信義區 中山區 安樂區 暖暖區 七堵區','桃園市':'桃園區 中壢區 平鎮區 八德區 楊梅區 蘆竹區 大溪區 龍潭區 龜山區 大園區 觀音區 新屋區 復興區','新竹市':'東區 北區 香山區','新竹縣':'竹北市 竹東鎮 新埔鎮 關西鎮 湖口鄉 新豐鄉 芎林鄉 橫山鄉 北埔鄉 寶山鄉 峨眉鄉 尖石鄉 五峰鄉','苗栗縣':'苗栗市 頭份市 竹南鎮 後龍鎮 通霄鎮 苑裡鎮 卓蘭鎮 造橋鄉 西湖鄉 頭屋鄉 公館鄉 銅鑼鄉 三義鄉 大湖鄉 獅潭鄉 三灣鄉 南庄鄉 泰安鄉','台中市':'中區 東區 南區 西區 北區 北屯區 西屯區 南屯區 太平區 大里區 霧峰區 烏日區 豐原區 后里區 石岡區 東勢區 和平區 新社區 潭子區 大雅區 神岡區 大肚區 沙鹿區 龍井區 梧棲區 清水區 大甲區 外埔區 大安區','彰化縣':'彰化市 員林市 和美鎮 鹿港鎮 溪湖鎮 二林鎮 田中鎮 北斗鎮 花壇鄉 芬園鄉 大村鄉 永靖鄉 伸港鄉 線西鄉 福興鄉 秀水鄉 埔心鄉 埔鹽鄉 大城鄉 芳苑鄉 竹塘鄉 社頭鄉 二水鄉 田尾鄉 埤頭鄉 溪州鄉','南投縣':'南投市 埔里鎮 草屯鎮 竹山鎮 集集鎮 名間鄉 鹿谷鄉 中寮鄉 魚池鄉 國姓鄉 水里鄉 信義鄉 仁愛鄉','雲林縣':'斗六市 斗南鎮 虎尾鎮 西螺鎮 土庫鎮 北港鎮 古坑鄉 大埤鄉 莿桐鄉 林內鄉 二崙鄉 崙背鄉 麥寮鄉 東勢鄉 褒忠鄉 臺西鄉 元長鄉 四湖鄉 口湖鄉 水林鄉','嘉義市':'東區 西區','嘉義縣':'太保市 朴子市 布袋鎮 大林鎮 民雄鄉 溪口鄉 新港鄉 六腳鄉 東石鄉 義竹鄉 鹿草鄉 水上鄉 中埔鄉 竹崎鄉 梅山鄉 番路鄉 大埔鄉 阿里山鄉','台南市':'中西區 東區 南區 北區 安平區 安南區 永康區 歸仁區 新化區 左鎮區 玉井區 楠西區 南化區 仁德區 關廟區 龍崎區 官田區 麻豆區 佳里區 西港區 七股區 將軍區 學甲區 北門區 新營區 後壁區 白河區 東山區 六甲區 下營區 柳營區 鹽水區 善化區 大內區 山上區 新市區 安定區','高雄市':'楠梓區 左營區 鼓山區 三民區 鹽埕區 前金區 新興區 苓雅區 前鎮區 旗津區 小港區 鳳山區 大寮區 鳥松區 林園區 仁武區 大樹區 大社區 岡山區 路竹區 橋頭區 梓官區 彌陀區 永安區 燕巢區 田寮區 阿蓮區 茄萣區 湖內區 旗山區 美濃區 內門區 杉林區 甲仙區 六龜區 茂林區 桃源區 那瑪夏區','屏東縣':'屏東市 潮州鎮 東港鎮 恆春鎮 萬丹鄉 長治鄉 麟洛鄉 九如鄉 里港鄉 鹽埔鄉 高樹鄉 萬巒鄉 內埔鄉 竹田鄉 新埤鄉 枋寮鄉 新園鄉 崁頂鄉 林邊鄉 南州鄉 佳冬鄉 琉球鄉 車城鄉 滿州鄉 枋山鄉 三地門鄉 霧臺鄉 瑪家鄉 泰武鄉 來義鄉 春日鄉 獅子鄉 牡丹鄉','宜蘭縣':'宜蘭市 羅東鎮 蘇澳鎮 頭城鎮 礁溪鄉 壯圍鄉 員山鄉 冬山鄉 五結鄉 三星鄉 大同鄉 南澳鄉','花蓮縣':'花蓮市 鳳林鎮 玉里鎮 新城鄉 吉安鄉 壽豐鄉 光復鄉 豐濱鄉 瑞穗鄉 富里鄉 秀林鄉 萬榮鄉 卓溪鄉','台東縣':'台東市 成功鎮 關山鎮 卑南鄉 大武鄉 太麻里鄉 東河鄉 長濱鄉 鹿野鄉 池上鄉 綠島鄉 延平鄉 海端鄉 達仁鄉 金峰鄉 蘭嶼鄉','澎湖縣':'馬公市 湖西鄉 白沙鄉 西嶼鄉 望安鄉 七美鄉','金門縣':'金城鎮 金湖鎮 金沙鎮 金寧鄉 烈嶼鄉 烏坵鄉','連江縣':'南竿鄉 北竿鄉 莒光鄉 東引鄉'}).map(([k,v])=>[k,v.split(' ')]));
+const moreLive=p=>{const m=p.more||[];return `<div class="w">${m.map((x,i)=>`<div class="row" style="gap:6px;margin-top:6px"><select data-mv="${p.id}|${i}|c" style="flex:1"><option value="">縣市</option>${OPT.live.map(o=>`<option ${o===x.c?'selected':''}>${E(o)}</option>`).join('')}</select>${DIST[x.c]?`<select data-mv="${p.id}|${i}|d" style="flex:1"><option value="">鄉鎮市區</option>${DIST[x.c].map(o=>`<option ${o===x.d?'selected':''}>${E(o)}</option>`).join('')}</select>`:`<input data-mv="${p.id}|${i}|d" value="${E(x.d||'')}" placeholder="${x.c==='海外'?'國家／城市':'補充地點'}" style="flex:1">`}<button class="x" data-mvx="${p.id}|${i}">×</button></div>`).join('')}${m.length<3?`<button class="x" style="font-size:12px;color:var(--acc);padding:4px 0" data-mva="${p.id}">＋ 常去的其他地方</button>`:''}</div>`};
+const ds=p=>{const v=p.live||'';if(DIST[v])return sel(p,'live2','鄉鎮市區',DIST[v]);if(!v)return '<label class="fl"><span>鄉鎮市區</span><select disabled><option>先選縣市</option></select></label>';return inp(p,'live2',v==='海外'?'國家／城市':'補充地點')};
+const ELEMS=['金','木','水','火','土'];
+const CARS=['戰車','火車','娃娃車','跑車','禮車'];
+const GR={sA:['木火','土金','水木','火土','金水'],sB:['火木','金土','木水','土火','水金'],kA:['木金','土木','水土','火水','金火'],kB:['金木','木土','土水','水火','火金']};
+const PING={木:'戰車',土:'火車',水:'娃娃車',火:'跑車',金:'禮車'};
+const CAR={
+戰車:{key:'你會老，我會長大。',era:'革命時期／動盪改革期',who:'皇太極、努爾哈赤、順治（雙戰車：項羽）',short:'獨立敢衝、開創突破',
+ t:['獨立','有能力','有創業精神','敢突破','敢冒險','行動力強'],w:['容易孤立','衝動','不依賴別人','不太會撒嬌','很多事情習慣自己做'],l:['冷靜','多與人合作','整合人才','相信別人','不要太多心','透過讚美、溝通、表達讓事情更順利'],
+ note:'像是開創、突破、打天下的人；要做事情、開創局面，可以找有戰車特質的人。被媽媽罵時：「你會老，我會大，有一天我會贏你。」'},
+火車:{key:'乖乖被罵，心裡悲傷。',era:'太平時期前期／制度整合期',who:'康熙、雍正、蔣介石（雙火車：劉邦）',short:'有原則、守軌道、重制度',
+ t:['很有原則','堅持軌道','複製能力強','軍師型人才','重視規律','按部就班','有守成能力','適合制度化、標準化'],w:['啟動速度慢','堅持己見','不容易改變','一個蘿蔔一個坑','容易太拘泥於原本的軌道'],l:['多笑','學會奉承、讚美','跟隨學習','跟對人','跟對環境'],
+ note:'火車如果沒有軌道會不會跑？只能照著軌道跑。被媽媽罵時：「哭在心裡，悶的人。」'},
+娃娃車:{key:'中指，好大喜功',era:'太平時期後期／安定繁榮期',who:'乾隆',short:'親和力強、好合作',
+ t:['親和力強','有魅力','合作力強','好學新事物','很能做事','老二哲學'],w:['想很多、做很少','耳根軟','容易被別人影響','持續力不足','容易逃避'],l:['多學習','改變思維','增加判斷力','增加分析力','增加說服力','增加影響力'],
+ note:'好命：煩惱只有三分鐘，來得快也去得快。金錢觀：「有錢就好命嗎？」「靠體力賺死錢，靠腦力賺大錢。」'},
+跑車:{key:'無名指、婚戒戴在這一指，重承諾',era:'淫亂時期前期／組織分化期',who:'道光（八國聯軍）',short:'重目標、講效率、重承諾',
+ t:['很有目標感','做事講求速度','重視效率','有帶動力','有學習力','反應快','變動性也快','很有同情心'],w:['很容易被影響','容易改變目標','求快、求效率，容易欲速則不達','到達目標後可能只剩自己一個人','很需要安全感','喜怒不形於色'],l:['找到明確目標','穩定價值觀','堅持、堅持、再堅持'],
+ note:'跟跑車型的人溝通，要直接告訴他「明確的目標」，他會比較容易信服。'},
+禮車:{key:'小拇指、打勾勾，重承諾',era:'淫亂時期後期／亂象更多／M型社會出現',who:'光緒、宣統',short:'人緣好、擅協調、重承諾',
+ t:['人緣好','魅力值高','協調能力強','談判高手','有耐心','推理思考能力佳','容易讓人尊重'],w:['害怕人群','想太多','容易矛盾','體力較弱'],l:['敢開口','多與人接觸','多學習','增強判斷力','不要想太多'],note:''}};
+function info(pr){if(pr[0]===pr[1])return{g:'平宮',ty:'平',car:PING[pr[0]]};
+ for(const [k,g,ty] of [['sA','生宮','A'],['sB','生宮','B'],['kA','剋宮','A'],['kB','剋宮','B']]){const i=GR[k].indexOf(pr);if(i>=0)return{g,ty,car:CARS[i]}}return null}
+function rels(F,B){const R={boss:'',meBoss:'',meSub:'',subMe:''},m='你對我好，我就對你好（平宮：互動平衡、互惠）';
+ if(F.g==='平宮'){R.boss=R.meBoss=m}else if(F.g==='生宮')F.ty==='A'?R.boss='長官對我們很好':R.meBoss='我們很聽話';else F.ty==='A'?R.meBoss='我們個人比較容易叛逆':R.boss='比較容易碰到長官對你要求很多';
+ if(B.g==='平宮'){R.meSub=R.subMe=m}else if(B.g==='生宮')B.ty==='A'?R.meSub='我們對下屬很好':R.subMe='你的下屬會很挺你';else B.ty==='A'?R.meSub='你對屬下會要求比較嚴格':R.subMe='你帶的人稍微比較容易叛逆';
+ return R}
+const NA='<span class="sub">目前資料不足，無法判定</span>';
+const lis=a=>a.map(x=>`<div>• ${E(x)}</div>`).join('');
+const pick=(a,b,same)=>{if(same)return a.slice(0,5);const r=[];[...a.slice(0,3),...b.slice(0,2),...a.slice(3),...b.slice(2)].forEach(x=>{if(r.length<5&&!r.includes(x))r.push(x)});return r};
+function namo(p,k){
+ const a=(p.wuxing||'').split('+').slice(0,4);while(a.length<4)a.push('');
+ const fp=a[0]+a[1],bp=a[2]+a[3],hasF=!!(a[0]&&a[1]),hasB=!!(a[2]&&a[3]),F=hasF?info(fp):null,B=hasB?info(bp):null;
+ const row=`<div class="row" style="gap:6px">${a.map((x,i)=>`<select data-wx="${i}"${k?` data-wk="${k}"`:''} style="flex:1"><option value="">第${i+1}格</option>${ELEMS.map(e=>`<option ${e===x?'selected':''}>${e}</option>`).join('')}</select>`).join('')}</div>`;
+ let head='';
+ if(F)head+=`<div style="margin-top:6px"><span class="sub">前車（外表車）</span> <b>${fp}</b> → <b>${F.car}</b>　<span class="pill">${F.g}</span></div>`;
+ if(B)head+=`<div><span class="sub">後車（思想車）</span> <b>${bp}</b> → <b>${B.car}</b>　<span class="pill">${B.g}</span></div>`;
+ if(!F||!B)head+='<div class="sub" style="margin-top:6px">四格都選好，會顯示完整解讀（前兩格＝外表車，後兩格＝思想車）</div>';
+ let body='';
+ if(F&&B){
+  const cf=CAR[F.car],cb=CAR[B.car],same=F.car===B.car,R=rels(F,B),v=x=>x||NA;
+  let dbl='';
+  if(same){dbl=F.car==='戰車'?'雙戰車：打天下，代表很強的開創與突破能力。'+(F.g==='剋宮'&&B.g==='剋宮'?'而且兩台都落在剋宮，代表「躲在防空洞，沒有出來」。':'')
+   :F.car==='火車'?'雙火車：劉邦，得天下；重點是「整合人才」。':'雙'+F.car+'：目前資料不足，無法判定特殊意義。'}
+  const warn=['火水','水火'].includes(bp)?`<div class="sub" style="margin-top:4px">※ 規則文字中「${bp}」在後兩格的列法前後不一致，這裡依「前面兩格」的順序處理，請跟老師確認。</div>`:'';
+  const H=t=>`<div style="margin-top:10px"><b>${t}</b></div>`;
+  body=`${H('① 五行組合')}<div>前車：${fp} → ${F.car}　後車：${bp} → ${B.car}</div>
+  ${H('② 宮位')}<div>${fp} → ${F.g}　${bp} → ${B.g}</div>
+  ${H('③ 外表車｜'+F.car)}<div class="sub">體力、行為、表態、做事方式</div><div>關鍵句：${E(cf.key)}</div><div>${cf.era}・${cf.who}</div><div style="margin-top:4px"><b>特質</b></div>${lis(cf.t)}<div style="margin-top:4px"><b>容易出現的問題</b></div>${lis(cf.w)}${cf.note?`<div class="sub" style="margin-top:4px">${E(cf.note)}</div>`:''}
+  ${H('④ 思想車｜'+B.car)}<div class="sub">思想，以及與長官、屬下、兄弟、朋友的關係</div><div>關鍵句：${E(cb.key)}</div><div>${cb.era}・${cb.who}</div><div style="margin-top:4px"><b>特質</b></div>${lis(cb.t)}<div style="margin-top:4px"><b>容易出現的問題</b></div>${lis(cb.w)}<div style="margin-top:4px">與朋友／兄弟：${NA}</div>${cb.note?`<div class="sub" style="margin-top:4px">${E(cb.note)}</div>`:''}
+  ${dbl?`<div style="margin-top:8px;padding:8px;border-radius:10px;background:var(--card);border:1px solid var(--line)"><b>雙車</b>　${E(dbl)}</div>`:''}
+  ${H('⑤ 長官／屬下關係')}<div>長官對我：${v(R.boss)}</div><div>我對長官：${v(R.meBoss)}</div><div>我對屬下：${v(R.meSub)}</div><div>屬下對我：${v(R.subMe)}</div>${warn}
+  ${H('⑥ 核心個性')}<div>外表是「${F.car}」：${cf.t.slice(0,3).join('、')}；思想是「${B.car}」：${cb.t.slice(0,3).join('、')}。</div>
+  ${H('⑦ 優勢')}${lis(pick(cf.t,cb.t,same))}
+  ${H('⑧ 需要注意')}${lis(pick(cf.w,cb.w,same))}
+  ${H('⑨ 最適合的成長方向')}${lis(pick(cf.l,cb.l,same))}
+  ${H('⑩ 一句話總結')}<div>${same?`雙${F.car}：${cf.short}，特質特別明顯。`:`外表是「${F.car}」（${cf.short}），內心是「${B.car}」（${cb.short}）。`}</div>`}
+ return anCard('姓名學','金木水火土 × 4 格',row+head,body)}
+function trait_v(){return `<h2>姓名學個性設定</h2><div class="card"><div class="sub">每個五行寫一次；四格選好後，會依序組成這個人的個性。未填時顯示通用的預設特質，你填了就以你的為準。</div>${ELEMS.map(k=>`<label class="fl" style="margin-top:8px"><span>${k}</span><textarea rows="2" data-tr="${k}">${E(S.traits[k]||'')}</textarea></label>`).join('')}</div>
+ <h2>一次匯入專屬說明（選用）</h2><div class="card"><div class="sub">每行一筆：四個五行|說明<br>例：金木水火|說明文字（寫成 金+木+水+火 也可以）</div><textarea id="imp" rows="4" style="margin:8px 0"></textarea><button class="go" data-a="impd">匯入</button></div>`}
+const LST=['待聯絡','聯絡中','已約見','卡關需協助','已成交'];
+const lcol={'待聯絡':'var(--sub)','聯絡中':'var(--acc)','已約見':'#4A6FD6','卡關需協助':'var(--bad)','已成交':'var(--ok)'};
+const lshort={'待聯絡':'待','聯絡中':'中','已約見':'約','卡關需協助':'卡','已成交':'成'};
+const lget=(p,id)=>(p.lsd&&p.lsd[id])||{st:'待聯絡',note:'',date:''};
+const norm=q=>{if(q.cat==='F')q.cat='X';if(q.cat==='E')q.cat='O';if(q.ageD===undefined&&S.myBd&&+q.age)q.ageD=+q.age-myAge();if(q.ageD!==undefined||q.by){const a=ageOf(q);q.age=a?String(a):''}{const lc=lifeNumOf(q);if(lc)q.life=lc}if(q.phone===undefined)q.phone=Object.values(q.camp||{}).some(Boolean);q.mentorL=q.mentorL||{};q.mentor=q.mentor||{nanny:'',coach:'',teacher:''};{const ls=S.leaders||[];q.nannies=(q.nannies||[]).filter(id=>ls.some(l=>l.id===id));if(!q.nannies.length&&q.mentorL.nanny&&ls.some(l=>l.id===q.mentorL.nanny))q.nannies=[q.mentorL.nanny];if(!q.nannies.length&&q.mentor.nanny){const l=ls.find(x=>x.name===q.mentor.nanny);if(l)q.nannies=[l.id]}if(q.nannies.length)q.mentor.nanny=q.nannies.map(id=>ls.find(l=>l.id===id).name).join('、')}['coach','teacher'].forEach(k=>{const id=q.mentorL[k],ls=S.leaders||[];if(id){const l=ls.find(x=>x.id===id);if(l)q.mentor[k]=l.name;else delete q.mentorL[k]}else if(q.mentor[k]){const l=ls.find(x=>x.name===q.mentor[k]);if(l)q.mentorL[k]=l.id}});q.leaders=q.leaders||[];q.lsd=q.lsd||{};if(q.leader){if(!q.leaders.includes(q.leader)){q.leaders.push(q.leader);q.lsd[q.leader]={st:q.lst||'待聯絡',note:q.lnote||'',date:q.ldate||''}}q.leader=0}};
+const lopts=()=>'<option value="0">加入領導人…</option>'+S.leaders.map(l=>`<option value="${l.id}">${E(l.name)}</option>`).join('');
+const ldb=p=>(p.leaders||[]).map(id=>{const l=S.leaders.find(x=>x.id===id);if(!l)return '';const st=lget(p,id).st;return `<span class="pill" style="border-color:${lcol[st]};color:${lcol[st]}">★${E(l.name)}・${st}</span>`}).join(' ');
+const lstat=(p,id)=>{const g=lget(p,id);return `<div class="chips" style="margin:6px 0">${LST.map(x=>`<button class="chip" style="${g.st===x?`background:${lcol[x]};color:#fff;border-color:transparent`:''}" data-ls="${p.id}|${id}|${x}">${x}</button>`).join('')}</div><input data-ln="${p.id}|${id}" value="${E(g.note)}" placeholder="這位領導人跟進他的狀況">`};
+const leadField=p=>`<div class="w"><div class="sub" style="margin-bottom:4px">目前跟進的領導人（可多選）</div>${S.leaders.length?`<div class="chips">${S.leaders.map(l=>`<button class="chip ${(p.leaders||[]).includes(l.id)?'on':''}" data-lt="${p.id}|${l.id}">★ ${E(l.name)}</button>`).join('')}</div>`:'<div class="sub">先到「領導人」分頁新增領導人</div>'}${(p.leaders||[]).map(id=>{const l=S.leaders.find(x=>x.id===id);return l?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line)"><b>★ ${E(l.name)}</b>${lstat(p,id)}</div>`:''}).join('')}</div>`;
+function matrix(){if(!S.leaders.length||!S.people.length)return '';const ps=S.people.slice().sort(byNo);
+ return `<div class="card" style="padding:8px;overflow-x:auto"><div class="sub" style="margin-bottom:6px">總覽：誰被哪些領導人跟進（點「＋」＝指定，點色塊＝換狀態）</div><table style="border-collapse:collapse;width:100%;font-size:13px"><tr><th style="text-align:left;padding:4px;position:sticky;left:0;background:var(--card)"></th>${S.leaders.map(l=>`<th style="padding:4px 6px;white-space:nowrap;font-weight:500">★${E(l.name)}</th>`).join('')}</tr>${ps.map(p=>`<tr><td style="padding:4px;white-space:nowrap;position:sticky;left:0;background:var(--card);cursor:pointer" data-open="${p.id}">${nm(p)}</td>${S.leaders.map(l=>{const on=(p.leaders||[]).includes(l.id),st=on?lget(p,l.id).st:'';return `<td style="text-align:center;padding:3px"><button class="chip" data-lc="${p.id}|${l.id}" style="padding:2px 0;width:36px;${on?`background:${lcol[st]};color:#fff;border-color:transparent`:'color:var(--sub)'}">${on?lshort[st]:'＋'}</button></td>`}).join('')}</tr>`).join('')}</table><div class="sub" style="margin-top:6px">待＝待聯絡　中＝聯絡中　約＝已約見　卡＝卡關需協助　成＝已成交</div></div>`}
+function ldTable(){const rows=S.leaders.map(l=>{const fl=S.people.filter(p=>(p.leaders||[]).includes(l.id)).sort(byNo),sd=S.side.filter(x=>x.leader===l.id),inv=S.events.reduce((n,e)=>n+e.who.filter(pid=>e.inv&&Math.abs(e.inv[pid]||0)===l.id).length,0),bd=/^\d+-\d+$/.test(l.bd||'')?l.bd.split('-').map(Number).join('/'):'';
+ return `<tr data-lz="${l.id}"><td><span data-lh="${l.id}" title="按住拖曳排序" style="touch-action:none;cursor:grab;display:inline-flex;align-items:center;padding:8px 8px 8px 0;vertical-align:middle;user-select:none;-webkit-user-select:none"><i style="display:block;width:16px;height:9px;border-top:2px solid var(--sub);border-bottom:2px solid var(--sub);border-radius:1px"></i></span><b data-gp="l|${l.id}" style="color:var(--acc);cursor:pointer">${E(l.name)}</b>${bd?`<div class="sub" style="font-size:11px">🎂${bd}</div>`:''}</td><td>${fl.map(p=>`<span data-open="${p.id}" style="cursor:pointer;color:var(--acc)">${nm(p)}</span>`).join('、')||'<span class="sub">—</span>'}</td><td style="text-align:center">${sd.length}</td><td style="text-align:center">${inv}</td></tr>`}).join('');
+ return `<div class="card" style="padding:8px;overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr class="sub" style="text-align:left"><th style="padding:4px">領導人</th><th style="padding:4px">跟進中的新人</th><th style="padding:4px;white-space:nowrap">旁線</th><th style="padding:4px;white-space:nowrap">幫約</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="sub">還沒有領導人</td></tr>'}</tbody></table></div><div class="sub" style="margin:6px 2px;font-size:12px">共 ${S.leaders.length} 位領導人・點名字跳到他的卡片</div>`}
+function ld_v(){
+ const lseg=`<div class="chips" style="margin-bottom:8px">${[['tbl','總表'],['card','卡片']].map(([k,n])=>`<button class="chip ${(S.ldv||'tbl')===k?'on':''}" data-ldv="${k}">${n}</button>`).join('')}</div>`;
+ if((S.ldv||'tbl')==='tbl'&&!S.hl)return `<h1>教室領導人總表</h1>${lseg}${ldTable()}`;
+ const lead=S.leaders.map(l=>{const fl=S.people.filter(p=>(p.leaders||[]).includes(l.id)).sort(byNo);
+  const sum=LST.map(x=>[x,fl.filter(p=>lget(p,l.id).st===x).length]).filter(x=>x[1]).map(x=>x[0]+' '+x[1]).join('・');
+  return `<div class="card" data-lz="${l.id}" id="hl_l${l.id}" style="${S.hl==='l'+l.id?'outline:2px solid var(--acc)':''}"><div class="row stkl"><span data-lh="${l.id}" title="按住拖曳排序" style="touch-action:none;cursor:grab;display:inline-flex;align-items:center;padding:8px 8px 8px 0;vertical-align:middle;user-select:none;-webkit-user-select:none"><i style="display:block;width:16px;height:9px;border-top:2px solid var(--sub);border-bottom:2px solid var(--sub);border-radius:1px"></i></span><b class="sp">★ ${E(l.name)}${l.pid&&P(l.pid)?` <span data-open="${l.pid}" style="cursor:pointer;color:var(--acc);font-size:12px;font-weight:400">新人資訊 ›</span>`:''}</b><span class="sub">${fl.length} 人</span><button class="x" data-ldel="${l.id}">${S.arm==='l'+l.id?'再按刪除':'×'}</button></div><div class="row" style="margin-top:4px;gap:6px"><span class="sub">🎂</span>${bdBox('l',l.id,l.bd)}</div>${persDet(pzOwn('l|'+l.id),'l|'+l.id)}
+  <div style="margin-top:2px">${fl.map(p=>`<span data-open="${p.id}" style="cursor:pointer;color:var(--acc)">${nm(p)}</span>`).join('、')||'<span class="sub">目前沒有跟進的人</span>'}</div><div class="sub">${sum}</div>
+  ${fl.map(p=>`<div style="border-top:1px solid var(--line);margin-top:8px;padding-top:8px"><div class="row"><b class="sp" data-open="${p.id}" style="cursor:pointer">${nm(p)} ›</b><button class="x" style="font-size:13px" data-lrm="${p.id}|${l.id}">移出</button></div>${lstat(p,l.id)}</div>`).join('')}${invHtml(l)}${sideBox(l)}</div>`}).join('');
+ const un=S.people.filter(p=>!(p.leaders||[]).some(id=>S.leaders.some(l=>l.id===id))).sort(byNo);
+ return `<h1>教室領導人</h1>${lseg}${lead||'<div class="sub">先按右上角的「＋」新增一位領導人，再到每個人的頁面指定。</div>'}
+ ${un.length&&S.leaders.length?`<h2>還沒有領導人跟進（${un.length} 人）</h2>${un.map(p=>`<div class="card row"><span class="sp" data-open="${p.id}" style="cursor:pointer">${nm(p)}</span><select data-asg="${p.id}" style="width:130px;flex:none">${lopts()}</select></div>`).join('')}`:''}`}
+const GP={NF:{n:'NF｜理想情懷族群',c:'我希望你好、這個群體好、甚至希望全世界都好。',t:'談「人、意義、貢獻、願景」'},NT:{n:'NT｜理性主義／挑戰導向族群',c:'事情可以怎麼做得更好、更有效率？',t:'談「效率、邏輯、問題、未來、系統」'},SJ:{n:'SJ｜社群支援族群',c:'穩定、可靠、照規則把事情做好。',t:'談「流程、規則、細節、風險、SOP」'},SP:{n:'SP｜實務技能族群',c:'先做、先體驗、先解決眼前的問題。',t:'談「數據、成果、實際效果、現在可以看到什麼」'}};
+const DIM={E:'外向',I:'內向',S:'實感',N:'直覺',T:'思考',F:'情感',J:'判斷',P:'感知'};
+const MB={
+ENFJ:{n:'導師型／教育家',kw:'啟發|教育|帶領|看見別人的需要|團體願景',c:'希望大家都變得更好。希望自己能啟發別人、幫助別人成為更好的自己。',tr:'很容易察覺團體中的氣氛|容易發現團體的潛規則|容易看到別人的需要|對團體有願景|希望大家一起變好|容易期待別人給自己相同程度的回饋',bl:'容易覺得「他應該需要我的幫助」|容易過度照顧別人|容易默默付出後期待對方理解|最後可能產生：「為什麼都是我在付出？」',gr:'先確認對方到底需不需要你的幫助|勇於表達自己的需求|不要期待別人自動讀懂你|可以鼓勵別人，但不一定要拯救別人|學習設定界線',bo:'可以談這件事情的意義|這個專案對團隊的貢獻|可以幫助哪些人|長期會帶來什麼價值|不只談數字，也要談「人」'},
+INFJ:{n:'諮商師型',kw:'深度|一對一|理想|敏感|人的成長',c:'「我希望你好。」比 ENFJ 更聚焦於「一個人」，而不是「整個群體」。',tr:'對人的敏感度非常高|容易看到別人的需求|喜歡深度關係|重視社會貢獻|如果覺得一件事情沒有價值，可能選擇離開|對團體期待高',bl:'對團體或公司期待太高|期待落差大時容易失望|情緒可能突然爆發|別人有時不知道他到底怎麼了|容易把「愛」想得太有力量',gr:'勇於表達自己的需求|理解每個人都有能力極限|愛不是無所不能|不需要一個人承擔所有事情|保有自己的界線|可以有秘密，不需要什麼都說',bo:'要談「這件事情對人的意義」|要說明長期價值|要讓他知道這件事是否真的有貢獻|不要只談短期利益'},
+ENFP:{n:'記者型',kw:'好奇|熱情|感覺|驚喜|探索|深度對話',c:'喜歡探索世界，也喜歡探索人。',tr:'快樂|好奇|容易跟著感覺走|喜歡驚喜與浪漫|願意為喜歡的人花心思|如果很喜歡一個人，會突然變得非常細心|喜歡深度對話|好惡分明',bl:'容易情緒化|容易分析過度|容易設定很高的標準後內耗|容易衝動|容易追求刺激|可能不適合長距離關係|多巴胺退去後可能需要重新面對現實',gr:'不要只靠感覺做決定|面對多巴胺退去後的現實|愛情與事業都要學習長期經營|把熱情轉化成持續行動|好奇之外要有深度',bo:'可以先讓他看到可能性|給他探索空間|不要過度限制|但需要補上具體期限與執行方式'},
+INFP:{n:'夢想家型',kw:'理想|夢想|包容|想像|好奇',c:'希望世界與人可以變成自己心中「最美好的樣子」。',tr:'喜歡人，但不一定喜歡一直回訊息|喜歡默默陪伴|有自己的理想與夢想|容易對人抱有很高期待|好奇心強|喜歡探索|能包容不同的人',bl:'期待別人「應該懂自己」|但自己不一定會說明|容易活在理想中|容易因為現實與理想的落差失望',gr:'為夢想設定期限|接受別人的不完美|接受別人會「扣分」|不要永遠停留在幻想|勇於說出自己的需求'},
+ENTJ:{n:'指揮官／總經理型',kw:'領導|遠見|掌控|結果|改革',c:'「我已經幫你想好怎麼做了，你照著做就是愛我。」',tr:'能力強|有遠見|勇於承擔|喜歡規劃|喜歡掌控|重視整體成果|可以把事情做大|喜歡大刀闊斧改革',bl:'缺乏彈性|不容易理解別人為什麼因為情緒而做不到|容易忽略個人感受|太快進入「解決問題」模式|容易讓人感覺強勢',gr:'學習傾聽|在行動前問：「大家可以接受嗎？」|學習人情與溝通|同理別人為什麼做不到|不只是把事情做好，也要讓人願意一起做',bo:'談長期成果|談整體策略|談效率|提供方案，不要只丟問題|最好同時說明執行方法與成果',ex:'與 ESTJ 差異：ESTJ 更重視細節與執行，ENTJ 更重視方向、遠見與整體成果。'},
+ENTP:{n:'辯論家型',kw:'挑戰|創新|論述|辯論|打破規則',c:'不喜歡跟別人一樣，希望找到新的可能性。',tr:'標新立異|喜歡挑戰別人|喜歡說服別人|喜歡發明自己的論述|願意為大眾發聲|有時候認為規則可以被打破|適合最後檢查與挑戰既有想法',bl:'很會說，但不一定會照著做|做事容易壓線|長期執行力可能不穩定|喜歡挑戰，但不一定喜歡維持',gr:'把想法落實|學習長期執行|不只是證明自己是對的|要學習把創意轉化為制度'},
+INTP:{n:'學者／邏輯學家型',kw:'分析|思考|好奇|驗證|理論',c:'先自己思考，再觀察外界驗證自己的想法。',tr:'花很多時間思考|不會一開始就接受別人的想法|喜歡觀察世界|好奇|喜歡找問題|很適合發現系統中的漏洞|適合做發布前最後檢查',bl:'過度分析|容易與內心想法打架|可能思考太久才行動|溝通表達可能不夠直接',gr:'友善表達自己的想法|不只驗證，也要行動|學習與不同觀點的人合作|不要因為害怕錯誤而一直停留在分析'},
+INTJ:{n:'軍師型',kw:'完美|策略|實力|作品|遠見',c:'「凡我出品，必是佳作。」',tr:'人數相對少見|不喜歡出來拋頭露面|喜歡用作品與實力說話|很適合幕後策略、小編、企劃|喜歡自己完成事情|手藝與專業能力通常很好',bl:'太相信自己|不太相信別人|什麼都自己做|容易把別人的建議視為不夠好|因為不合作而降低效率|人際關係可能成為發展瓶頸',gr:'學習合作|學習欣賞別人的優點|理解「鼓勵會使白癡變天才」|即使自己很優秀，也不能只靠個人能力|學習同理別人為什麼做不到'},
+ESTJ:{n:'督察／總經理型',kw:'可靠|執行|組織|規則|SOP',c:'「事情就照規則做好。」',tr:'非常可靠|組織能力強|務實|果斷|辦事能力強|能處理大量細節|很容易把身邊的人分類成「這個人可以負責什麼」',bl:'不喜歡變動|不喜歡一直思考還沒有發生的未來|容易認為既然以前有效，就應該繼續使用',bo:'欣賞他的 SOP|不要一直亂改|如果要改，請說明原因與新流程',ex:'與 ENTJ 差異：ESTJ 更關注細節、流程、執行，ENTJ 更關注遠見、方向、改革。'},
+ISTJ:{n:'會計／物流型',kw:'責任|規則|界線|實際|計畫',tr:'責任感強|一開始可能比較沒有感情|內向|重邏輯與實際|融入群體比較慢|很會畫界線|對自己人包容度高|對外人比較理性',gr:'可以讓自己更有彈性|不需要所有事情都照規則|學習表達情感',ex:'常見特徵：給愛的方式可能是直接給你計畫表；會一邊念你一邊幫你做事；不太容易因為別人不喜歡自己而內耗；覺得規則就是規則。'},
+ESFJ:{n:'主人／里長伯型',kw:'照顧|人情|喬事情|付出|關係',c:'「我照顧你，是因為我希望你好。」',tr:'人緣通常很好|願意付出|喜歡照顧別人|很會喬事情|喜歡當中間協調的人|比較有彈性|容易把照顧別人當成自己的價值',bl:'默默付出太多|對方不知道自己付出多少|最後可能情緒爆炸|可能出現：「我為你做這麼多，你為什麼還這樣對我？」',gr:'不要什麼人都幫|選擇真正值得幫助的人|不要讓自己的付出變成對別人的壓力|先說清楚自己的期待',ex:'NF：「我希望你好，你為什麼不好？」SF：「我為你付出，我希望你好，我去照顧你。」'},
+ISFJ:{n:'守護者型',kw:'守護|照顧|忠誠|喜歡的人|安全感',tr:'對自己喜歡的人非常好|忠誠|容易照顧別人|容易有「聖母情節」|可能想拯救很難救的人|容易走心|不一定喜歡創新|喜歡守護自己認同的人或事物',gr:'可以把「守護」能力轉化成長期規劃，「守護者＋長期經營」可以形成很強的力量',ex:'例如追星很投入的人：若那個團體十年後仍然會紅，是不是可以先解決自己的經濟問題，之後追星反而可以坐 VIP？'},
+ESTP:{n:'冒險家／企業家型',kw:'行動|挑戰|體驗|爆發力|當下|實作',c:'「先做再說，直接體驗就知道了。」',tr:'觀察力敏銳|活在當下|喜歡挑戰|喜歡創業|喜歡實作|透過體驗認識世界|可以直接擺攤、直接測試市場|有刺激時行動力很強|沒有刺激時容易拖延|遇到問題傾向立刻解決',bl:'不擅長長期規劃|容易只處理眼前的事情|容易忽略抽象概念|可能很難做長期累積型工作|有些事情需要長期累積：信任、人際關係、安全感、品牌',gr:'學習長期規劃|把爆發力變成持續力|理解有些事情不能馬上看到成果|學習建立長期信任|不只解決現在，也要建立未來',bo:'不要只講抽象理念|用數字|用證據|用實際成果|告訴他「現在看得到什麼」'},
+ISTP:{n:'工匠／鑑賞家型',kw:'技術|拆解|試水溫|實力|自主',tr:'喜歡研究細節|喜歡試水溫|喜歡自己拆解事情|可以自己完成工作|不一定需要大量人際互動|用實力與作品說話|可以自己創業',gr:'多與外界接觸|學習合作|個人能力很強，但合作可以把事情做大',ex:'感情面：陷入愛河後可能產生非常強烈的情感，可能出現嫉妒與反差；「我愛你就是把我的陽壽分給你」，但長期規劃可能不是強項。'},
+ESFP:{n:'表演者型',kw:'表演|現場|情緒|刺激|爆發',tr:'怕冷場|願意表演|喜歡刺激|喜歡逼自己到最後一刻|壓線時反而可能爆發|可能容易逃避現實|有時會搞失蹤|可能容易遲到',bl:'時間觀念|容易拖延|沒有 100% 確定成功時可能不想做|可能透過最後一刻的壓力逼自己行動',gr:'培養時間觀念|提早面對現實|不要等到最後一刻才爆發|學習接受「不確定也可以開始」'},
+ISFP:{n:'藝術家型',kw:'藝術|細節|善意|內在情感|小事',tr:'重視自己做的小事有沒有對社會產生幫助|重視實際感受|不太會直接表達自己的需求與情感|有自己的價值觀|適合藝術與創作',bl:'不容易表達需求|發現自己做不到時容易內耗|容易把壓力放在自己身上',gr:'學習表達需求|不要因為一次做不到就否定自己|把內在價值轉化為具體行動'}};
+const GX={NF:{f:'重視精神層面|很容易察覺他人的情緒|關心人的狀態與意義|容易對人產生期待|容易把「我希望你好」變成「你應該要變好」',q:'ENFJ 導師型・INFJ 諮商師型・ENFP 記者型・INFP 夢想家型',e:'「這件事對人的意義是＿，對團隊的貢獻是＿，長期的願景是＿。」'},
+NT:{f:'喜歡挑戰|討厭一成不變|持續追求更有效率的方法|著重解決問題|關注未來與長期議題|不一定會優先處理情緒',q:'ENTJ 指揮官型・ENTP 辯論家型・INTJ 軍師型・INTP 學者／邏輯學家型',e:'「問題在＿，更有效率的做法是＿，對系統與未來的影響是＿。」'},
+SJ:{f:'重視責任|遵守規範|執行力強|重視穩定|忠誠度高|認同一個組織後可以長期投入|不喜歡突然改變',q:'ESTJ 督察／總經理型・ISTJ 會計／物流型・ESFJ 主人／里長伯型・ISFJ 守護者型',e:'「流程是＿，細節與風險是＿，我會依 SOP 執行。」'},
+SP:{f:'觀察力敏銳|活在當下|重視實際體驗|喜歡一技之長|喜歡立刻看到成果|不喜歡等待太久|遇到緊急情況反而容易發揮',q:'ESTP 冒險家／企業家型・ISTP 工匠／鑑賞家型・ESFP 表演者型・ISFP 藝術家型',e:'「現在可以看到的數據是＿，實際成果是＿。」'}};
+const DM={
+E:'願意接受外在刺激|容易記得外在發生的事情|需要與外界、人群互動|沒有外界刺激時可能容易內耗、空虛|可以透過與人互動獲得能量|「如果沒有 E 人，世界上可能連聖誕節都沒有」',
+I:'比較重視內在價值與自己的思考|不一定需要依靠外界認同|歷史上的部分領袖型人物可能具有強烈的內在信念（例：馬丁路德、德蕾莎修女）|I 並不等於不喜歡社交|I 人只是需要找到讓自己安心、放心的社交環境|I 人在安全的環境中也可以非常會社交',
+S:'關注實際發生的事情|重視細節|喜歡具體、看得見、可以驗證的資訊|偏向「現在到底發生什麼？」',
+N:'關注可能性|重視想像、遠見、意義|容易思考未來|偏向「這件事情未來可以變成什麼？」',
+T:'比較關注事情、邏輯、事實|依據事實做反應|不容易說違心的話|比較容易直接指出問題|例：被問「我很胖嗎？」，T 可能會問「誰說的？有數據嗎？」',
+F:'比較關注人、感受、關係|會先注意對方的情緒|例：聽到「我心情不好，想買飲料」，F 會問「你怎麼了？」（T 可能會問「買飲料就會變好嗎？」）',
+J:'喜歡系統化|喜歡有計畫|喜歡事情確定|喜歡掌握進度|傾向先規劃再行動',
+P:'喜歡彈性|喜歡保留選擇|可以邊做邊調整|比較能接受臨時變化|常常在壓力或最後期限出現爆發力'};
+const DR={EI:'不要把 E 當成愛講話、I 當成不會社交；應該理解成「注意力與能量主要傾向外界還是內在」。',SN:'現實與遠見都重要；S 不是不會想未來，N 也不是不切實際。',TF:'T 不等於沒感情，F 也不等於不講邏輯；差異在於「做決定時優先考慮什麼」。',JP:'J 不等於認真，P 不等於懶惰；這是「面對外在世界時偏好結構還是彈性」。'};
+function mbtiBox(p,k){const t=p.mbti,d=MB[t];if(!d)return anCard('MBTI','',pz(p,k,'mbti','MBTI'),'');
+ const g=t[1]==='N'?'N'+t[2]:'S'+t[3],G=GP[g],X=GX[g],L=x=>x?x.split('|').map(i=>`<div>• ${E(i)}</div>`).join(''):'',
+ H=(h,b)=>b?`<div style="margin-top:12px"><b>${h}</b></div>${b}`:'',
+ sm=x=>`<div class="sub" style="margin-top:4px">${E(x)}</div>`,
+ dim=(c,k)=>`<div style="margin-top:6px"><span class="pill y">${c} ${DIM[c]}</span></div>${L(DM[c])}${sm(DR[k])}`,
+ none='<div class="sub">這部分你的筆記沒有特別寫</div>';
+ const lead=d.c||('關鍵字：'+d.kw.split('|').slice(0,3).join('、'));
+ const bd=` ${H('一句話理解',`<div>${E(lead)}</div><div class="sub" style="margin-top:2px">關鍵字：${E(d.kw.split('|').join('、'))}</div>`)}
+ ${H('所屬族群',`<div>${G.n}</div><div class="sub">核心：「${E(G.c)}」</div>${L(X.f)}<div class="sub" style="margin-top:4px">同族群四型：${E(X.q)}</div>`)}
+ ${H('四個向度',`<div>${[...t].map(x=>x+'｜'+DIM[x]).join('　')}</div>`)}
+ ${H('核心特質',L(d.tr.split('|').slice(0,8).join('|')))}
+ ${H('他怎麼思考？',`<div class="sub">訊息解讀（${t[1]}）</div>${L(DM[t[1]])}<div class="sub" style="margin-top:6px">關注力（${t[0]}）</div>${L(DM[t[0]])}${sm(DR.SN)}${sm(DR.EI)}`)}
+ ${H('他怎麼做決定？',`<div class="sub">決定方式（${t[2]}）</div>${L(DM[t[2]])}${sm(DR.TF)}`)}
+ ${H('工作中的樣子',`<div class="sub">計畫習慣（${t[3]}）</div>${L(DM[t[3]])}${sm(DR.JP)}<div class="sub" style="margin-top:6px">${g} 族群傾向</div>${L(X.f)}`)}
+ ${H('當主管／領導者',`<div>他最在意：${G.t}</div>${d.bo?`<div class="sub" style="margin-top:4px">如果主管是 ${t}：</div>${L(d.bo)}`:'<div class="sub" style="margin-top:4px">你的筆記沒有針對這型另外寫「如果主管是他」，這裡只有族群原則。</div>'}`)}
+ ${H('容易踩雷',d.bl?L(d.bl.split('|').slice(0,5).join('|')):none)}
+ ${H('成長課題',d.gr?L(d.gr):none)}
+ ${H('跟他相處的方法',L(['溝通時'+G.t.replace('談','談：').replace(/[「」]/g,''),...(d.bo?d.bo.split('|'):[])].slice(0,5).join('|')))}
+ ${H('如果要向他報告',`<div>${g} 族群句型範例（把＿換成你的內容）：</div><div style="margin-top:4px">${E(X.e)}</div>`)}
+ ${H('一句提醒',d.gr?`<div>${E(d.gr.split('|')[0])}</div>`:none)}
+ ${d.ex?H('補充',`<div>${E(d.ex)}</div>`):''}
+ <div style="margin-top:14px;padding:10px;border-radius:10px;background:var(--card);border:1px solid var(--line)"><div class="sub">MBTI 不是非黑即白，每個人都可能在光譜上移動。「健全人格」不是把優勢做到最大，而是願意去不同的「房間」生活：練習不擅長的能力、接觸不同類型的人、理解不同思考方式。</div>
+ <div style="margin-top:8px">「沒有被察覺到的潛意識，都默默地在教我們；我們卻常常稱之為『命運』。」</div>
+ <div class="sub" style="margin-top:6px">MBTI 的目的不是告訴一個人「你就是這樣」，而是讓人看見「原來我習慣這樣思考」，接著可以選擇「我要繼續這樣，還是我要練習另一種方式？」</div>
+ <div style="margin-top:6px;color:var(--acc);font-weight:700">理解自己 → 理解別人 → 發現盲點 → 練習不同的能力 → 發展更完整的人格</div></div>
+ <div class="sub" style="margin-top:8px">以上都是「傾向」，不是命運，也不代表能力高低；同一型的人也會因成長環境、經驗、教育而不同。</div>`;
+ return anCard('MBTI',`${t}｜${d.n}・${g}`,pz(p,k,'mbti','MBTI')+`<div style="margin-top:6px;font-size:13px">${E(lead)}</div>`,bd)}
+const CAT={A:{n:'下線／積極跟進',bg:'#C98B8B'},B:{n:'顧客',bg:'#D9A57E'},C:{n:'已破／態度好',bg:'#D8C47C'},D:{n:'已破／態度平',bg:'#9FB89B'},O:{n:'新朋友',bg:'#84B5B8'},X:{n:'掰掰謝謝下一位',bg:'#A3A3A3'}};
+const catChip=(k,on,extra)=>`style="${on?`background:${CAT[k].bg};color:#2b2b2b;border-color:transparent`:`border-color:${CAT[k].bg}`}${extra||''}"`;
+const ST=['已約','待確定','有來','沒來','無法來','不約'],STC={'已約':'var(--ok)','待確定':'#C9A24D','有來':'#4E8A66','沒來':'var(--bad)','無法來':'var(--bad)','不約':'var(--sub)'};
+const igUrl=v=>{v=String(v||'').trim();if(!v)return '';if(/^https?:\/\//i.test(v))return v;if(/^(www\.)?instagram\.com\//i.test(v))return 'https://'+v;const h=v.replace(/^@/,'').replace(/[^A-Za-z0-9._]/g,'');return h?'https://www.instagram.com/'+h+'/':''};
+const igLink=(v,t)=>{const u=igUrl(v);return u?`<a class="pill" href="${E(u)}" target="_blank" rel="noopener noreferrer" style="color:var(--acc);border-color:var(--acc);text-decoration:none">${t||'IG ›'}</a>`:''};
+const igcell=p=>`<div class="fl"><label class="fl"><span>IG（帳號或網址）</span><input data-p="ig" value="${E(p.ig)}"></label>${igUrl(p.ig)?`<div style="margin-top:4px">${igLink(p.ig)}</div>`:''}</div>`;
+const sideCard=(s,wl)=>{const own='s|'+s.id,pend=(s.log||[]).filter(x=>x.todo&&!x.done).length;return `<div id="hl_s${s.id}" style="margin:8px 0;padding-top:8px;border-top:1px solid var(--line);${S.hl==='s'+s.id?'outline:2px solid var(--acc);border-radius:8px;padding:6px':''}"><div class="row"><input data-sf="${s.id}|no" value="${E(s.no||'')}" placeholder="${E(((S.leaders.find(l=>l.id===s.leader)||{name:'旁'}).name[0])+'1')}" style="width:58px;flex:none;text-align:center" title="夥伴新朋友的編號（例：領導人名字第一個字＋流水號）"><input data-sf="${s.id}|name" value="${E(s.name)}" placeholder="姓名" style="font-weight:700"><input data-sf="${s.id}|nick" value="${E(s.nick||'')}" placeholder="綽號" style="width:84px;flex:none"><button class="x" data-sd="${s.id}">${S.arm==='s'+s.id?'再按刪除':'×'}</button></div><div class="grid" style="margin-top:4px"><input data-sf="${s.id}|ig" value="${E(s.ig)}" placeholder="IG 帳號或網址"><input data-sf="${s.id}|job" value="${E(s.job)}" placeholder="職業"></div>${igUrl(s.ig)?`<div style="margin-top:4px">${igLink(s.ig,'前往 IG ›')}</div>`:''}<input data-sf="${s.id}|note" value="${E(s.note)}" placeholder="備註（我可以怎麼幫他）" style="margin-top:4px"><div class="row" style="margin-top:4px;gap:6px"><span class="sub">🎂</span>${bdBox('s',s.id,s.bd)}</div>${persDet(s,'s|'+s.id)}${stepsBar(own,s)}${wl?`<select data-sf="${s.id}|leader" style="margin-top:4px"><option value="0">未指定領導人</option>${S.leaders.map(l=>`<option value="${l.id}" ${l.id===s.leader?'selected':''}>${E(l.name)} 的新朋友</option>`).join('')}</select>`:''}${pfBox(own,s)}<details style="margin-top:6px" ${s.info?'':''}><summary class="sub" style="cursor:pointer">領導人給我的資料${s.info?'（已貼）':''}</summary><textarea rows="4" data-sf="${s.id}|info" placeholder="把領導人給的這位新朋友資料貼在這裡" style="margin-top:6px">${E(s.info||'')}</textarea></details><details style="margin-top:6px"><summary class="sub" style="cursor:pointer">對答案${(s.log||[]).length?'（'+s.log.length+'）':''}${pend?'・待辦 '+pend:''}</summary><div style="margin-top:6px">${logForm(own)}${logList(own,s)}</div></details></div>`};
+const sideAdd=lid=>`<div class="row"><input id="sn${lid}" placeholder="姓名"><input id="si${lid}" placeholder="IG（選填）"></div><div class="row" style="margin-top:4px"><input id="sz${lid}" placeholder="備註（選填）"><button class="go q" data-sadd="${lid}">新增</button></div>`;
+const sideBox=l=>{const a=S.side.filter(x=>x.leader===l.id);return `<div style="margin-top:12px"><b>他的新朋友（旁線）${a.length}</b></div>${a.map(x=>sideCard(x,false)).join('')}<details style="margin-top:6px"><summary class="sub" style="cursor:pointer">＋ 新增他的新朋友</summary><div style="margin-top:6px">${sideAdd(l.id)}</div></details>`};
+const invHtml=l=>{const a=[];S.events.forEach(e=>e.who.forEach(pid=>{if(e.inv&&(e.inv[pid]===l.id||e.inv[pid]===-l.id)){const p=P(pid);if(p)a.push({e,p,sl:e.inv[pid]<0})}}));a.sort((x,y)=>x.e.date.localeCompare(y.e.date));
+ return mentorHtml(l)+`<div style="margin-top:12px"><b>幫我約的（${a.length}）</b></div>${a.map(({e,p,sl})=>{const st=(e.st||{})[p.id]||'已約';return `<div style="margin:8px 0;padding-top:8px;border-top:1px solid var(--line)"><div class="row"><span class="sp"><b data-open="${p.id}" style="cursor:pointer;color:var(--acc)">${nm(p)}</b>・${E(e.title)}${sl?' <span class="pill">旁線</span>':''}</span><span class="pill" style="border-color:${STC[st]};color:${STC[st]}">${st}</span></div><div class="sub">${e.date.slice(5).replace('-','/')}</div><input data-an="e|${e.id}|${p.id}" value="${E((e.notes||{})[p.id]||'')}" placeholder="新朋友的反應、做了什麼" style="margin-top:4px"></div>`}).join('')||'<div class="sub">還沒有紀錄，在「課表」的活動裡選「誰幫我約的」就會出現在這裡</div>'}`};
+function catBoard(){const un=S.people.filter(p=>!CAT[p.cat]).sort(byNo);
+ return Object.entries(CAT).map(([k,c])=>{const l=S.people.filter(p=>p.cat===k).sort(byNo);return `<div class="card" style="border-left:8px solid ${c.bg}"><div class="row"><b class="sp"><span style="background:${c.bg};color:#2b2b2b;border-radius:8px;padding:1px 8px">${k}</span> ${c.n}</b><span class="sub">${l.length} 人</span></div><div class="chips" style="margin-top:8px">${l.map(p=>`<button class="chip" data-open="${p.id}" style="border-color:${c.bg}">${nm(p)}</button>`).join('')||'<span class="sub">（沒有）</span>'}</div></div>`}).join('')+`<div class="card"><div class="row"><b class="sp">未分類</b><span class="sub">${un.length} 人</span></div><div class="chips" style="margin-top:8px">${un.map(p=>`<button class="chip" data-open="${p.id}">${nm(p)}</button>`).join('')||'<span class="sub">（沒有）</span>'}</div></div>`}
+function sideView(){const gs=[...S.leaders,{id:0,name:'未指定領導人'}];
+ return ``+gs.map(l=>{const a=S.side.filter(x=>x.leader===l.id);return a.length?`<div class="card"><b>${l.id?'★ ':''}${E(l.name)}${l.id?' 的新朋友':''}（${a.length}）</b>${a.map(x=>sideCard(x,true)).join('')}</div>`:''}).join('')}
+function list_v(){
+ const q=S.q.trim().toLowerCase(),mode=S.lv;
+ const seg=`<div class="chips" style="margin-bottom:8px">${[['list','新人'],['cat','分類'],['side','旁線'],['grp','社團'],['zod','星座'],['life','靈數']].map(([k,n])=>`<button class="chip ${mode===k?'on':''}" data-lv="${k}">${n}</button>`).join('')}</div>`;
+ if(mode==='cat')return `<h1>新人分類</h1>${seg}`+catBoard();
+ if(mode==='side')return `<h1>旁線名單</h1>${seg}`+sideView();
+ if(mode==='grp')return `<h1>社團與聚會</h1>${seg}`+grpView();
+ if(mode==='zod')return `<h1>星座</h1>${seg}`+zodView();
+ if(mode==='life')return `<h1>生命靈數</h1>${seg}`+lifeView();
+ const lives=[...new Set(S.people.flatMap(p=>[p.live,...(p.more||[]).map(x=>x.c)]).filter(Boolean))];
+ const so=(attr,val,opts)=>`<select ${attr} style="flex:1">${opts.map(([v,n])=>`<option value="${v}" ${v===val?'selected':''}>${E(n)}</option>`).join('')}</select>`;
+ const cr=p=>{const k=Object.keys(CAT),i=k.indexOf(p.cat);return i<0?k.length-1.5:i},l=S.people.slice().sort((a,b)=>cr(a)-cr(b)||byNo(a,b)).filter(p=>(S.fb==='all'||(S.fb==='y')===!!p.broke)&&(S.fs==='all'||(S.fs==='y')===!!p.shared)&&(S.fl==='all'||(p.live===S.fl||(p.more||[]).some(x=>x.c===S.fl)))&&(S.fc==='all'||p.cat===S.fc)&&(!q||[p.name,p.nick,p.no,p.ig,p.line,p.job,p.backer].join(' ').toLowerCase().includes(q)));
+ const fn=[S.fb,S.fs,S.fl,S.fc].filter(x=>x!=='all').length;
+ return `<h1>新人名單</h1>${seg}<input id="q" placeholder="搜尋姓名、編號、IG、Line、職業" value="${E(S.q)}">
+ <div class="row" style="gap:6px;margin-top:8px"><button class="chip ${fn?'on':''}" data-fopen="1">篩選${fn?'（'+fn+'）':''} ${S.fo?'▴':'▾'}</button>${fn?'<button class="chip" data-fclear="1">清除</button>':''}</div>${S.fo?`<div class="card" style="margin-top:8px;padding:10px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${so('data-fb',S.fb,[['all','破題：全部'],['y','已破題'],['n','未破題']])}${so('data-fs',S.fs,[['all','分享產品：全部'],['y','已分享'],['n','未分享']])}${so('data-fl',S.fl,[['all','哪裡人：全部'],...lives.map(x=>[x,x])])}${so('data-fcs',S.fc,[['all','分類：全部'],...Object.keys(CAT).map(k=>[k,k+' '+CAT[k].n])])}</div></div>`:''}
+ <div class="sub" style="margin:8px 2px">符合 ${l.length} / ${S.people.length} 人</div>
+ ${l.map(row).join('')||'<div class="sub">沒有符合的人</div>'}`}
+const en=t=>` <small style="opacity:.55;font-size:10px">${t}</small>`;
+const nowHM=()=>{const d=new Date();return pad2(d.getHours())+':'+pad2(d.getMinutes())};
+const SN=(p,i,t)=>{const k=p.id+'|'+i,n=(p.sn||{})[i]||'',o=S.sno&&S.sno[k];return `<div class="row" style="margin-top:12px"><span class="sub sp">${t}</span><button class="x" style="font-size:13px;opacity:${n?1:.45};color:${n?'var(--acc)':'var(--sub)'}" data-sno="${k}">✎</button></div>${o?`<input data-snv="${k}" value="${E(n)}" placeholder="備註" style="margin:4px 0">`:(n?`<div class="sub" style="font-size:12px;margin:2px 0;color:var(--acc)">${E(n)}</div>`:'')}`};
+const photosMini=(own,ids)=>`<div class="mini">${(ids||[]).map(id=>`<img class="ph" data-ph="${id}" data-own="${own}" alt="照片">`).join('')}<label class="add mini-add">＋<input type="file" accept="image/*" multiple style="display:none" data-up="${own}"></label></div>`;
+function fab(){const el=$('fab');let k=null;if(!S.view){if(S.tab==='list')k=S.lv==='side'?'side':S.lv==='grp'?'grp':(S.lv==='zod'||S.lv==='cat')?null:'person';else if(S.tab==='ld')k='leader'}
+ if(!k){el.innerHTML='';return}
+ const pn=k==='grp'?`<div class="row"><input id="gname" placeholder="社團或活動名稱"><button class="go q" data-a="addg">新增</button></div>`:k==='person'?`<div class="row"><input id="addn" placeholder="新朋友姓名"><button class="go q" data-a="add">新增</button></div>`:k==='leader'?`<div class="row"><input id="ldn" placeholder="領導人姓名"><button class="go q" data-a="addld">新增</button></div><select data-ldp="1" style="margin-top:6px"><option value="">或從新人名單選一位…</option>${S.people.filter(q=>!isLd(q)).sort(byNo).map(q=>`<option value="${q.id}">${nm(q)}</option>`).join('')}</select>`:`<select id="sl0" style="margin-bottom:6px"><option value="0">屬於哪位領導人？</option>${S.leaders.map(l=>`<option value="${l.id}">${E(l.name)}</option>`).join('')}</select>${sideAdd(0)}`;
+ el.innerHTML=`<button class="fabb" data-ap="1" aria-label="新增">${S.ap?'×':'＋'}</button>${S.ap?`<div class="fabp">${pn}</div>`:''}`}
+const getOwn=k=>{const[t,i]=k.split('|');return t==='s'?S.side.find(x=>x.id===+i):P(+i)};
+const logList=(own,o)=>{const a=o.log||[],all=S.lgall===own,vs=all?a:a.slice(0,3);return vs.map((x,i)=>`<div style="margin-top:6px;font-size:13px"><div class="row"><span class="pill" style="flex:none">${x.date.slice(5).replace('-','/')}${x.time?' '+x.time:''}</span><span class="sp" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${E(x.text)}</span><button class="x" style="font-size:14px" data-ld="${own}|${i}">×</button></div>${x.todo?`<div class="row" style="margin:3px 0 0 2px;gap:6px"><input type="checkbox" style="width:18px;height:18px;flex:none" ${x.done?'checked':''} data-lk="${own}|${i}"><span class="sp ${x.done?'done':''}" style="color:var(--acc)">${E(x.todo)}</span></div>`:''}</div>`).join('')+(a.length>3?`<button class="x" style="font-size:12px;color:var(--acc)" data-lgall="${own}">${all?'收合':'看全部 '+a.length+' 筆'}</button>`:'')};
+const logForm=own=>{const ip='lg'+own.replace('|','_');return `<div class="grid"><input type="date" id="${ip}d" value="${today()}"><div class="row" style="gap:4px">${tsel2(nowHM(),ip+'h',ip+'m')}</div></div><input id="${ip}n" placeholder="筆記內容" style="margin-top:6px"><div class="row" style="margin-top:6px"><input id="${ip}t" placeholder="對完答案後要做的事（選填）"><button class="go q" data-lsub="${own}">送出</button></div>`};
+const BT={p:['新人','#7FA8A0'],l:['領導人','#A98FB8'],s:['旁線','#C9A56E']};
+const isLd=p=>S.leaders.some(l=>l.pid===p.id);
+const linkLeader=p=>{if(isLd(p))return;S.leaders.push({id:S.leaders.reduce((m,x)=>Math.max(m,x.id),0)+1,name:p.nick||p.name,bd:p.bd||'',pid:p.id})};
+const syncLd=()=>S.leaders.forEach(l=>{const q=l.pid&&P(l.pid);if(q){l.name=q.nick||q.name;if(q.bd)l.bd=q.bd;else if(l.bd)q.bd=l.bd}});
+const bdAll=()=>[...S.people.filter(o=>!isLd(o)).map(o=>['p',o]),...S.leaders.map(o=>['l',o]),...S.side.map(o=>['s',o])];
+const bdNext=bd=>{const[m,d]=(bd||'').split('-').map(Number);if(!m||!d)return null;const t=new Date(today()+'T00:00:00');let dt=new Date(t.getFullYear(),m-1,d);if(dt<t)dt=new Date(t.getFullYear()+1,m-1,d);return Math.round((dt-t)/864e5)};
+const bdMonth=ym=>{const mm=+ym.split('-')[1];return bdAll().map(([t,o])=>{const[m,d]=(o.bd||'').split('-').map(Number);return m===mm&&d?{t,o,d:pad2(d)}:null}).filter(Boolean).sort((a,b)=>a.d.localeCompare(b.d))};
+const ZD=[
+{n:'牡羊座',rg:'3/21–4/19',el:'火',kw:'直接、行動、挑戰、效率',core:'領頭羊、競爭型、活力、行動派',psy:'喜歡挑戰、競爭與立即行動。|希望自己的能力被看見。|可能不喜歡被忽視或受到過多限制。',need:'直接、明確、有來有往的互動。|有挑戰性、能一起做事的關係。',def:'不滿時直接表達。|情緒上來時容易快速下結論。',tip:'說明重點，不要繞太多圈。|給予適當的行動空間。|有不同意見時可以坦白討論，但不要用壓制的方式溝通。|提醒對方先確認事實，再決定如何行動。',work:'可能擅長啟動任務、帶頭行動。|可以安排有明確目標、短期成果的工作。|需要練習耐心、持續追蹤與聆聽他人意見。',love:'常被描述為熱情、直接、主動。|關係中需要互動與新鮮感，也要學習持續經營。',key:'他喜歡自己決定、接受挑戰，還是需要別人協助他穩定步調？'},
+{n:'金牛座',rg:'4/20–5/20',el:'土',kw:'穩定、實際、信任、時間',core:'感官安定、累積型、重視生活品質',psy:'重視可預期的生活與安全感。|傾向建立自己熟悉、穩定的節奏。|喜歡能真正帶來價值的事物。',need:'穩定、可信任、說到做到。|不喜歡一直改變規則或臨時增加要求。',def:'遇到變動時先觀望。|對不認同的事情不容易改變立場。',tip:'給予充分資訊與考慮時間。|用具體行動與實際成果建立信任。|說明改變的必要性、成本與好處。|不要因為對方需要時間，就認定對方不願意成長。',work:'可能擅長持續執行、資源管理與穩定維護。|適合有明確流程、可累積成果的任務。|可以透過階段性目標降低改變帶來的不確定感。',love:'常被描述為重視穩定、忠誠與生活品質。|可能透過陪伴、照顧與實際付出表達關心。',key:'他需要什麼資訊，才能放心做決定？'},
+{n:'雙子座',rg:'5/21–6/21',el:'風',kw:'話題、交流、好奇、新鮮感',core:'多變好奇、資訊交換型、反應靈活',psy:'喜歡探索新事物，重視思考與交流。|可能容易因為新鮮事物而轉移注意力。|可能喜歡儀式感、紀念日與新鮮的互動。',need:'好聊、有反應、願意交流的人。|可以交換觀點，也能保留自己的想法。',def:'遇到太沉重或難以回答的問題時，可能轉移話題。|有時會先談想法，卻還沒有決定如何執行。',tip:'從有趣的話題與共同經驗開始。|避免太快要求對方交代內心或做出承諾。|如果需要討論重要事情，可以先交流想法，再整理出具體結論。',work:'可能擅長溝通、資訊整理、點子發想與靈活應變。|可用階段性任務與明確的完成標準協助聚焦。',love:'常被描述為重視交流、新鮮感與思想上的互動。|需要在變化與承諾之間找到平衡。',key:'他對什麼話題有熱情？什麼情境能讓他持續投入？'},
+{n:'巨蟹座',rg:'6/22–7/22',el:'水',kw:'關心、陪伴、歸屬、安全感',core:'照顧型、歸屬感、安全連結',psy:'重視熟悉感、歸屬感與情感安全。|可能希望自己對重要的人有價值。|在陌生環境中，可能需要時間建立信任。',need:'真誠、穩定、有溫度的互動。|感覺被理解、被尊重，而不是只被當成完成任務的工具。',def:'受傷時可能選擇沉默、退縮或間接表達。|有時會反覆確認關係是否穩定。',tip:'主動關心，但不要過度追問。|記得對方曾經分享的重要事情。|遇到誤會時，清楚說明自己的想法，不要只靠猜測。|給對方安全感，同時尊重彼此的界線。',work:'可能重視團隊氣氛、照顧與合作關係。|適合參與需要協調、支持、陪伴的工作。|需要留意是否因為不好意思拒絕，而承擔過多責任。',love:'常被描述為重視陪伴、家庭感與情緒連結。|關係中的安全感可能比表面的熱鬧更重要。',key:'他需要的是實際幫忙、情緒支持，還是穩定的陪伴？'},
+{n:'獅子座',rg:'7/23–8/22',el:'火',kw:'尊重、肯定、舞台、成就感',core:'太陽中心、自尊型、重視表現與認同',psy:'希望自己的努力與價值被看見。|重視尊重、成就感與在團體中的位置。|表面強勢的人也可能有害怕失敗或不被喜歡的一面，但需要透過實際互動確認。',need:'被尊重、被肯定。|有表現能力、承擔責任與發揮影響力的機會。',def:'感到被否定時，可能防衛、反駁或封閉自己。|有時會把批評解讀為對個人價值的否定。',tip:'具體稱讚對方的努力、選擇與成果。|需要提出建議時，針對事情討論，而不是攻擊人格。|給予舞台與責任，也要建立清楚的合作規範。|不要把「捧人」變成不真誠的奉承。|稱讚的方式：不要只說「你很棒」，可以說：「我很欣賞你剛才處理這件事的方式，因為你先聽完大家的意見，再做出決定。」',work:'可能擅長帶領、鼓舞士氣與承擔責任。|如果擔任領導角色，要學習授權與聆聽不同意見。',love:'常被描述為熱情、浪漫、重視尊重與表達。|需要在自信與相互理解之間取得平衡。',key:'他最在意的是被尊重、被肯定，還是擁有發揮能力的機會？'},
+{n:'處女座',rg:'8/23–9/22',el:'土',kw:'細節、流程、品質、改善',core:'完美檢視、服務型、細節與流程導向',psy:'希望事情有秩序、能被改善。|透過準備、分析與掌握細節，降低不確定感。|希望自己做得夠好，也希望事情不要出錯。|容易把注意力放在細節、正確性與流程上；責任感很強時，也可能想把所有事情掌握在自己手中。',need:'清楚的規則、可信任的合作對象。|對方願意溝通、負責並重視細節。',def:'過度檢查、批判或反覆確認。|因為擔心結果不好，而把責任全部攬在自己身上。|有時以糾正問題的方式表達關心，卻讓別人感受到壓力。',tip:'重要事項盡量說清楚標準與流程。|面對挑剔，不必立刻把它理解為否定，可以先釐清對方真正擔心的事情。|但也不應把所有批評都視為關心，要看具體內容與表達方式。|練習接受不同做法，不要求所有人都按照自己的節奏完成任務。',work:'可能擅長分析、規劃、檢查、改善流程與品質管理。|適合把複雜事情拆解成步驟。|需要練習授權、分工與設定合理的完成標準。',love:'常被描述為理性、細膩、重視實際照顧。|有時會透過提醒、協助解決問題來表達關心。',key:'他是因為真的在意品質，還是因為擔心失控而反覆確認？'},
+{n:'天秤座',rg:'9/23–10/23',el:'風',kw:'公平、協調、關係、溫和表達',core:'人際平衡、優雅關係型、協調者',psy:'重視公平、和諧與被接納。|希望關係維持平衡。|面對選擇時，可能會同時考慮很多人的立場。',need:'尊重、互相理解、有品質的溝通。|能夠協商而不是一味爭輸贏的關係。',def:'為了避免衝突，勉強答應自己不想做的事。|遇到不同選項時，容易反覆權衡。',tip:'鼓勵他說出自己的真實立場。|直接但溫和地表達需求。|幫助他區分「讓大家滿意」與「做出合適的決定」。|練習拒絕，並清楚說明原因。',work:'可能擅長協調、溝通、建立合作關係。|適合需要整合意見的任務。|要避免為了和平而不斷承接額外工作。',love:'常被描述為重視浪漫、平等、互相尊重與關係品質。|需要在照顧關係與保留自我之間取得平衡。',key:'他是真心同意，還是因為不想讓別人失望而答應？'},
+{n:'天蠍座',rg:'10/24–11/22',el:'水',kw:'信任、深度、真誠、界線',core:'深度連結、洞察型、重視信任與界線',psy:'重視真誠、深度與關係的可靠程度。|對重要的人事物可能投入很多心力。|希望了解事情背後的原因，而不只接受表面說法。',need:'能夠保守界線、尊重隱私、言行一致的人。|不必隨時熱絡，但在重要時刻值得信賴。',def:'不確定是否能信任對方時，可能先觀察。|受傷後可能減少分享，或需要較長時間恢復信任。|有時會過度解讀訊息，需要透過直接溝通確認。',tip:'不要為了快速拉近關係而過度探問隱私。|用持續、穩定的行動建立信任。|討論敏感議題時，說明自己的立場與目的。|尊重對方不願分享的部分，不用逼問來證明關係。',work:'可能擅長深入研究、問題分析、風險辨識與處理複雜議題。|適合需要專注、保密或持續追蹤的工作。|團隊合作時，要練習適度分享資訊，避免因為過度防備而影響協作。',love:'常被描述為重視忠誠、深度與專一。|需要在親密與個人界線之間建立平衡。',key:'他需要多少時間建立信任？什麼行為會讓他感受到真誠？'},
+{n:'射手座',rg:'11/23–12/21',el:'火',kw:'自由、探索、成長、意義',core:'自由流動、探索型、真理追求者',psy:'重視自由、探索、成長與更大的可能性。|希望生活有方向，也有彈性。|對過度限制或缺乏意義的規則可能感到不耐。',need:'真誠、開放、可以交流想法的關係。|能夠保留個人空間，不需要時時報備。',def:'面對太沉重的情緒時，可能用幽默、轉換話題或保持距離處理。|有時太快追求下一個目標，而忽略眼前需要完成的事情。',tip:'說明事情的意義、方向與可能性。|給予合理的選擇空間。|把自由與責任一起說清楚。|不要把所有規範都變成命令，可以討論共同目標。',work:'可能喜歡探索新方向、學習、挑戰與開拓。|適合需要創意、交流、嘗試新方法的任務。|需要搭配明確的期限與執行追蹤。',love:'常被描述為喜歡真誠、冒險、共同成長與保有空間。|自由不代表不在乎，仍需要共同建立承諾。',key:'他最有動力的目標是什麼？什麼樣的規範會讓他覺得有幫助，而不是受到束縛？'},
+{n:'摩羯座',rg:'12/22–1/19',el:'土',kw:'目標、責任、成果、長期規劃',core:'現實向上、責任型、長期建構者',psy:'重視成就、責任與長期累積。|可能透過完成目標、解決問題來建立自我價值。|對未來的不確定性，傾向以計畫與努力應對。',need:'務實、可靠、有方向感的互動。|彼此能承擔責任，不把問題全部推給別人。',def:'不容易立即表達脆弱或不安。|壓力大時可能把重心全部放在工作與責任上。|有時過度重視結果，而忽略自己的情緒與休息。',tip:'提出具體計畫、目標與可執行的方案。|用實際支持取代情緒勒索。|尊重對方的努力與時間。|也可以溫和地關心對方是否負擔過重，而不只問成果如何。',work:'可能擅長長期規劃、執行、管理與追蹤。|適合有清楚目標、責任範圍與里程碑的任務。|要練習適時求助、授權及接受不完美的結果。',love:'常被描述為外在務實、內在重視承諾。|可能透過負責、陪伴與實際付出表達關心。',key:'他在意的長期目標是什麼？他如何判斷一段合作關係值得投入？'},
+{n:'水瓶座',rg:'1/20–2/18',el:'風',kw:'獨立、理念、創新、自主空間',core:'理性獨特、理念導向、社會創新型',psy:'重視獨立思考與個人特色。|希望自己的想法能被理解，而不是被要求盲目服從。|可能對新觀念、制度改革與不同觀點感興趣。',need:'理念上的交流與思想上的尊重。|即使關係親近，也需要保有個人空間。',def:'感到被控制或誤解時，可能抽離、不解釋，或減少互動。|有時習慣先用理性分析，讓別人不容易理解自己的情緒。',tip:'尊重他的獨特觀點，不急著要求他與大家一樣。|討論事情時說明理由與邏輯。|不要用「為什麼你不能正常一點」否定差異。|同時練習確認彼此的情緒與合作需求，不要只停留在理念討論。',work:'可能擅長創新、提出不同觀點、系統思考與改善制度。|適合需要自主性與新方法的任務。|要把理念轉化為可執行的步驟，並讓團隊理解進度。',love:'常被描述為重視精神交流、平等與個人空間。|需要在獨立性與情感表達之間找到適合自己的方式。',key:'他希望自己的什麼想法被理解？他需要多少自主空間才能投入合作？'},
+{n:'雙魚座',rg:'2/19–3/20',el:'水',kw:'理解、共感、想像、情感連結',core:'共感型、想像力、情感連結與直覺',psy:'重視情感共鳴、理解與關係中的溫度。|可能對他人的感受、故事與處境有較強的共鳴。|透過想像、創作或情感交流整理自己的經驗。',need:'被理解、被接納、能夠自在表達感受。|不需要每次都立即得到解決方案，有時先被聆聽就很重要。',def:'面對衝突時，可能退縮、逃避或不願直接拒絕。|有時因為不想傷害別人，而沒有清楚表達自己的界線。|容易受氣氛影響的情況，需要透過實際觀察確認，不能直接當成固定性格。',tip:'先聆聽，再詢問對方需要陪伴、建議還是實際協助。|把模糊的期待轉化為具體的選項與步驟。|鼓勵對方說出真正的想法，不必為了讓大家開心而勉強答應。|溫柔不代表沒有原則，理解他人也要保留自己的界線。',work:'可能擅長創作、關懷、故事表達與理解不同觀點。|適合能發揮創意、同理心或人際支持的任務。|需要清楚的工作範圍、期限與回饋，避免因為不好意思拒絕而承擔過多。',love:'常被描述為浪漫、重視共鳴與情感連結。|需要在理解他人與照顧自己之間取得平衡。',key:'他希望被理解的是哪一種感受？他需要陪伴、具體幫助，還是明確的界線？'}];
+const ZE={火:{c:'#C98B8B',t:'火象｜行動、熱情、主導、自我驅動、面子與自由'},土:{c:'#B3A57C',t:'土象｜穩定、實用、安全感、責任、建構與累積'},風:{c:'#8FA9BF',t:'風象｜溝通、思考、資訊交換、社會連結、理念'},水:{c:'#84B5B8',t:'水象｜情感、直覺、安全連結、信任、情緒感受'}};
+const zodiacOf=bd=>{const a=String(bd||'').split('-').map(Number);if(a.length<2||!a[0]||!a[1])return '';const v=a[0]*100+a[1],Z=[[120,'水瓶座'],[219,'雙魚座'],[321,'牡羊座'],[420,'金牛座'],[521,'雙子座'],[622,'巨蟹座'],[723,'獅子座'],[823,'處女座'],[923,'天秤座'],[1024,'天蠍座'],[1123,'射手座'],[1222,'摩羯座']];let r='摩羯座';for(const[k,n]of Z)if(v>=k)r=n;return r};
+const ownBy=(t,id)=>{const o=t==='l'?S.leaders.find(x=>x.id===+id):getOwn(t+'|'+id);return(o&&o.by)||''};
+const bdBox=(t,id,bd,noAge)=>{const k=t+'|'+id,ok=/^\d+-\d+$/.test(bd||''),by=ownBy(t,id),o=t==='l'?S.leaders.find(x=>x.id===+id):getOwn(k);
+ if(ok&&S.bdE!==k){const[m,d]=bd.split('-'),a=by&&o?ageOf(o):0,ln=by&&o?lifeNumOf(o):'';return `<span style="display:inline-flex;gap:4px;align-items:center;white-space:nowrap"><span class="sub" style="font-size:12px">${by?by+'/':''}${+m}/${+d}・${zodiacOf(bd)}${a&&!noAge?'・'+a+'歲':''}${ln?'・靈數'+ln:''}</span><button class="x" style="font-size:12px;padding:0;color:var(--acc)" data-bde="${k}">${by?'編輯':'補年份'}</button><button class="x" style="font-size:12px;padding:0;color:var(--sub)" data-bdclr="${k}">重設</button></span>`}
+ const v=ok&&by?by+'-'+bd.split('-').map(x=>x.padStart(2,'0')).join('-'):'';
+ return `<input type="date" data-bdd="${k}" value="${v}" max="${today()}" style="width:auto;padding:3px 6px;font-size:13px;height:32px">`+(ok?`<span class="sub" style="font-size:13px">${zodiacOf(bd)}</span><button class="x" style="font-size:12px;color:var(--acc)" data-bde="${k}">完成</button><button class="x" style="font-size:12px;color:var(--sub)" data-bdclr="${k}">重設</button>`:'')};
+const bdSel=(t,id,bd)=>{const[m,d]=(bd||'-').split('-');const st='width:auto;padding:3px 6px;font-size:13px;height:30px';return `<select data-bd="${t}|${id}|0" style="${st}"><option value="">月</option>${Array.from({length:12},(_,i)=>`<option value="${i+1}" ${+m===i+1?'selected':''}>${i+1}月</option>`).join('')}</select><select data-bd="${t}|${id}|1" style="${st}"><option value="">日</option>${Array.from({length:31},(_,i)=>`<option value="${i+1}" ${+d===i+1?'selected':''}>${i+1}日</option>`).join('')}</select>`};
+const bdName=(t,o)=>t==='p'?nm(o):E(o.nick||o.name);
+function bdCard(){const l=bdAll().map(([t,o])=>({t,o,n:bdNext(o.bd)})).filter(x=>x.n!==null&&x.n<=7).sort((a,b)=>a.n-b.n);
+ const lg=Object.values(BT).map(([n,c])=>`<span class="pill" style="background:${c};color:#fff;border-color:transparent">${n}</span>`).join(' ');
+ return `<div class="card"><div class="row"><b class="sp">🎂 一週內生日</b>${lg}</div>${l.map(x=>{const dt=new Date(addD(x.n)+'T00:00:00'),md=(dt.getMonth()+1)+'/'+dt.getDate();return `<div class="row" style="margin-top:6px"><span class="pill" style="flex:none">${x.n===0?'今天 ':x.n===1?'明天 ':''}${md}（週${WD[dt.getDay()]}）</span><b class="sp" data-gp="${x.t}|${x.o.id}" style="cursor:pointer">${bdName(x.t,x.o)}</b><span class="pill" style="background:${BT[x.t][1]};color:#fff;border-color:transparent;flex:none">${BT[x.t][0]}</span></div>`}).join('')||'<div class="sub" style="margin-top:4px">這一週沒有人生日</div>'}</div>`}
+function todoCard(){const pend=[],dn=[];[...S.people.map(p=>['p|'+p.id,p,'p']),...S.side.map(x=>['s|'+x.id,x,'s'])].forEach(([own,o,t])=>(o.log||[]).forEach((x,i)=>{if(x.todo)(x.done?dn:pend).push({own,o,x,i,t})}));
+ const asc=(a,b)=>(a.x.date+(a.x.time||'')).localeCompare(b.x.date+(b.x.time||''));pend.sort(asc);dn.sort((a,b)=>-asc(a,b));
+ const r=it=>`<div class="row" style="margin:7px 0;align-items:flex-start"><input type="checkbox" style="width:20px;height:20px;flex:none;margin-top:2px" ${it.x.done?'checked':''} data-lk="${it.own}|${it.i}"><div class="sp"><span class="${it.x.done?'done':''}">${E(it.x.todo)}</span><div class="sub"><b data-gp="${it.t}|${it.o.id}" style="color:var(--acc);cursor:pointer">${bdName(it.t,it.o)}</b>${it.t==='s'?'（旁線）':''}・對答案 ${it.x.date.slice(5).replace('-','/')}</div></div></div>`;
+ return `<div class="card"><div class="row"><b class="sp">對答案後要做的事</b><span class="sub">待辦 ${pend.length}</span></div>${pend.map(r).join('')||'<div class="sub" style="margin-top:4px">目前沒有待辦</div>'}${dn.length?`<button class="x" style="font-size:12px;color:var(--acc)" data-tdone="1">${S.tdone?'收合已完成':'已完成 '+dn.length+' 筆'}</button>${S.tdone?dn.map(r).join(''):''}`:''}</div>`}
+const watchRole=e=>{const w=(S.watch||'').trim();if(!w||!e.crew)return '';const r=[];String(e.crew).split(/[；;\n]/).forEach(sg=>{sg=sg.trim();if(sg.includes(w)){if(/^主持/.test(sg))r.push('主持');else if(/^分享/.test(sg))r.push('分享')}});return r.join('、')};
+const tsel2=(val,idh,idm,attr)=>{const[h,m]=(val||'00:00').split(':');return `<select ${attr?`data-et="${attr}|h"`:`id="${idh}"`} style="flex:1;min-width:0">${opts(24,h)}</select><b>:</b><select ${attr?`data-et="${attr}|m"`:`id="${idm}"`} style="flex:1;min-width:0">${opts(60,m)}</select>`};
+function catSeed(){return [["N 紐崔萊", ["益生菌", "營養餐", "蛋白素", "卵磷脂", "關鍵", "A倍欣", "雙效 B 群", "強效 C", "D 鈣", "E硒", "得力", "葉酸鐵", "DX", "管花", "晶明+", "纖維錠", "水纖維", "葡萄糖胺", "活悅益生菌", "女士益生菌", "瘦瘦菌", "好甘萃", "月見草", "纖盈", "纖巧", "Q10", "大蒜", "紫錐花", "三倍魚油", "全方位魚油", "消化酵素", "綠茶素", "養晶飲", "衡怡飲", "養氣飲", "活妍飲", "蔚葆飲", "順欣飲", "靈芝", "薑黃C", "兒童益生菌+C", "兒童綜合片", "兒童鐵嚼片", "水美飲", "活果飲", "營養能量棒"]], ["A 雅芝｜潔顏・精華・眼部", ["煥然一新去角質潔面膠", "玫你不型萃蒸水", "招桃花眼膜", "淨痘調理凝膠", "超有神亮眼冰珠", "超級果力水凝乳", "活力滿點精華液", "淨透深層卸妝水", "淨透深層卸妝乳", "淨透深層卸妝油", "超能亮維C精華", "青春水潤淨化精華", "賦活緊緻抗老精華", "OMEGA多效修護油", "極萃晚安修護面膜", "OMEGA多效修護面膜", "超能亮維C凝膠面膜"]], ["A 雅芝｜基礎保養與組合", ["多重防護UV防曬乳", "平衡潔顏凝膠", "平衡調理露", "平衡水凝乳", "水潤潔顏慕斯", "水潤調理露", "水潤眼霜", "水潤凝霜", "賦活潔膚乳", "賦活柔膚水", "賦活亮采眼霜", "賦活亮膚霜", "緊緻彈力霜", "光感煥白潔膚乳", "光感煥白調理露", "光感煥白乳液", "光感煥白乳霜", "豐潤乳霜", "輕質乳霜", "緊緻眼霜", "豐潤乳霜填充瓶", "輕質乳霜填充瓶", "緊緻眼霜填充瓶", "精華凝露", "A醇抗皺精華", "肌光淨白精華", "煥膚精華", "煥膚保養組", "智能煥膚美肌儀", "智能煥膚組", "肌光淨白組", "抗皺緊緻精華", "肌因14活膚組"]], ["A 雅芝｜面膜", ["黑鑽研磨修護面膜", "白奇亞籽煥亮面膜", "紅石榴緊緻面膜", "柑橘潔淨面膜", "綠茶保濕面膜", "極潤超彈力面膜", "極潤蛋白保濕霜"]], ["A 雅芝｜彩妝", ["純萃光煥亮飾底乳", "純萃光精華粉底", "純萃光氣墊粉餅", "純萃光遮瑕膏", "完美持妝粉餅", "完美持妝粉底", "完美持妝蜜粉", "水光潤澤唇膏", "霧光絲絨唇膏", "植萃潤澤護唇膏", "時尚造型眼影", "時尚旋轉眼線筆", "時尚纖俏睫毛膏", "3合1濃密睫毛膏", "時尚造型眉筆"]], ["A 雅芝｜男仕", ["男仕淨速潔膚乳", "男仕平衡爽膚水", "男仕保濕水乳液"]], ["S 髮品｜洗潤", ["豐盈強健洗", "豐盈強健潤", "清新淨化洗", "清新淨化潤", "舒緩抗屑洗", "柔潤保濕洗", "柔潤保濕潤", "強韌護色洗", "強韌護色潤"]], ["S 髮品｜護髮與護染", ["強韌護色修護髮膜", "強健頭皮養護水精華", "強韌護色護髮精露", "強韌護色免沖洗護髮乳", "護染霜－經典黑", "護染霜－摩卡棕", "護染霜－酒紅棕", "護染霜－蜜茶棕"]], ["G 沐浴", ["橘/潤澤沐浴乳", "橘/潤澤身體乳", "橘/潤澤護手霜", "橘/潔膚皂", "橘/潤澤潤唇膏", "綠/清新去角質沐浴露", "綠/清新柔膚露", "藍/淨護防曬乳", "藍/潔膚皂", "藍/洗手露", "藍/淨護體香劑", "藍/淨護體香噴霧", "黃/嬰兒舒緩洗髮沐浴慕斯", "黃/嬰兒舒緩潤膚乳"]], ["G 口腔", ["藍/多效氟潔牙膏", "綠/白茶益生菌潔牙膏", "牙刷", "齒縫牙間刷", "細滑牙線棒", "多效濃縮漱口水", "口氣清新劑－薄荷口味"]], ["H 家潔", ["易潔劑", "冷洗精", "超濃縮無磷高效洗衣粉", "衣物柔軟精", "三合一超效洗衣", "超效活氧漂白", "炫黑深色衣物洗衣精", "晶亮軟性", "L.O.C.多用途強效", "廚房強效", "浴廁強效", "洗碟精", "金鋼刷", "蔬果清潔劑", "希望工場愛心萬用布"]], ["E 家用", ["益之源", "MINI空氣", "Sky空氣", "金鍋"]], ["XS", ["紅橙飲", "水蜜桃", "可樂", "西瓜", "葡萄柚", "莓果", "藍莓檸檬", "檸檬雪酪"]], ["R&J 健康吃", ["咖啡券", "益生菌黑咖啡", "堅果", "醬油", "橄欖油", "白奇亞籽油", "穀物脆片", "十穀粉"]]].map(([n,i])=>({n,items:[...new Set(i)]}))}
+function groupSeed(){return ['羽球社','熱舞社','桌遊聚會','逛街聚會'].map((n,i)=>({id:i+1,name:n,m:[]}))}
+const myAge=()=>{const b=new Date((S.myBd||'1995-08-29')+'T00:00:00'),t=new Date();let a=t.getFullYear()-b.getFullYear();if(t.getMonth()<b.getMonth()||(t.getMonth()===b.getMonth()&&t.getDate()<b.getDate()))a--;return a};
+const ngCell=p=>{if(p.nat&&p.gender&&S.ide!==p.id)return `<button class="x" style="font-size:12px;padding:0;color:var(--sub);white-space:nowrap;flex:none" data-ide="${p.id}">${E(p.nat)}・${E(p.gender)}</button>`;
+ return `<input data-p="nat" value="${E(p.nat)}" placeholder="國籍" style="width:96px;flex:none;padding:5px 8px"><select data-p="gender" style="width:68px;flex:none;padding:5px 4px"><option value="">性別</option>${OPT.gender.map(o=>`<option ${o===p.gender?'selected':''}>${E(o)}</option>`).join('')}</select>${p.nat&&p.gender?`<button class="x" style="font-size:12px;color:var(--acc);flex:none" data-ide="${p.id}">完成</button>`:''}`};
+const ageCell=p=>{const has=!!S.myBd,ma=has?myAge():0,a=ageOf(p),df=a&&has?a-ma:null,byok=p.by&&/^\d+-\d+$/.test(p.bd||'');const op=(v,l)=>`<option value="${v}" ${df===v?'selected':''}>${l}</option>`;let o='';for(let i=30;i>=1;i--)o+=op(-i,'-'+i);o+=`<option value="" ${df===null?'selected':''}>±</option>`+op(0,'±0');for(let i=1;i<=30;i++)o+=op(i,'+'+i);
+ const txt=a?((df!==null?(df>0?'+'+df:df<0?String(df):'±0')+'=':'')+a+'歲'):'';
+ return `<div class="w"><div class="row" style="gap:6px;flex-wrap:wrap">${ngCell(p)}${byok?'':(a?'':`<input data-agein="${p.id}" inputmode="numeric" placeholder="歲" style="width:52px;flex:none">`)+(has&&!byok?`<select data-age="${p.id}" style="width:70px;flex:none;padding:6px 4px">${o}</select>`:'')}${txt?`<span style="font-size:12px;flex:none">${txt}</span>`:''}${bdBox('p',p.id,p.bd,true)}</div>${has?'':'<div class="sub" style="font-size:12px">到「設定」填你的生日，就能用 +／- 記年齡</div>'}</div>`};
+const STN=['一群朋友','兩個追求','三生有幸','四部規劃','五福臨門','六六大順'];
+function stepSt(own,o,i){return{n:(o.sd&&o.sd[i])?1:0,t:1}}
+const stCls=x=>x.n>=x.t?'done':x.n>0?'part':'';
+const stepMini=(own,o)=>`<div class="row" style="gap:4px;margin-top:6px"><span class="sub" style="font-size:11px;flex:none">進度</span>${[1,2,3,4,5,6].map(i=>`<span class="stp mini ${stCls(stepSt(own,o,i))}">${i}</span>`).join('')}</div>`;
+function stepsBar(own,o){const key=S.stp&&S.stp.startsWith(own+'|')?+S.stp.split('|')[2]:0;
+ return `<div style="margin-top:10px"><div class="sub" style="margin-bottom:4px">生涯規劃俱樂部 123456</div><div class="row" style="gap:4px;align-items:flex-start">${[1,2,3,4,5,6].map(i=>`<div style="flex:1;text-align:center;min-width:0"><button class="stp ${stCls(stepSt(own,o,i))} ${key===i?'sel':''}" data-st6="${own}|${i}">${i}</button><div class="sub" style="font-size:10px;margin-top:2px;white-space:nowrap">${STN[i-1]}</div></div>`).join('')}</div>
+ ${[1,2,3,4,5,6].filter(i=>(o.sn||{})[i]).map(i=>`<div style="font-size:12px;margin-top:3px"><b style="color:var(--acc)">${i}</b> <span class="sub">${STN[i-1]}</span>　${E(o.sn[i])}</div>`).join('')}
+ ${key?`<div style="margin-top:8px;padding:8px;border-radius:10px;background:var(--bg)"><div class="row"><b class="sp">${key} ${STN[key-1]}</b><label class="row" style="gap:4px;flex:none"><input type="checkbox" style="width:18px;height:18px" ${o.sd&&o.sd[key]?'checked':''} data-sd6="${own}|${key}">完成</label></div><input data-sn6="${own}|${key}" value="${E((o.sn||{})[key]||'')}" placeholder="這一步的備註" style="margin-top:6px"></div>`:''}</div>`}
+const PT={N:['N','#8FAE8B','紐崔萊'],A:['A','#C9A961','雅芝'],S:['S','#A08CB5','髮品'],E:['E','#7F9FBF','淨水器'],K:['A','#A9CCE0','空氣'],H:['H','#A8CBB0','居家清潔'],G:['G','#D9A06B','身體沐浴'],X:['XS','#9B5B63','XS'],Q:['g','#8DAA5B','口腔'],O:['其','#A98B6A','其他']};
+function prodType(n){for(const g of S.cat){if(g.items.includes(n)){const h=g.n[0];if(g.n.startsWith('N '))return 'N';if(g.n.startsWith('A '))return 'A';if(g.n.startsWith('S '))return 'S';if(g.n.startsWith('H '))return 'H';if(g.n==='G 沐浴')return 'G';if(g.n==='XS')return 'X';if(g.n==='G 口腔')return 'Q';if(g.n.startsWith('E ')){return n==='益之源'?'E':/空氣/.test(n)?'K':'O'}return 'O'}}return 'O'}
+const prodMarks=p=>{const t=[...new Set((p.prods||[]).map(x=>prodType(x.n)))];return t.length?'<span style="display:inline-flex;gap:3px">'+Object.keys(PT).filter(k=>t.includes(k)).map(k=>`<span title="${PT[k][2]}" style="width:18px;height:18px;border-radius:50%;background:${PT[k][1]};color:#fff;font-size:${k==='O'?10:k==='X'?9:11}px;font-weight:700;display:inline-grid;place-items:center">${PT[k][0]}</span>`).join('')+'</span>':''};
+const lastCt=p=>{const d=(p.log||[]).map(x=>x.date).filter(Boolean).sort().pop();if(!d)return '尚未聯絡';const n=-dleft(d);return d.slice(5).replace('-','/')+(n>0?'（'+n+' 天前）':'（今天）')};
+function row(p){const c=CAT[p.cat];return `<div class="card" data-open="${p.id}" style="cursor:pointer;border-left:6px solid ${c?c.bg:'var(--line)'}"><div class="row"><b class="sp">${nm(p)}</b>${isLd(p)?'<span class="pill" style="background:#A98FB8;color:#fff;border-color:transparent">領導人</span>':''}${c?`<span class="pill" style="background:${c.bg};color:#2b2b2b;border-color:transparent">${p.cat}</span>`:''}${igLink(p.ig)}</div><div class="sub" style="margin-top:2px">${p.age?E(p.age)+' 歲':'年齡未填'}・${E(p.job)||'職業未填'}</div><div class="chips" style="margin-top:6px"><span class="pill ${p.broke?'y':''}">${p.broke?'已破題':'未破題'}</span><span class="pill ${p.shared?'y':''}">${p.shared?'已分享產品':'未分享產品'}</span>${p.live?`<span class="pill">${E([p.live,...(p.more||[]).map(x=>x.c)].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join('・'))}</span>`:''}</div><div class="row" style="gap:8px;margin-top:6px;flex-wrap:wrap">${prodMarks(p)}${(p.prods||[]).length?`<span class="sub" style="font-size:11px">用 ${(p.prods||[]).length} 項・穩定 ${(p.prods||[]).filter(x=>x.c).length} 項</span>`:''}<span style="display:inline-flex;gap:3px">${[1,2,3,4,5,6].map(i=>`<span class="stp mini ${stCls(stepSt('p|'+p.id,p,i))}">${i}</span>`).join('')}</span><span class="sub" style="font-size:11px;margin-left:auto">最近聯絡 ${lastCt(p)}</span></div>${ldb(p)?'<div style="margin-top:4px">'+ldb(p)+'</div>':''}</div>`}
+const markShared=q=>{q.shared=true;if(!q.pf)q.pf={next:shiftD(today(),14),hist:[]}};
+const pfLine=h=>`<div class="sub" style="font-size:12px">${h.date.slice(5).replace('-','/')}　${h.t==='done'?'✓ 完成':'暫不分享'}${h.note?'：'+E(h.note):''}</div>`;
+const pfId=own=>'pfn'+own.replace('|','_');
+function pfBox(own,o){const f=o.pf;
+ if(!f)return `<div style="margin-top:8px"><button class="chip" style="font-size:12px" data-pfs="${own}">＋ 開始追蹤產品使用（每兩週跟進）</button></div>`;
+ const due=f.next<=today(),op=due||(S.pfo&&S.pfo[own]);
+ if(!op)return `<div class="row" style="margin-top:8px;gap:6px"><span class="sub" style="font-size:12px">使用產品跟進・下次 ${f.next.slice(5).replace('-','/')}${(f.hist||[])[0]&&f.hist[0].t==='done'?'・上次已完成':''}</span><button class="chip" style="font-size:12px;padding:2px 10px;flex:none" data-pfo="${own}">展開</button></div>`;
+ return `<div style="margin-top:10px;padding:8px;border-radius:10px;background:var(--bg)"><div class="row"><b class="sp" style="font-size:13px">使用產品跟進（每兩週）</b>${!due?`<button class="x" style="font-size:12px;color:var(--acc)" data-pfo="${own}">收合</button>`:''}<button class="x" style="font-size:12px" data-pfx="${own}">${S.arm==='pf'+own?'再按停止':'停止'}</button></div><div class="sub" style="margin:2px 0 6px;${due?'color:var(--bad)':''}">${due?'已到跟進時間，完成前會一直留在「首頁」':'下次跟進 '+f.next.slice(5).replace('-','/')}</div><input id="${pfId(own)}" placeholder="這次跟進的備註（選填）"><div class="row" style="margin-top:6px;gap:6px"><button class="go" data-pfd="${own}">完成這次跟進</button><button class="go g" data-pfz="${own}">暫不分享（14 天後再提醒）</button></div>${(f.hist||[]).slice(0,3).map(pfLine).join('')}</div>`}
+const bkWarn=()=>{const n=S.lastBk?-dleft(S.lastBk):999;if(n<7||!S.people.length)return '';return `<div class="note" style="margin-bottom:8px">${S.lastBk?'已 '+n+' 天沒備份':'還沒備份過'}。到「設定」按「複製全部備份」，貼到備忘錄保存（照片不在備份文字內）。</div>`};
+function pfCard(){const a=[],dn=[];[...S.people.map(p=>['p|'+p.id,p,'p']),...S.side.map(x=>['s|'+x.id,x,'s'])].forEach(([own,o,t])=>{const f=o.pf;if(!f)return;if(f.next<=today())a.push({own,o,t,f});(f.hist||[]).filter(h=>h.t==='done'&&h.date>=shiftD(today(),-14)).forEach(h=>dn.push({own,o,t,h}))});
+ a.sort((x,y)=>x.f.next.localeCompare(y.f.next));dn.sort((x,y)=>y.h.date.localeCompare(x.h.date));
+ if(!a.length&&!dn.length)return '';
+ return `<div class="card"><div class="row"><b class="sp">產品使用跟進</b><span class="sub">待跟進 ${a.length}</span></div>${a.map(z=>`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line)"><div class="row"><b class="sp" data-gp="${z.own}" style="color:var(--acc);cursor:pointer">${bdn(z.t,z.o)}${z.t==='s'?'（旁線）':''}</b><span class="sub" style="color:var(--bad)">${z.f.next<today()?'已逾期 ':'今天 '}${z.f.next.slice(5).replace('-','/')}</span></div><input id="${pfId(z.own)}" placeholder="使用狀況、備註（選填）" style="margin-top:6px"><div class="row" style="margin-top:6px;gap:6px"><button class="go" data-pfd="${z.own}">完成</button><button class="go g" data-pfz="${z.own}">暫不分享（14 天後提醒）</button></div></div>`).join('')||'<div class="sub" style="margin-top:4px">目前沒有待跟進</div>'}${dn.slice(0,5).map(z=>`<div class="sub" style="margin-top:6px">✓ 完成 ${z.h.date.slice(5).replace('-','/')}　${bdn(z.t,z.o)}${z.h.note?'：'+E(z.h.note):''}</div>`).join('')}</div>`}
+
+const inGrp=(n,g)=>!!g&&g.items.includes(n);
+function promoWho(pr){const g=S.cat.find(x=>x.n===pr.g);if(!g)return '<div class="sub" style="margin-top:6px">這個大類別已不存在，請刪除後重新新增</div>';
+ const used=S.people.filter(p=>(p.prods||[]).some(x=>inGrp(x.n,g))).sort(byNo),want=S.people.filter(p=>(p.want||[]).some(x=>inGrp(x.n,g))).sort(byNo);
+ const ch=(a,st)=>a.map(p=>`<button class="chip" style="${st}" data-open="${p.id}">${nm(p)}</button>`).join('')||'<span class="sub">（沒有）</span>';
+ return `<div style="margin-top:8px"><div class="sub">用過（${used.length}）</div><div class="chips" style="margin-top:4px">${ch(used,'')}</div><div class="sub" style="margin-top:8px">有興趣但未購買（${want.length}）</div><div class="chips" style="margin-top:4px">${ch(want,'border-color:var(--acc);color:var(--acc)')}</div></div>`}
+function promoCard(){const ps=S.promos||[];
+ return `<div class="card"><div class="row"><b class="sp">🏷 近期特惠</b><span class="sub">${ps.length} 則</span><button class="x" style="font-size:20px;color:var(--acc);font-weight:700" data-pnew="1" aria-label="新增特惠">${S.pnew?'−':'＋'}</button></div>${ps.map(pr=>`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line)"><div class="row" style="align-items:flex-start"><div class="sp" style="white-space:pre-wrap;min-width:0">${E(pr.t)}</div><button class="x" data-prdel="${pr.id}">${S.arm==='pr'+pr.id?'再按刪除':'×'}</button></div><div class="row" style="gap:6px;margin-top:4px"><span class="pill">${E(pr.g||'未分類')}</span><button class="chip ${S.pm===pr.id?'on':''}" style="font-size:12px;padding:2px 10px" data-prwho="${pr.id}">${S.pm===pr.id?'收起名單':'看誰可能有興趣'}</button></div>${S.pm===pr.id?promoWho(pr):''}</div>`).join('')||'<div class="sub" style="margin-top:4px">還沒有特惠</div>'}
+ ${S.pnew?`<div style="margin-top:8px"><textarea id="prot" rows="3" placeholder="輸入特惠內容，例：10 月 買二送一" style="margin-top:6px"></textarea><div class="row" style="margin-top:6px;gap:6px"><select id="proc" style="flex:1">${S.cat.map(g=>`<option>${E(g.n)}</option>`).join('')}</select><button class="go q" data-a="promadd">新增</button></div></div>`:''}</div>`}
+function prodSec(p){const ps=p.prods||[],wl=p.want||[],gw=S.pkgw>=0&&S.cat[S.pkgw]?S.pkgw:-1,gW=S.cat[gw],gi=S.pkg>=0&&S.cat[S.pkg]?S.pkg:-1,g=S.cat[gi];
+ return `<h2 id="sc_prod">產品</h2><div class="card"><b>用過／在用的產品</b>${ps.length?`<div class="chips">${ps.map((x,i)=>`<span style="display:inline-flex;align-items:center;gap:1px"><button class="chip ${x.c?'on':''}" data-pc="${p.id}|${i}">${x.c?'★ ':''}${E(x.n)}</button><button class="x" style="font-size:14px;padding:0 4px" data-pr="${p.id}|${i}">×</button></span>`).join('')}</div><div class="sub" style="margin-top:4px;font-size:12px">點產品名稱可標記或取消「★ 常客」，× 移除</div>`:'<div class="sub">還沒選產品</div>'}
+ <div class="grid" style="margin-top:8px"><select data-pkg="1"><option value="-1">① 選品牌／系列</option>${S.cat.map((c,i)=>`<option value="${i}" ${i===gi?'selected':''}>${E(c.n)}</option>`).join('')}</select><select data-pks="${p.id}" ${g?'':'disabled'}><option value="">② 選產品</option>${g?g.items.map((n,ii)=>{const on=ps.some(x=>x.n===n);return `<option value="${ii}" ${on?'disabled':''}>${on?'✓ ':''}${E(n)}</option>`}).join(''):''}</select></div>
+ <details style="margin-top:6px"><summary class="sub" style="cursor:pointer">清單沒有？自己輸入</summary><div class="row" style="margin-top:6px"><input id="pkn" placeholder="輸入產品名稱"><button class="go q" data-a="pkadd">加入</button></div></details>${pfBox('p|'+p.id,p)}<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)"><b>有興趣但未購買</b> <span class="sub" style="font-size:12px">之後有特惠可以分享</span>${wl.length?`<div class="chips" style="margin-top:6px">${wl.map((x,i)=>`<span style="display:inline-flex;align-items:center;gap:1px"><span class="chip" style="border-color:var(--acc);color:var(--acc)">${E(x.n)}</span><button class="x" style="font-size:12px;padding:0 4px;color:var(--acc)" data-pwb="${p.id}|${i}">已買</button><button class="x" style="font-size:14px;padding:0 4px" data-pwx="${p.id}|${i}">×</button></span>`).join('')}</div>`:'<div class="sub" style="margin-top:4px">還沒有</div>'}
+ <div class="grid" style="margin-top:8px"><select data-pkgw="1"><option value="-1">① 選品牌／系列</option>${S.cat.map((c,i)=>`<option value="${i}" ${i===gw?'selected':''}>${E(c.n)}</option>`).join('')}</select><select data-pws="${p.id}" ${gW?'':'disabled'}><option value="">② 選產品</option>${gW?gW.items.map((n,ii)=>{const on=wl.some(x=>x.n===n);return `<option value="${ii}" ${on?'disabled':''}>${on?'✓ ':''}${E(n)}</option>`}).join(''):''}</select></div>
+ <details style="margin-top:6px"><summary class="sub" style="cursor:pointer">清單沒有？自己輸入</summary><div class="row" style="margin-top:6px"><input id="pwn" placeholder="輸入產品名稱"><button class="go q" data-a="pwadd">加入</button></div></details></div></div>`}
+function grpView(){return ``+S.groups.map(g=>{
+ const ms=g.m.map(x=>({x,o:getOwn(x.k)})).filter(z=>z.o),todo=ms.filter(z=>!z.x.inv),nmx=z=>z.x.k[0]==='p'?nm(z.o):E(z.o.nick||z.o.name),
+ cand=[...S.people.map(p=>['p|'+p.id,nm(p)]),...S.side.map(x=>['s|'+x.id,E(x.nick||x.name)+'（旁線）'])].filter(([k])=>!g.m.some(x=>x.k===k));
+ return `<div class="card"><div class="row"><b class="sp">${E(g.name)}</b><span class="sub">參加過 ${ms.length}・還可約 ${todo.length}</span><button class="x" data-gdel="${g.id}">${S.arm==='g'+g.id?'再按刪除':'×'}</button></div>
+ ${ms.map(z=>`<div class="row" style="margin-top:6px;gap:6px"><span class="pill" style="background:${BT[z.x.k[0]][1]};color:#fff;border-color:transparent;flex:none">${BT[z.x.k[0]][0]}</span><b class="sp" data-gp="${z.x.k}" style="cursor:pointer">${nmx(z)}</b><button class="chip ${z.x.inv?'on':''}" style="font-size:12px;padding:2px 10px;flex:none" data-gi="${g.id}|${z.x.k}">${z.x.inv?'已約下次':'還可約'}</button><button class="x" data-gm="${g.id}|${z.x.k}">×</button></div>`).join('')||'<div class="sub" style="margin-top:4px">還沒有人</div>'}
+ <div class="row" style="margin-top:8px;gap:6px"><select data-gadd="${g.id}" style="height:30px;padding:3px 8px;font-size:13px;width:auto;flex:1"><option value="">＋ 加入參加過的人</option>${cand.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')}</select>${ms.some(z=>z.x.inv)?`<button class="chip" style="font-size:12px;flex:none" data-greset="${g.id}">下次重新約</button>`:''}</div></div>`}).join('')}
+function catMgr(){return `<h2>產品清單（可自己編輯）</h2>`+S.cat.map((g,gi)=>`<div class="card"><div class="row"><input data-cn="${gi}" value="${E(g.n)}" style="font-weight:700"><button class="x" data-cdel="${gi}">${S.arm==='c'+gi?'再按刪除':'×'}</button></div><textarea rows="${Math.min(8,Math.max(2,g.items.length+1))}" data-ci="${gi}" placeholder="每行一個產品名稱" style="margin-top:6px">${E(g.items.join('\n'))}</textarea></div>`).join('')+`<div class="row"><input id="cnew" placeholder="新增系列或品牌名稱"><button class="go q" data-a="addcat">新增</button></div>`}
+function back_v(){return back_v0()+catMgr()}
+const bdn=(t,o)=>t==='p'?nm(o):E(o.nick||o.name);
+const objKids=(par)=>S.obj.filter(o=>(o.par||0)===par);
+const objDesc=(id,acc)=>{acc=acc||[];objKids(id).forEach(k=>{acc.push(k.id);objDesc(k.id,acc)});return acc};
+const objTitle=o=>o.title||String(o.q||'').slice(0,16)||'（未命名）';
+function objNode(o,depth){const open=!!(S.oex&&S.oex[o.id]),kc=objKids(o.id).length,w=o.src&&getOwn(o.src),bad=[o.id,...objDesc(o.id)];
+ const par=S.obj.filter(z=>!bad.includes(z.id));
+ return `<div style="margin-left:${depth?14:0}px;margin-top:6px"><div class="card" data-dz="${o.id}" style="padding:8px 10px;margin:0"><div class="row" style="gap:8px"><span data-dh="${o.id}" style="touch-action:none;cursor:grab;color:var(--sub);font-size:18px;line-height:1;user-select:none;-webkit-user-select:none;padding:2px 4px">⠿</span><b class="sp" data-oex="${o.id}" style="cursor:pointer;font-size:14px">${E(objTitle(o))}${kc?` <span class="sub" style="font-weight:400">（${kc}）</span>`:''}</b><span class="sub" data-oex="${o.id}" style="cursor:pointer">${open?'▾':'▸'}</span></div>
+ ${open?`<div style="margin-top:8px"><label class="fl"><span>小標題</span><input data-ob="${o.id}|title" value="${E(o.title||'')}" placeholder="${E(String(o.q||'').slice(0,16))}"></label><div class="sub" style="margin:6px 0 2px">異議／問題</div><input data-ob="${o.id}|q" value="${E(o.q)}"><div class="sub" style="margin:6px 0 2px">回答</div><textarea rows="3" data-ob="${o.id}|a" placeholder="我的回答方式">${E(o.a)}</textarea><div class="grid" style="margin-top:6px"><input data-ob="${o.id}|tag" value="${E(o.tag)}" placeholder="標籤"><select data-ob="${o.id}|par"><option value="0">最上層</option>${par.map(z=>`<option value="${z.id}" ${(o.par||0)===z.id?'selected':''}>放在：${E(objTitle(z))}</option>`).join('')}</select></div>${w?`<div class="sub" style="margin-top:4px">來源：<b data-gp="${o.src}" style="color:var(--acc);cursor:pointer">${bdn(o.src[0],w)}</b></div>`:''}<div style="text-align:right"><button class="x" data-odel="${o.id}">${S.arm==='o'+o.id?'再按刪除':'刪除'}</button></div></div>`:''}</div>${open?objKids(o.id).map(k=>objNode(k,depth+1)).join(''):''}</div>`}
+function dropObj(id,zone){const o=S.obj.find(z=>z.id===id);if(!o)return false;const t=zone==='root'?0:+zone;if(t===id||objDesc(id).includes(t))return false;o.par=t;if(t){S.oex=S.oex||{};S.oex[t]=true}return true}
+function ans_v(){const seg=`<div class="chips" style="margin-bottom:8px">${[['log','全部紀錄'],['obj','回答異議庫']].map(([k,n])=>`<button class="chip ${S.av===k?'on':''}" data-av="${k}">${n}</button>`).join('')}</div>`,q=(S.aq||'').trim().toLowerCase(),srch=`<input id="aq" placeholder="搜尋姓名、內容、標籤" value="${E(S.aq||'')}">`;
+ if(S.av==='obj'){const l=S.obj.filter(o=>!q||[o.title,o.q,o.a,o.tag].join(' ').toLowerCase().includes(q));
+  return `<h1>回答異議庫</h1>${seg}${srch}
+  <details class="card" style="margin-top:8px"><summary style="cursor:pointer;font-weight:700">＋ 新增異議</summary><input id="ott" placeholder="小標題（選填，例：嫌貴）" style="margin-top:8px"><input id="oq" placeholder="遇到的異議／問題" style="margin-top:6px"><textarea id="oa" rows="2" placeholder="我的回答方式" style="margin-top:6px"></textarea><div class="row" style="margin-top:6px"><input id="ot" placeholder="標籤（例：價格、沒時間）"><button class="go q" data-oadd="1" style="flex:none;width:auto">新增</button></div></details>
+  <div data-dz="root" style="margin-top:8px;border:1.5px dashed var(--line);border-radius:10px;padding:4px;text-align:center" class="sub">最上層（拖到這裡）</div>
+  <div class="sub" style="margin:8px 2px 0">${l.length} / ${S.obj.length} 則</div>
+  ${q?l.map(o=>objNode(o,0)).join(''):objKids(0).map(o=>objNode(o,0)).join('')||''}${S.obj.length?'':'<div class="card sub" style="margin-top:8px">還沒有資料</div>'}`}
+ const it=[];[...S.people.map(p=>['p',p]),...S.side.map(x=>['s',x])].forEach(([t,o])=>(o.log||[]).forEach((x,i)=>it.push({t,o,x,i,own:t+'|'+o.id})));
+ it.sort((a,b)=>(b.x.date+(b.x.time||'')).localeCompare(a.x.date+(a.x.time||'')));
+ const l=it.filter(z=>!q||[bdn(z.t,z.o),z.x.text,z.x.todo].join(' ').toLowerCase().includes(q));
+ return `<h1>全部對答案</h1>${seg}${srch}<div class="sub" style="margin:8px 2px">共 ${l.length} 筆（新人與旁線，最新在上）</div>`+(l.map(z=>`<div class="card"><div class="row"><span class="pill" style="flex:none">${z.x.date.slice(5).replace('-','/')}${z.x.time?' '+z.x.time:''}</span><b class="sp" data-gp="${z.own}" style="color:var(--acc);cursor:pointer">${bdn(z.t,z.o)}${z.t==='s'?'（旁線）':''}</b><button class="chip" style="font-size:11px;padding:2px 8px;flex:none" data-lobj="${z.own}|${z.i}">整理成異議</button></div><div style="margin-top:4px;font-size:14px">${E(z.x.text)}</div>${z.x.todo?`<div class="row" style="margin-top:4px;gap:6px"><input type="checkbox" style="width:18px;height:18px;flex:none" ${z.x.done?'checked':''} data-lk="${z.own}|${z.i}"><span class="sp ${z.x.done?'done':''}" style="color:var(--acc)">${E(z.x.todo)}</span></div>`:''}</div>`).join('')||'<div class="card sub">還沒有對答案紀錄。在新人或旁線的「對答案」寫下第一筆。</div>')}
+
+const zsec=(t,s)=>s?`<div style="margin-top:8px"><b style="font-size:13px">${t}</b>${s.split('|').map(x=>`<div style="font-size:13px;margin-top:2px">• ${E(x)}</div>`).join('')}</div>`:'';
+const zodOf=(t,o)=>{const z=zodiacOf(o.bd);if(z)return z;if(t==='p'){const m=ZD.find(x=>String(o.zodiac||'').includes(x.n.slice(0,2)));return m?m.n:''}return ''};
+function zodView(){const all=bdAll(),g={};ZD.forEach(z=>g[z.n]=[]);const un=[];all.forEach(([t,o])=>{const z=zodOf(t,o);z&&g[z]?g[z].push([t,o]):un.push([t,o])});
+ const chip=([t,o])=>`<button class="chip" data-gp="${t}|${o.id}" style="border-color:${BT[t][1]};font-size:12px;padding:3px 9px">${t==='p'?nm(o):E(o.nick||o.name)}</button>`;
+ const grp=m=>['l','p','s'].map(k=>{const a=m.filter(x=>x[0]===k);return a.length?`<div class="row" style="gap:6px;margin-top:6px;align-items:flex-start"><span style="flex:none;width:44px;font-size:12px;font-weight:700;color:${BT[k][1]};padding-top:4px">${BT[k][0]}</span><div class="chips">${a.map(chip).join('')}</div></div>`:''}).join('');
+ S.zx=S.zx||{};
+ return ``+
+ ZD.map(z=>{const m=g[z.n],c=ZE[z.el].c,open=!!S.zx[z.n];return `<div class="card" style="border-left:6px solid ${c}"><div class="row"><b class="sp">${z.n} <span class="sub" style="font-weight:400;font-size:12px">${z.rg}</span></b><span class="pill" style="background:${c};color:#2b2b2b;border-color:transparent">${z.el}象</span><span class="sub">${m.length} 人</span></div><div class="sub" style="font-size:12px;margin-top:2px">${z.kw}</div>${grp(m)||'<div class="sub" style="font-size:12px;margin-top:6px">（目前沒有）</div>'}<button class="chip" style="margin-top:8px;font-size:12px" data-zx="${z.n}">${open?'收起特質':'星座特質'}</button>${open?`<div style="margin-top:6px"><div class="sub" style="font-size:12px">${ZE[z.el].t}</div><div style="margin-top:6px"><b>核心定位</b>：${z.core}</div>${zsec('心理動力',z.psy)}${zsec('人際需求',z.need)}${zsec('可能的防衛反應',z.def)}${zsec('相處建議',z.tip)}${zsec('工作與團隊',z.work)}${zsec('愛情與關係',z.love)}<div style="margin-top:8px;padding:8px;border-radius:10px;background:var(--bg);font-size:13px"><b>觀察關鍵</b>：${z.key}</div></div>`:''}</div>`}).join('')+
+ `<div class="card"><div class="row"><b class="sp">還不知道星座</b><span class="sub">${un.length} 人</span></div>${grp(un)||'<div class="sub" style="font-size:12px;margin-top:6px">（都知道了）</div>'}</div>`}
+const TABS=[['today','◔','首頁',today_v],['list','☰','新人',list_v],['org','◎','架構',org_v],['ld','★','領導人',ld_v],['ans','✎','答案',ans_v],['ev','▦','課表',ev_v],['bk','⚙','設定',back_v]];
+function render(){S.people.forEach(norm);syncLd();
+ $('nav').innerHTML=TABS.map(([k,i,n])=>`<button class="${S.tab===k&&!S.view?'on':''}" data-tab="${k}"><b>${i}</b>${n}</button>`).join('');
+ const p=S.view&&P(S.view);applySkin();$('app').innerHTML=p?detail(p):TABS.find(t=>t[0]===S.tab)[3]();save();hydrate();fab();tipsUI();setTimeout(lfixUpd,0);setTimeout(stkFix,0);setTimeout(stkFix,300);if(S.hl){const el=document.getElementById('hl_'+S.hl);if(el&&el.scrollIntoView)el.scrollIntoView({block:'center'})}
+}
+document.addEventListener('click',e=>{if(e.target.closest('a[href]'))return;
+ const t=e.target.closest('[data-skin],[data-bdclr],[data-mybdx],[data-pnew],[data-prwho],[data-prdel],[data-pwb],[data-pwx],[data-hev],[data-s6],[data-mrm],[data-sj],[data-cv],[data-wn],[data-wev],[data-pzt],[data-tab],[data-open],[data-flt],[data-a],[data-t],[data-ad],[data-pt],[data-pd],[data-pl],[data-nx],[data-ew],[data-evd],[data-lbx],[data-ls],[data-ldel],[data-lt],[data-lc],[data-lrm],[data-cm],[data-cday],[data-erm],[data-pn],[data-lv],[data-ap],[data-ld],[data-lgall],[data-sno],[data-lsub],[data-lk],[data-gp],[data-tdone],[data-st6],[data-sd6],[data-pk],[data-pc],[data-pi],[data-gi],[data-gm],[data-gdel],[data-greset],[data-cdel],[data-fc],[data-cat],[data-es],[data-sd],[data-sadd],[data-ldv],[data-mkld],[data-mva],[data-mvx],[data-zx],[data-lmv],[data-pfs],[data-bde],[data-oex],[data-pfo],[data-pfd],[data-pfz],[data-pfx],[data-av],[data-lobj],[data-oadd],[data-odel],[data-pr],[data-evlog],[data-pwv],[data-rnw],[data-fopen],[data-fclear],[data-ide],[data-tp],[data-lx],[data-nrm],[data-tlcopy],img[data-ph]');if(!t)return;
+ const d=t.dataset,p=S.view&&P(S.view),v=id=>($(id)||{}).value||'';
+ if(d.pzt!==undefined){PZO[d.pzt]=!t.parentNode.open;return}
+ if(d.bdclr){const[bt,bi]=d.bdclr.split('|'),bo=bt==='l'?S.leaders.find(x=>x.id===+bi):getOwn(bt+'|'+bi);if(bo){bo.bd='';bo.by='';if(bt==='p'){bo.zodiac='';bo.life=''}S.bdE=null;toast('生日已歸零')}save();render();return}
+ if(d.mybdx){S.myBd='';save();render();toast('我的生日已歸零');return}
+ if(d.skin){S.skin=d.skin;applySkin();save();render();return}
+ if(d.pnew){S.pnew=!S.pnew;render();return}
+ if(d.prwho){const id=+d.prwho;S.pm=S.pm===id?null:id;render();return}
+ if(d.prdel){const id=+d.prdel;if(S.arm!=='pr'+id){S.arm='pr'+id}else{S.promos=S.promos.filter(x=>x.id!==id);S.arm=null;if(S.pm===id)S.pm=null}save();render();return}
+ if(d.pwx){const[a,b]=d.pwx.split('|'),q=P(+a);if(q&&q.want)q.want.splice(+b,1);save();render();return}
+ if(d.pwb){const[a,b]=d.pwb.split('|'),q=P(+a);if(q&&q.want&&q.want[+b]){const n=q.want[+b].n;q.want.splice(+b,1);q.prods=q.prods||[];if(!q.prods.some(x=>x.n===n))q.prods.push({n,c:false});markShared(q)}save();render();return}
+ if(d.hev){const e=S.events.find(x=>x.id===+d.hev);if(e){S.tab='ev';S.view=null;S.pn=null;S.cv='m';S.cf=e.date;S.cm=e.date.slice(0,7);save();render();const c=$('ev_'+e.id);if(c)c.scrollIntoView();else window.scrollTo(0,0)}return}
+ if(d.sj){const el=$(d.sj),h=document.querySelector('.stk');if(el){const hb=h?h.getBoundingClientRect().bottom:0;window.scrollTo({top:Math.max(0,el.getBoundingClientRect().top+(window.scrollY||0)-hb-8),behavior:'smooth'})}return}
+ if(d.cv){S.cv=d.cv;S.pn=null;if(d.cv==='w')S.wk=mon0(S.cf||(S.cm===today().slice(0,7)?today():S.cm+'-01'));save();render();return}
+ if(d.wn!==undefined){S.wk=d.wn==='0'?mon0(today()):addDs(S.wk||mon0(today()),7*(+d.wn));save();render();return}
+ if(d.wev){const id=d.wev;if(id[0]==='d'){S.cf=id.slice(1)}else{const e=S.events.find(x=>x.id===+id);if(e)S.cf=e.date}S.cm=S.cf.slice(0,7);S.cv='m';save();render();window.scrollTo(0,0);return}
+ if(d.tab){S.tab=d.tab;S.view=null;S.arm=null;S.ap=false;S.hl=null;if(d.tab==='ld')S.ldv='tbl'}
+ else if(d.open){S.view=+d.open;S.ao=false;scrollTo(0,0)}
+ else if(d.flt)S.flt=d.flt;
+ else if(d.t){const n=!get(p,d.t);set(p,d.t,n);if(d.t==='joined'&&!n)kids(p.id).forEach(k=>k.up=p.up)}
+ else if(d.pt){const pl=plan(),id=+d.pt,i=pl.ids.indexOf(id);if(i<0)addToPlan(id);else pl.ids.splice(i,1)}
+ else if(d.pd){S.pd=d.pd==='0'?today():shiftD(S.pd,+d.pd)}
+ else if(d.s6){const[sa,sb]=d.s6.split('|'),q=P(+sa);if(q){q.s6=q.s6||{};q.s6[+sb]=!s6done(q,+sb)}}
+ else if(d.mrm){const[ma,mk]=d.mrm.split('|'),q=P(+ma);if(q){q.mentorL=q.mentorL||{};delete q.mentorL[mk];q.mentor[mk]=''}}
+ else if(d.nrm){const[na,nb]=d.nrm.split('|'),q=P(+na);if(q){q.nannies=(q.nannies||[]).filter(x=>x!==+nb);if(!q.nannies.length){q.mentor.nanny='';if(q.mentorL)delete q.mentorL.nanny}}}
+ else if(d.tlcopy){const q=P(+d.tlcopy);if(!q)return;const tx=leadText(q),ta=$('tl');if(ta)ta.value=tx;try{navigator.clipboard&&navigator.clipboard.writeText(tx)}catch(x){}if(ta&&ta.select){ta.select();try{document.execCommand('copy')}catch(x){}}toast('已複製，可以貼給領導人');return}
+ else if(d.evlog){const[ea,eb]=d.evlog.split('|'),e=S.events.find(x=>x.id==ea),q=P(+eb),kk=ea+'_'+eb,tx=v('el_n'+kk).trim(),td=v('el_t'+kk).trim();if(!e||!q||(!tx&&!td))return;q.log=q.log||[];q.log.push({date:today(),time:'',text:'【'+e.title+'】'+tx,todo:td,done:false});q.log.sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));e.fu=e.fu||{};e.fu[eb]=1}
+ else if(d.pl){const q=P(+d.pl),tx=v('lg'+d.pl).trim();if(!tx)return;q.log.unshift({date:today(),text:tx})}
+ else if(d.nx){const[i,n]=d.nx.split('|');P(+i).next=shiftD(S.pd,+n)}
+ else if(d.a==='due'){S.people.filter(q=>dleft(q.next)<=0).forEach(q=>addToPlan(q.id))}
+ else if(d.a==='carry'){const pv=S.plans[shiftD(S.pd,-1)];if(pv)pv.ids.forEach(i=>{const q=P(i);if(q&&!q.log.some(l=>l.date===shiftD(S.pd,-1)))addToPlan(i)})}
+ else if(d.ph){LB={id:d.ph,own:d.own};LBarm=false;drawLb();return}
+ else if(d.lbx){if(d.lbx==='x'){LB=null;drawLb();return}if(!LBarm){LBarm=true;drawLb();return}const o=ownerOf(LB.own);if(o)o.photos=o.photos.filter(x=>x!==LB.id);delPh(LB.id);if(URLS[LB.id]){URL.revokeObjectURL(URLS[LB.id]);delete URLS[LB.id]}LB=null;drawLb()}
+ else if(d.ew){const[a,b]=d.ew.split('|').map(Number),e=S.events.find(x=>x.id===a),i=e.who.indexOf(b);i<0?e.who.push(b):e.who.splice(i,1)}
+ else if(d.evd){if(S.arm!=='e'+d.evd){S.arm='e'+d.evd}else{const e=S.events.find(x=>x.id==d.evd);(e.photos||[]).forEach(delPh);S.events=S.events.filter(x=>x!==e);S.arm=null}}
+ else if(d.a==='addev'&&v('evt').trim()){const st=v('evsh')+':'+v('evsm'),en=v('eveh')+':'+v('evem');if(en<=st){toast('結束時間要晚於開始時間');return}const dt=v('evd')||today(),wk=$('evw')&&$('evw').checked,cnt=wk?(+v('evwn')||12):1,rid=wk?'r'+Date.now():'';let nid=S.events.reduce((m,x)=>Math.max(m,x.id),0);for(let i=0;i<cnt;i++){const[yy,mm,dd]=dt.split('-').map(Number),ds=iso(new Date(yy,mm-1,dd+7*i));S.events.push(Object.assign({id:++nid,date:ds,start:st,end:en,kind:v('evk')||'活動',speaker:v('evs').trim(),crew:v('evc').trim(),loc:v('evl').trim(),title:v('evt').trim(),who:[],notes:{},photos:[]},rid?{rid}:{}))}if(cnt>1)toast('已新增每週活動，共 '+cnt+' 場');S.cm=dt.slice(0,7);S.cf=null}
+ else if(d.ls){const[i,l,st]=d.ls.split('|'),q=P(+i);q.lsd[l]=Object.assign(lget(q,l),{st,date:today()})}
+ else if(d.lt){const[i,l]=d.lt.split('|').map(Number),q=P(i),k=q.leaders.indexOf(l);if(k<0){q.leaders.push(l);q.lsd[l]={st:'待聯絡',note:'',date:today()}}else q.leaders.splice(k,1)}
+ else if(d.lc){const[i,l]=d.lc.split('|').map(Number),q=P(i);if(!q.leaders.includes(l)){q.leaders.push(l);q.lsd[l]={st:'待聯絡',note:'',date:today()}}else{const g=lget(q,l);q.lsd[l]=Object.assign(g,{st:LST[(LST.indexOf(g.st)+1)%LST.length],date:today()})}}
+ else if(d.lrm){const[i,l]=d.lrm.split('|').map(Number),q=P(i);q.leaders=q.leaders.filter(x=>x!==l)}
+ else if(d.ldel){if(S.arm!=='l'+d.ldel){S.arm='l'+d.ldel}else{S.people.forEach(q=>{q.leaders=(q.leaders||[]).filter(x=>x!==+d.ldel)});S.leaders=S.leaders.filter(x=>x.id!==+d.ldel);S.arm=null}}
+ else if(d.a==='addld'&&v('ldn').trim()){S.leaders.push({id:S.leaders.reduce((m,x)=>Math.max(m,x.id),0)+1,name:v('ldn').trim()});S.ap=false}
+ else if(d.cm){S.cf=null;if(d.cm==='0')S.cm=today().slice(0,7);else{const[y,m]=S.cm.split('-').map(Number),n=new Date(y,m-1+(+d.cm),1);S.cm=n.getFullYear()+'-'+pad2(n.getMonth()+1)}}
+ else if(d.cday){S.cf=S.cf===d.cday?null:d.cday}
+ else if(d.erm){const[a,b]=d.erm.split('|').map(Number),e=S.events.find(x=>x.id===a);e.who=e.who.filter(x=>x!==b);if(e.notes)delete e.notes[b]}
+ else if(d.a==='impq'){IMP={rows:mkRows(2026,10,QDATA.map(x=>({day:x[0],title:x[1],speaker:x[2],fix:!!x[3],crew:x[4]||''}))),note:'已帶入 2026 年 10 月課表'}}
+ else if(d.a==='impx'){IMP=null}
+ else if(d.a==='impgo'){const st=v('imsh')+':'+v('imsm'),en=v('imeh')+':'+v('imem');if(en<=st){toast('結束時間要晚於開始時間');return}let n=0,dup=0,last='';IMP.rows.filter(r=>r.inc&&r.date&&r.title).forEach(r=>{const ex=S.events.find(e=>e.date===r.date&&e.title===r.title);if(ex){if(r.crew&&!ex.crew)ex.crew=r.crew;dup++;return}S.events.push({id:S.events.reduce((m,x)=>Math.max(m,x.id),0)+1,date:r.date,start:st,end:en,kind:/管理班|課/.test(r.title)?'課程':'活動',speaker:r.speaker,crew:r.crew||'',loc:'',title:r.title,who:[],notes:{},photos:[]});n++;last=r.date});if(last){S.cm=last.slice(0,7);S.cf=null}IMP=null;S.pn='imp';toast('已匯入 '+n+' 筆'+(dup?'，已存在 '+dup+' 筆（有主持／分享資料的已補上）':'')+'。可以繼續選下一個月的照片')}
+ else if(d.st6){S.stp=S.stp===d.st6?null:d.st6}
+ else if(d.sd6){const a=d.sd6.split('|'),o=getOwn(a[0]+'|'+a[1]);if(o){o.sd=o.sd||{};o.sd[a[2]]=!o.sd[a[2]]}}
+ else if(d.pk){S.pk=S.pk===+d.pk?null:+d.pk;S.pkq=''}
+ else if(d.pc){const[i,k]=d.pc.split('|'),q=P(+i);if(q&&q.prods&&q.prods[+k])q.prods[+k].c=!q.prods[+k].c}
+ else if(d.pi){const[i,g,k]=d.pi.split('|').map(Number),q=P(i),n=S.cat[g]&&S.cat[g].items[k];if(q&&n){q.prods=q.prods||[];const ix=q.prods.findIndex(x=>x.n===n);if(ix<0)q.prods.push({n,c:false});else q.prods.splice(ix,1)}}
+ else if(d.a==='pkadd'){const q=S.view&&P(S.view),n=v('pkn').trim();if(!q||!n)return;q.prods=q.prods||[];if(!q.prods.some(x=>x.n===n))q.prods.push({n,c:false});markShared(q);if(!S.cat.some(g=>g.items.includes(n))){let g=S.cat.find(x=>x.n==='自訂品項');if(!g){g={n:'自訂品項',items:[]};S.cat.push(g)}g.items.push(n)}}
+ else if(d.a==='addcat'&&v('cnew').trim()){S.cat.push({n:v('cnew').trim(),items:[]})}
+ else if(d.cdel){if(S.arm!=='c'+d.cdel){S.arm='c'+d.cdel}else{S.cat.splice(+d.cdel,1);S.arm=null}}
+ else if(d.a==='addg'&&v('gname').trim()){S.groups.push({id:S.groups.reduce((m,x)=>Math.max(m,x.id),0)+1,name:v('gname').trim(),m:[]});S.ap=false}
+ else if(d.gi){const a=d.gi.split('|'),G=S.groups.find(x=>x.id===+a[0]),m=G&&G.m.find(x=>x.k===a[1]+'|'+a[2]);if(m)m.inv=!m.inv}
+ else if(d.gm){const a=d.gm.split('|'),G=S.groups.find(x=>x.id===+a[0]);if(G)G.m=G.m.filter(x=>x.k!==a[1]+'|'+a[2])}
+ else if(d.gdel){if(S.arm!=='g'+d.gdel){S.arm='g'+d.gdel}else{S.groups=S.groups.filter(x=>x.id!==+d.gdel);S.arm=null}}
+ else if(d.greset){const G=S.groups.find(x=>x.id===+d.greset);if(G)G.m.forEach(m=>m.inv=false)}
+ else if(d.a==='meedit'){S.mee=!S.mee}
+ else if(d.pfs){const o=getOwn(d.pfs);if(o)o.pf={next:shiftD(today(),14),hist:[]}}
+ else if(d.pfd||d.pfz){const k=d.pfd||d.pfz,o=getOwn(k);if(!o||!o.pf)return;const nt=($(pfId(k))||{}).value||'';o.pf.hist=o.pf.hist||[];o.pf.hist.unshift({date:today(),t:d.pfd?'done':'snooze',note:nt.trim()});o.pf.next=shiftD(today(),14);if(S.pfo)S.pfo[k]=false;toast(d.pfd?'已記錄完成，14 天後再跟進':'已暫停，14 天後再提醒')}
+ else if(d.pfx){if(S.arm!=='pf'+d.pfx){S.arm='pf'+d.pfx}else{const o=getOwn(d.pfx);if(o)delete o.pf;S.arm=null}}
+ else if(d.lmv){const[i,n]=d.lmv.split('|').map(Number),k=S.leaders.findIndex(x=>x.id===i),j=k+n;if(k>=0&&j>=0&&j<S.leaders.length){const t=S.leaders[k];S.leaders[k]=S.leaders[j];S.leaders[j]=t}}
+ else if(d.zx){S.zx=S.zx||{};S.zx[d.zx]=!S.zx[d.zx]}
+ else if(d.mva){const q=P(+d.mva);if(q){q.more=q.more||[];if(q.more.length<3)q.more.push({c:'',d:''})}}
+ else if(d.mvx){const[i,k]=d.mvx.split('|'),q=P(+i);if(q&&q.more)q.more.splice(+k,1)}
+ else if(d.mkld){const q=P(+d.mkld);if(!q)return;if(!isLd(q)){linkLeader(q);S.arm=null}else if(S.arm!=='ul'+q.id){S.arm='ul'+q.id}else{const l=S.leaders.find(x=>x.pid===q.id);S.people.forEach(z=>{z.leaders=(z.leaders||[]).filter(x=>x!==l.id)});S.leaders=S.leaders.filter(x=>x!==l);S.arm=null}}
+ else if(d.ldv){S.ldv=d.ldv;S.hl=null}
+ else if(d.bde){S.bdE=S.bdE===d.bde?null:d.bde}
+ else if(d.a==='bkcopy'){const t=$('bk');if(t&&t.select){t.select();try{document.execCommand('copy')}catch(x){}}S.lastBk=today();save();toast('已複製，貼到備忘錄或傳給自己保存');return}
+ else if(d.oex){S.oex=S.oex||{};S.oex[d.oex]=!S.oex[d.oex]}
+ else if(d.pfo){S.pfo=S.pfo||{};S.pfo[d.pfo]=!S.pfo[d.pfo]}
+ else if(d.av){S.av=d.av;S.aq=''}
+ else if(d.lobj){const a=d.lobj.split('|'),o=getOwn(a[0]+'|'+a[1]),x=o&&(o.log||[])[+a[2]];if(!x)return;S.obj.push({id:S.obj.reduce((m,z)=>Math.max(m,z.id),0)+1,title:String(x.text).slice(0,12),q:x.text,a:'',tag:'',par:0,src:a[0]+'|'+a[1],date:today()});S.av='obj';S.aq='';toast('已加入異議庫，請補上回答')}
+ else if(d.oadd){if(!v('oq').trim())return;S.obj.push({id:S.obj.reduce((m,z)=>Math.max(m,z.id),0)+1,title:v('ott').trim(),q:v('oq').trim(),a:v('oa').trim(),tag:v('ot').trim(),par:0,date:today()})}
+ else if(d.odel){if(S.arm!=='o'+d.odel){S.arm='o'+d.odel}else{const o=S.obj.find(z=>z.id===+d.odel);S.obj.forEach(z=>{if((z.par||0)===+d.odel)z.par=o.par||0});S.obj=S.obj.filter(z=>z.id!==+d.odel);S.arm=null}}
+ else if(d.pr){const[i,k]=d.pr.split('|'),q=P(+i);if(q&&q.prods)q.prods.splice(+k,1)}
+ else if(d.ap){S.ap=!S.ap;if(S.ap)S.tp=false}
+ else if(d.ide){S.ide=S.ide===+d.ide?null:+d.ide}
+ else if(d.fopen){S.fo=!S.fo}
+ else if(d.fclear){S.fb=S.fs=S.fl=S.fc='all'}
+ else if(d.pwv){S.pwv=S.pwv===+d.pwv?null:+d.pwv}
+ else if(d.rnw){const q=P(+d.rnw);if(q&&rdOk(q))q.rd=addMo(q.rd,12)}
+ else if(d.tp){S.tp=!S.tp;if(S.tp)S.ap=false}
+ else if(d.lx){S.lxo=S.lxo||{};S.lxo[d.lx]=!S.lxo[d.lx]}
+ else if(d.a==='actopen'){S.ao=!S.ao}
+ else if(d.sno){S.sno=S.sno||{};S.sno[d.sno]=!S.sno[d.sno]}
+ else if(d.pn){S.pn=S.pn===d.pn?null:d.pn;if(d.pn==='imp'&&!S.pn)IMP=null}
+ else if(d.lv){S.lv=d.lv;S.ap=false}
+ else if(d.fc){S.fc=S.fc===d.fc?'all':d.fc}
+ else if(d.cat){const[i,k]=d.cat.split('|'),q=P(+i);q.cat=q.cat===k?'':k}
+ else if(d.es){const[a,b,st]=d.es.split('|'),e=S.events.find(x=>x.id==a);e.st=e.st||{};e.st[b]=st}
+ else if(d.sd){if(S.arm!=='s'+d.sd){S.arm='s'+d.sd}else{S.side=S.side.filter(x=>x.id!==+d.sd);S.arm=null}}
+ else if(d.sadd){const nmv=v('sn'+d.sadd).trim();if(!nmv)return;const lid=+d.sadd||+v('sl0')||0;S.side.push({id:S.side.reduce((m,x)=>Math.max(m,x.id),0)+1,leader:lid,name:nmv,ig:v('si'+d.sadd).trim(),job:'',note:v('sz'+d.sadd).trim()});S.ap=false}
+ else if(d.ad)p.acts.splice(+d.ad,1);
+ else if(d.a==='back'){S.view=null;S.arm=null}
+ else if(d.a==='add'&&v('addn').trim()){S.ap=false;const n=newP(v('addn').trim(),S.people.reduce((m,x)=>Math.max(m,x.id),0)+1);S.people.push(n);S.view=n.id}
+ else if(d.lsub){const o=getOwn(d.lsub),ip='lg'+d.lsub.replace('|','_'),tx=v(ip+'n').trim(),td=v(ip+'t').trim();if(!o||(!tx&&!td))return;o.log=o.log||[];o.log.push({date:v(ip+'d')||today(),time:v(ip+'h')+':'+v(ip+'m'),text:tx,todo:td,done:false});o.log.sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')))}
+ else if(d.lk){const a=d.lk.split('|'),o=getOwn(a[0]+'|'+a[1]);if(o&&o.log&&o.log[+a[2]])o.log[+a[2]].done=!o.log[+a[2]].done}
+ else if(d.ld){const a=d.ld.split('|'),o=getOwn(a[0]+'|'+a[1]);if(o&&o.log)o.log.splice(+a[2],1)}
+ else if(d.lgall){S.lgall=S.lgall===d.lgall?null:d.lgall}
+ else if(d.gp){const[t,i]=d.gp.split('|');if(t==='p'){S.view=+i;S.ao=false;scrollTo(0,0)}else if(t==='l'){S.view=null;S.tab='ld';S.ldv='card';S.hl='l'+i}else{S.view=null;S.tab='list';S.lv='side';S.hl='s'+i}}
+ else if(d.tdone){S.tdone=!S.tdone}
+ else if(d.a==='act'&&v('at').trim()){p.acts.push({date:v('ad'),text:v('at').trim(),note:v('an').trim()});p.acts.sort((a,b)=>b.date.localeCompare(a.date));S.ao=false}
+ else if(d.a==='del'){if(S.arm!==p.id){S.arm=p.id}else{(p.photos||[]).forEach(delPh);kids(p.id).forEach(k=>k.up=p.up);S.people=S.people.filter(x=>x.id!==p.id);S.view=null;S.arm=null}}
+ else if(d.a==='impd'){let ok=0,bad=0;v('imp').split('\n').forEach(l=>{if(!l.trim())return;const m=l.match(/^([^|：:]+)[|：:]\s*(.+)$/),k=m?m[1].replace(/[+＋\s]/g,''):'';if(m&&k.length===4&&/^[金木水火土]{4}$/.test(k)){S.ndesc[[...k].join('+')]=m[2].trim();ok++}else bad++});toast('匯入 '+ok+' 筆'+(bad?'，'+bad+' 行格式不符，已略過':''))}
+ else if(d.a==='rf'){toast('已重新整理')}
+ else if(d.a==='promadd'){const t=v('prot').trim(),g=v('proc');if(!t){toast('先輸入特惠內容');return}S.promos=S.promos||[];S.pnew=false;S.promos.unshift({id:S.promos.reduce((m,x)=>Math.max(m,x.id),0)+1,t,g})}
+ else if(d.a==='pwadd'){const q=S.view&&P(S.view),n=v('pwn').trim();if(!q||!n)return;q.want=q.want||[];if(!q.want.some(x=>x.n===n))q.want.push({n});if(!S.cat.some(g=>g.items.includes(n))){let g=S.cat.find(x=>x.n==='自訂品項');if(!g){g={n:'自訂品項',items:[]};S.cat.push(g)}g.items.push(n)}}
+ else if(d.a==='imp'){try{const a=JSON.parse(v('bk'));if(Array.isArray(a))S.people=a;else if(a&&Array.isArray(a.people)){S.people=a.people;S.events=a.events||[];S.traits=a.traits||{};S.ndesc=a.ndesc||{};S.leaders=a.leaders||[];S.side=a.side||[];S.groups=a.groups||groupSeed();S.cat=a.cat||catSeed();S.myBd=a.myBd||S.myBd;S.promos=a.promos||S.promos||[];S.obj=a.obj||[];S.me=a.me||S.me;S.meI=a.meI||S.meI;if(a.six){S.six=a.six;MG=S.six.mg;NDO=S.six.ndo}}else throw 0;render();$('bm')&&($('bm').textContent='已還原');return}catch(x){$('bm').textContent='格式不正確，沒有更動資料';return}}
+ else return;
+ render();
+});
+document.addEventListener('input',e=>{if(e.target.dataset&&e.target.dataset.pkq!==undefined){S.pkq=e.target.value;const pos=e.target.selectionStart;render();const q=$('pkq');if(q){q.focus();q.setSelectionRange(pos,pos)}}});
+document.addEventListener('change',e=>{
+ const el=e.target,p=S.view&&P(S.view);
+if(el.dataset.tr){S.traits[el.dataset.tr]=el.value.trim();save();return}
+if(el.dataset.pz){const[a1,b1,f1]=el.dataset.pz.split('|'),o=pzOwn(a1+'|'+b1);if(o&&OPT[f1]){o[f1]=el.value;save();render()}return}
+if(el.dataset.wx!==undefined&&(el.dataset.wk||p)){const p=el.dataset.wk?pzOwn(el.dataset.wk):S.view&&P(S.view);if(!p)return;const a=(p.wuxing||'').split('+').slice(0,4);while(a.length<4)a.push('');a[+el.dataset.wx]=el.value;p.wuxing=a.some(Boolean)?a.join('+'):'';save();render();return}
+if(el.dataset.asg!==undefined){const q=P(+el.dataset.asg),l=+el.value;if(l&&!q.leaders.includes(l)){q.leaders.push(l);q.lsd[l]={st:'待聯絡',note:'',date:today()}}save();render();return}
+ if(el.dataset.ln!==undefined){const[i,l]=el.dataset.ln.split('|'),q=P(+i);q.lsd[l]=Object.assign(lget(q,l),{note:el.value,date:today()});save();render();return}
+ if(el.dataset.nd){const k=el.dataset.nd,t=el.value.trim();if(t)S.ndesc[k]=t;else delete S.ndesc[k];save();render();return}
+ if(el.dataset.no!==undefined&&p){let n=el.value.replace(/\D/g,'').slice(0,3);n=n?String(+n):'';const o=n&&S.people.find(x=>x.id!==p.id&&x.no===n);p.no=n;save();render();if(o)toast('編號 '+n+' 也被「'+o.name+'」使用，請確認');else if(!n&&el.value.trim())toast('編號請填 1 到 999');return}
+ if(el.dataset.nadd!==undefined){const q=P(+el.dataset.nadd),lv=+el.value;if(q&&lv){q.nannies=q.nannies||[];if(!q.nannies.includes(lv))q.nannies.push(lv)}save();render();return}
+ if(el.dataset.mnt!==undefined){const[ma,mk]=el.dataset.mnt.split('|'),q=P(+ma),lv=+el.value;if(q){q.mentorL=q.mentorL||{};if(lv){const l=S.leaders.find(x=>x.id===lv);q.mentorL[mk]=lv;q.mentor[mk]=l?l.name:''}else{delete q.mentorL[mk];q.mentor[mk]=''}}save();render();return}
+ if(el.dataset.eaddp!==undefined){const e=S.events.find(x=>x.id===+el.value),id=+el.dataset.eaddp;if(e&&!e.who.includes(id)){e.who.push(id);e.st=e.st||{};e.st[id]='待確定'}save();render();return}
+ if(el.dataset.six!==undefined){const kx=el.dataset.six;if(kx==='mg'||kx==='ndo'){const l=[...new Set(el.value.split('\n').map(x=>x.trim()).filter(Boolean))];S.six[kx]=l;if(kx==='mg')MG=l;else NDO=l}else{const i=+kx.split('|')[1];S.six.t[i]=el.value.trim()||S.six.t[i]}save();render();return}
+ if(el.dataset.an!==undefined){const a=el.dataset.an.split('|');if(a[0]==='e'){const e=S.events.find(x=>x.id===+a[1]);if(e){e.notes=e.notes||{};e.notes[a[2]]=el.value}}else if(p&&p.acts[+a[1]])p.acts[+a[1]].note=el.value;save();return}
+ if(el.dataset.eadd!==undefined){const e=S.events.find(x=>x.id===+el.dataset.eadd),id=+el.value;if(e&&id&&!e.who.includes(id)){e.who.push(id);e.st=e.st||{};e.st[id]='待確定'}save();render();return}
+ if(el.dataset.ef!==undefined){const[i,k]=el.dataset.ef.split('|'),e=S.events.find(x=>x.id===+i);if(e&&!(k==='date'&&!el.value)){e[k]=el.value;if(k==='date')S.cm=el.value.slice(0,7)}save();render();return}
+ if(el.dataset.imf!==undefined){const fl=el.files&&el.files[0];el.value='';if(fl)readPhoto(fl);return}
+ if(el.dataset.ipc!==undefined&&IMP&&IMP.rows){IMP.rows[+el.dataset.ipc].inc=el.checked;return}
+ if(el.dataset.ip!==undefined&&IMP&&IMP.rows){const[i,k]=el.dataset.ip.split('|');IMP.rows[+i][k]=el.value;return}
+ if(el.dataset.fb!==undefined){S.fb=el.value;render();return}
+ if(el.dataset.fs!==undefined){S.fs=el.value;render();return}
+ if(el.dataset.fl!==undefined){S.fl=el.value;render();return}
+ if(el.dataset.ei!==undefined){const[a,b]=el.dataset.ei.split('|').map(Number),e=S.events.find(x=>x.id===a);e.inv=e.inv||{};e.inv[b]=+el.value;save();return}
+ if(el.dataset.sf!==undefined){const[i,k]=el.dataset.sf.split('|'),x=S.side.find(z=>z.id===+i);x[k]=k==='leader'?+el.value:el.value;save();if(k==='leader'||k==='ig')render();return}
+ if(el.dataset.snv!==undefined){const[i,k]=el.dataset.snv.split('|'),q=P(+i);q.sn=q.sn||{};q.sn[k]=el.value.trim();S.sno=S.sno||{};S.sno[el.dataset.snv]=false;save();render();return}
+ if(el.dataset.ldp!==undefined){const q=P(+el.value);if(q)linkLeader(q);S.ap=false;save();render();return}
+ if(el.dataset.mv!==undefined){const[i,k,f]=el.dataset.mv.split('|'),q=P(+i),x=q&&q.more&&q.more[+k];if(x){x[f]=el.value;if(f==='c')x.d=''}save();if(f==='c')render();return}
+ if(el.dataset.catsel!==undefined){const q=P(+el.dataset.catsel);if(q)q.cat=el.value;save();render();return}
+ if(el.dataset.fcs!==undefined){S.fc=el.value;render();return}
+ if(el.dataset.pkgw!==undefined){S.pkgw=+el.value;render();return}
+if(el.dataset.pws!==undefined){const q=P(+el.dataset.pws),g=S.cat[S.pkgw],n=g&&g.items[+el.value];if(q&&n){q.want=q.want||[];if(!q.want.some(x=>x.n===n))q.want.push({n})}save();render();return}
+if(el.dataset.pkg!==undefined){S.pkg=+el.value;render();return}
+ if(el.dataset.pks!==undefined){const q=P(+el.dataset.pks),g=S.cat[S.pkg],n=g&&g.items[+el.value];if(q&&n){q.prods=q.prods||[];if(!q.prods.some(x=>x.n===n))q.prods.push({n,c:false});markShared(q)}save();render();return}
+ if(el.dataset.ob!==undefined){const[i,k]=el.dataset.ob.split('|'),o=S.obj.find(z=>z.id===+i);if(o){o[k]=k==='par'?+el.value:el.value}save();if(k==='par'||k==='title')render();return}
+ if(el.dataset.mei!==undefined){const k=el.dataset.mei;if(k==='name'){if(el.value.trim())S.me=el.value.trim()}else S.meI[k]=el.value.trim();save();render();return}
+ if(el.dataset.age!==undefined){const q=P(+el.dataset.age);if(q){if(el.value!==''){q.ageD=Number(el.value);q.age=String(myAge()+Number(el.value))}else{delete q.ageD;q.age=''}}save();render();return}
+ if(el.dataset.agein!==undefined){const q=P(+el.dataset.agein),n=parseInt(el.value);if(q){if(n>0){q.age=String(n);if(S.myBd)q.ageD=n-myAge()}else{q.age='';delete q.ageD}}save();render();return}
+ if(el.dataset.sn6!==undefined){const a=el.dataset.sn6.split('|'),o=getOwn(a[0]+'|'+a[1]);if(o){o.sn=o.sn||{};o.sn[a[2]]=el.value.trim()}save();render();return}
+ if(el.dataset.cn!==undefined){const g=S.cat[+el.dataset.cn];if(g&&el.value.trim())g.n=el.value.trim();save();return}
+ if(el.dataset.ci!==undefined){const g=S.cat[+el.dataset.ci];if(g)g.items=[...new Set(el.value.split('\n').map(x=>x.trim()).filter(Boolean))];save();return}
+ if(el.dataset.gadd!==undefined){const G=S.groups.find(x=>x.id===+el.dataset.gadd);if(G&&el.value&&!G.m.some(x=>x.k===el.value))G.m.push({k:el.value,inv:false});save();render();return}
+ if(el.dataset.mybd!==undefined){S.myBd=el.value||'';save();render();return}
+ if(el.dataset.bdd!==undefined){const[bt,bi]=el.dataset.bdd.split('|'),bo=bt==='l'?S.leaders.find(x=>x.id===+bi):getOwn(bt+'|'+bi),dm=/^(\d{4})-(\d{2})-(\d{2})$/.exec(el.value);if(bo&&dm){bo.by=dm[1];bo.bd=dm[2]+'-'+dm[3];if(bt==='p')bo.zodiac=zodiacOf(bo.bd);S.bdE=null}save();render();return}
+ if(el.dataset.by!==undefined){const[bt,bi]=el.dataset.by.split('|'),bo=bt==='l'?S.leaders.find(x=>x.id===+bi):getOwn(bt+'|'+bi);let y=el.value.replace(/\D/g,'').slice(0,4);if(y&&(+y<1900||+y>new Date().getFullYear()))y='';if(bo)bo.by=y;save();render();return}
+ if(el.dataset.bd!==undefined){const[t,i,k]=el.dataset.bd.split('|'),o=t==='p'?P(+i):t==='l'?S.leaders.find(x=>x.id===+i):S.side.find(x=>x.id===+i);if(o){const a=(o.bd||'-').split('-');a[+k]=el.value;const m=a[0]?pad2(+a[0]):'',d=a[1]?pad2(+a[1]):'';o.bd=(m||d)?m+'-'+d:'';if(t==='p'&&/^\d+-\d+$/.test(o.bd))o.zodiac=zodiacOf(o.bd)}save();render();return}
+ if(el.dataset.watch!==undefined){S.watch=el.value.trim();save();render();return}
+ if(el.dataset.et){const[i,k,u]=el.dataset.et.split('|'),e=S.events.find(x=>x.id===+i),[h,m]=(e[k]||'19:00').split(':');e[k]=u==='h'?el.value+':'+m:h+':'+el.value;if((e.end||'')<=(e.start||''))toast('結束時間要晚於開始時間，請確認');save();return}
+ if(el.dataset.up){const o=ownerOf(el.dataset.up),fs=[...el.files];el.value='';if(o&&fs.length)upload(fs,o);return}
+ if(el.dataset.pa){const[i,k]=el.dataset.pa.split('|'),q=P(+i),a=(plan().acts[i]||[]).find(x=>x.k===k);if(a){if(a.path){set(q,a.path,el.checked);if(a.path==='joined'&&!el.checked)kids(q.id).forEach(c=>c.up=q.up)}else plan().done[i+'|'+k]=el.checked}render();return}
+ if(el.dataset.p&&p){set(p,el.dataset.p,el.dataset.num?+el.value:el.value);if(el.dataset.p==='jd'&&p.jd&&!p.rd)p.rd=addMo(p.jd,12);save();{const hs=$('hdrsum');if(hs)hs.innerHTML=hdrSum(p)}if(el.dataset.p==='live'){p.live2='';save()}if(['name','next','live','ig','jd','rd','life','mbti'].includes(el.dataset.p))render()}
+});
+document.addEventListener('input',e=>{if(e.target.id==='aq'){S.aq=e.target.value;const pos=e.target.selectionStart;render();const q=$('aq');q.focus();q.setSelectionRange(pos,pos);return}if(e.target.dataset.no!==undefined)e.target.value=e.target.value.replace(/\D/g,'').slice(0,3);if(e.target.id==='q'){S.q=e.target.value;const pos=e.target.selectionStart;render();const q=$('q');q.focus();q.setSelectionRange(pos,pos)}});
+let LDR=null;
+function moveLeader(id,to){const k=S.leaders.findIndex(x=>x.id===id),j=S.leaders.findIndex(x=>x.id===to);if(k<0||j<0||k===j)return false;const[x]=S.leaders.splice(k,1);S.leaders.splice(j,0,x);return true}
+document.addEventListener('pointerdown',e=>{const h=e.target.closest&&e.target.closest('[data-lh]');if(!h)return;LDR={id:+h.dataset.lh,z:null};e.preventDefault&&e.preventDefault()});
+const lzAt=(x,y)=>{const el=document.elementFromPoint&&document.elementFromPoint(x,y),z=el&&el.closest&&el.closest('[data-lz]');return z?z.dataset.lz:null};
+document.addEventListener('pointermove',e=>{if(!LDR)return;const z=lzAt(e.clientX,e.clientY);if(z!==LDR.z){document.querySelectorAll('[data-lz]').forEach(n=>n.style.outline='');LDR.z=z;const n=z&&document.querySelector('[data-lz="'+z+'"]');if(n&&z!==String(LDR.id))n.style.outline='2px solid var(--acc)'}});
+document.addEventListener('pointerup',e=>{if(!LDR)return;const z=LDR.z||lzAt(e.clientX,e.clientY),id=LDR.id;LDR=null;document.querySelectorAll('[data-lz]').forEach(n=>n.style.outline='');if(z!==null&&moveLeader(id,+z)){save();render()}});
+document.addEventListener('pointercancel',()=>{LDR=null});
+let ODR=null;
+document.addEventListener('pointerdown',e=>{const h=e.target.closest&&e.target.closest('[data-dh]');if(!h)return;ODR={id:+h.dataset.dh,z:null};e.preventDefault&&e.preventDefault()});
+const odzAt=(x,y)=>{const el=document.elementFromPoint&&document.elementFromPoint(x,y),z=el&&el.closest&&el.closest('[data-dz]');return z?z.dataset.dz:null};
+document.addEventListener('pointermove',e=>{if(!ODR)return;const z=odzAt(e.clientX,e.clientY);if(z!==ODR.z){document.querySelectorAll('[data-dz]').forEach(n=>n.style.outline='');ODR.z=z;const n=z&&document.querySelector('[data-dz="'+z+'"]');if(n&&z!==String(ODR.id))n.style.outline='2px solid var(--acc)'}});
+const odend=e=>{if(!ODR)return;const z=ODR.z||odzAt(e.clientX,e.clientY),id=ODR.id;ODR=null;document.querySelectorAll('[data-dz]').forEach(n=>n.style.outline='');if(z!==null&&dropObj(id,z)){save();render()}else if(z!==null)toast('不能放到自己或自己的下層')};
+document.addEventListener('pointerup',odend);document.addEventListener('pointercancel',()=>{ODR=null});
+const CTR=['pm','pnew','pkgw','tab','view','q','flt','cf','lv','fb','fs','fl','fc','pn','aq','pkg','pd','cm','av'];
+CL.msg=()=>CL.st;
+function cloudQ(){if(!CL.col)return;clearTimeout(CL.tm);CL.st='☁︎ 等待同步…';CL.tm=setTimeout(cloudPush,1500)}
+async function cloudPush(){
+ if(CL.busy){CL.again=1;return}
+ CL.busy=1;
+ try{
+  if(!localStorage.getItem('roster-t'))localStorage.setItem('roster-t',String(Date.now()));
+  const t=+localStorage.getItem('roster-t');
+  for(const k of Object.keys(S)){if(CTR.includes(k))continue;const j=JSON.stringify(S[k]);if(j===undefined||j===CL.last[k])continue;if(j.length>240000){CL.st='⚠︎「'+k+'」資料太大，無法同步';continue}await CL.col.doc('s_'+k).set({j});CL.last[k]=j}
+  await CL.col.doc('s__meta').set({t});
+  CL.st='☁︎ 已同步到雲端 '+new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+ }catch(e){CL.st='⚠︎ 雲端同步失敗，資料仍存在這支手機（'+((e&&e.code)||'錯誤')+'）'}
+ CL.busy=0;if(CL.again){CL.again=0;cloudQ()}
+}
+(async()=>{
+ try{
+  const db=await claude.use('db'),us=await claude.use('user');
+  const uid=us&&await us.id();
+  if(!db||!uid){CL.st='⚠︎ 沒有連到雲端（需在登入 Claude 的狀態開啟），資料只存在這支手機';return}
+  CL.col=db.collection('data/users/'+uid);
+  const snap=await CL.col.get(),docs={};
+  snap.docs.forEach(d=>{docs[d.id]=d.data()});
+  const ct=docs.s__meta?(+docs.s__meta.t||0):0,lt=CL.LT0,hasLocal=CL.HAS0;
+  if(ct>lt){
+   let rl='';try{rl=sessionStorage.getItem('rl')}catch(e){}
+   if(rl!==String(ct)){
+    let o={};try{o=JSON.parse(localStorage.getItem('roster-v2')||'{}');localStorage.setItem('roster-prev',localStorage.getItem('roster-v2')||'')}catch(e){}
+    Object.keys(docs).forEach(id=>{if(id.startsWith('s_')&&id!=='s__meta'){try{o[id.slice(2)]=JSON.parse(docs[id].j)}catch(e){}}});
+    localStorage.setItem('roster-v2',JSON.stringify(o));localStorage.setItem('roster-t',String(ct));
+    try{sessionStorage.setItem('rl',String(ct))}catch(e){}
+    location.reload();return}
+  }
+  Object.keys(docs).forEach(id=>{if(id.startsWith('s_')&&id!=='s__meta')CL.last[id.slice(2)]=docs[id].j});
+  if((ct===0&&hasLocal)||lt>ct){cloudPush()}else CL.st='☁︎ 已同步到雲端';
+ }catch(e){CL.st='⚠︎ 雲端連線失敗，資料只存在這支手機'}
+})();
+render();
+</script>
+</body>
+</html>
+
