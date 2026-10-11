@@ -5,8 +5,19 @@
 ## 檔案
 
 - `index.html` — 整個網站（HTML / CSS / JS 都在這一個檔案）
+- `auth.js` — Firebase 帳號密碼登入與雲端同步
+- `firebase-config.js` — 填入你的 Firebase 專案設定
+- `firestore.rules` — Firestore 安全規則（每人只能讀寫自己的資料）
 - `manifest.webmanifest`、`icon.svg` — 讓手機可以「加入主畫面」當成 App 使用
 - `.github/workflows/pages.yml` — 推送後自動部署到 GitHub Pages
+
+## 設定 Firebase（第一次）
+
+1. 到 https://console.firebase.google.com 建立專案。
+2. **Authentication → 登入方式**：啟用「電子郵件/密碼」。
+3. **Firestore Database**：建立資料庫（正式版模式），到「規則」分頁貼上 `firestore.rules` 的內容後發布。
+4. **專案設定 → 一般 → 你的應用程式**：新增「網頁」應用程式，把 `firebaseConfig` 的值填進 `firebase-config.js`。
+5. **Authentication → 設定 → 授權網域**：加入網站網域（例如 `<帳號>.github.io`）。
 
 ## 本機預覽
 
@@ -23,7 +34,8 @@ python3 -m http.server 8000
 
 ## 注意
 
-- 資料存在瀏覽器本機（localStorage / IndexedDB），換手機或清除瀏覽器資料就不會帶過去。
-  建議定期到「設定」按「複製全部備份」，貼到備忘錄保存。
-- 原本在 Claude 裡才有的「雲端同步」和「用照片讀取課表」功能，在一般網站上無法使用，
-  網站會自動改成只存在本機，其他功能都正常。
+- 每個人用自己的 Email 和密碼登入，資料存在 Firestore 的 `data/users/{uid}` 底下，彼此看不到。
+- 資料會先存在手機本機，再自動同步到雲端；換手機登入同一個帳號就會帶回來。
+- 登出時會清除這支手機上的本機資料；同一支手機換帳號登入也會先清掉上一個帳號的資料。
+- 照片只存在這支手機（IndexedDB），不會同步到雲端。
+- 「用照片讀取課表」在這個網站上不能用，請改用「快速匯入」。

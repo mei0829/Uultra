@@ -94,11 +94,15 @@ textarea{max-width:100%}
 .an{background:var(--bg);border-radius:12px;padding:10px 12px;margin-top:8px}.an-t{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:700;font-size:14px}.an-r{font-weight:400;color:var(--sub);font-size:12px;text-align:right}.an-s{cursor:pointer;color:var(--acc);font-weight:700;font-size:13px;margin-top:8px}.an-b{font-size:13px;line-height:1.65;margin-top:4px}.an .fl{margin-top:6px}
 .wk{display:grid;grid-template-columns:26px repeat(7,1fr);font-size:11px}.wk .hd{text-align:center;padding:2px 0 4px;border-bottom:1px solid var(--line);cursor:pointer;color:var(--sub);line-height:1.3}.wk .hd b{color:var(--ink);font-size:13px}.wk .hd.tdh b{background:var(--acc);color:#fff;border-radius:50%;display:inline-block;width:20px;line-height:20px}.wk .hr{color:var(--sub);font-size:9px;text-align:right;padding-right:3px;box-sizing:border-box;border-top:1px solid var(--line);margin-top:-1px;line-height:1}.wk .col{position:relative;border-left:1px solid var(--line);background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 39px,var(--line) 39px,var(--line) 40px)}.wk .col.tdc{background-color:rgba(127,150,120,.12)}.wk .ev{position:absolute;box-sizing:border-box;border-radius:5px;padding:1px 2px;font-size:10px;line-height:1.2;overflow:hidden;color:#fff;cursor:pointer;border:1px solid var(--card)}
 .rail{position:fixed;left:max(3px,calc(50% - 258px));top:50%;transform:translateY(-50%);z-index:5;display:flex;flex-direction:column;gap:4px}.rail button{width:34px;padding:7px 0;font:inherit;font-size:12px;line-height:1.1;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--acc);font-weight:700;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08)}.rail button:active{background:var(--acc);color:#fff}
+#authwrap{max-width:420px;margin:0 auto;padding:40px 16px}#authwrap a{color:var(--acc)}
+.afl{display:block;margin-bottom:10px}.afl span{display:block;font-size:13px;color:var(--sub);margin-bottom:4px}
 </style>
 </head>
 <body>
+<div id="auth"></div>
 <div id="app"></div><nav id="nav"></nav><div id="lb"></div><div id="toast"></div><div id="fab"></div><div id="tipx"></div><div id="lfix"></div>
-<script>
+<script type="module" src="auth.js"></script>
+<script type="text/plain" id="app-src">
 let NDO=['直銷通路','336','直安超','四個換','五福臨門','層次圖','六個圈圈','月結獎金','加碼獎金','九種十八項','安麗小學','新人啟動六步驟','成功三要','海外旅遊','六不講'];
 let MG=['健管班','形管班','創業班'];const TAGS=['線上運動','線上唱歌','團隊出遊','運動聚會','桌遊聚會'];
 const iso=d=>{const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())},addD=n=>{const d=new Date();d.setDate(d.getDate()+n);return iso(d)},today=()=>iso(new Date());
@@ -281,7 +285,7 @@ function applySkin(){try{document.documentElement.setAttribute('data-tskin',S.sk
 const skinCard=()=>`<h2>外觀主題</h2><div class="card"><div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">${SKINS.map(k=>`<button class="chip ${(S.skin||'forest')===k[0]?'on':''}" data-skin="${k[0]}" style="display:flex;align-items:center;gap:8px;justify-content:flex-start;padding:8px 12px"><span style="width:18px;height:18px;border-radius:50%;background:${k[2]};flex:none;border:2px solid ${k[3]}"></span>${k[1]}</button>`).join('')}</div></div>`
 const meCard=()=>`<h2>我的資料</h2><div class="card"><div class="sub" style="margin-bottom:6px">我的資料統一在這裡改，其他頁面會自動套用。</div><div class="grid"><label class="fl"><span>名字</span><input data-mei="name" value="${E(S.me)}"></label><label class="fl"><span>生日（用來算新朋友年齡）</span><input type="date" data-mybd="1" value="${E(S.myBd||'')}"><button class="x" style="font-size:12px;color:var(--sub);text-align:left;padding:2px 0" data-mybdx="1">重設／歸零</button></label><label class="fl"><span>目前職級</span><input data-mei="lv" value="${E(S.meI.lv)}" placeholder="例：銀牌"></label><label class="fl"><span>課表標粉色的名字</span><input data-watch="1" value="${E(S.watch)}" placeholder="主持或分享時的名字"></label><label class="fl w"><span>備註／目標</span><input data-mei="note" value="${E(S.meI.note)}"></label></div></div>`;
 function back_v0(){return `<h1>設定與備份</h1>${skinCard()}${meCard()}<h2>啟動新人六步驟內容</h2><div class="card"><div class="sub" style="margin-bottom:6px">改完會套用到所有新人與旁線（已勾選的紀錄不會消失）。</div>${S.six.t.map((t,i)=>`<label class="fl"><span>步驟 ${i+1} 名稱</span><input data-six="t|${i}" value="${E(t)}"></label>`).join('')}<label class="fl" style="margin-top:6px"><span>${E(S.six.t[3])}（一行一項）</span><textarea rows="3" data-six="mg">${E(S.six.mg.join('\n'))}</textarea></label><label class="fl" style="margin-top:6px"><span>${E(S.six.t[4])}（一行一項）</span><textarea rows="7" data-six="ndo">${E(S.six.ndo.join('\n'))}</textarea></label></div><h2>備份</h2><div class="note">資料會同步到雲端；這份備份是額外保險（照片不在下方文字內，請另外留在相簿）。名單含他人個資，請定期複製下面的文字貼到自己的備忘錄或密碼保護的筆記。</div>
- <div class="sub" style="margin-bottom:6px">${CL.msg()}（資料另存雲端，更新頁面不會消失；照片仍只存在這支手機）</div><div class="row" style="margin-bottom:6px;gap:6px"><button class="go" data-a="bkcopy">複製全部備份</button><span class="sub" style="flex:none">${S.lastBk?'上次備份 '+S.lastBk.slice(5).replace('-','/'):'還沒備份過'}</span></div><textarea id="bk" rows="9">${E(JSON.stringify({v:2,people:S.people,events:S.events,traits:S.traits,ndesc:S.ndesc,leaders:S.leaders,side:S.side,groups:S.groups,cat:S.cat,promos:S.promos,myBd:S.myBd,obj:S.obj,me:S.me,meI:S.meI,six:S.six}))}</textarea>
+ ${window.FBU?`<div class="row" style="margin-bottom:6px;gap:6px"><span class="sp sub">帳號：${E(FBU.email)}</span><button class="go q" data-a="logout">登出</button></div>`:''}<div class="sub" style="margin-bottom:6px">${CL.msg()}（資料另存雲端，更新頁面不會消失；照片仍只存在這支手機）</div><div class="row" style="margin-bottom:6px;gap:6px"><button class="go" data-a="bkcopy">複製全部備份</button><span class="sub" style="flex:none">${S.lastBk?'上次備份 '+S.lastBk.slice(5).replace('-','/'):'還沒備份過'}</span></div><textarea id="bk" rows="9">${E(JSON.stringify({v:2,people:S.people,events:S.events,traits:S.traits,ndesc:S.ndesc,leaders:S.leaders,side:S.side,groups:S.groups,cat:S.cat,promos:S.promos,myBd:S.myBd,obj:S.obj,me:S.me,meI:S.meI,six:S.six}))}</textarea>
  <div class="row" style="margin-top:8px"><button class="go" data-a="copy">複製</button><button class="go g" data-a="imp">用上方文字還原</button></div><div class="sub" id="bm" style="margin-top:6px"></div>`}
 
 const dbp=new Promise((res,rej)=>{try{const r=indexedDB.open('roster-photos',1);r.onupgradeneeded=()=>r.result.createObjectStore('p');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}});
@@ -320,7 +324,7 @@ async function readPhoto(file){
   const[cy,cm]=S.cm.split('-').map(Number);if(!y)y=cy;if(m<1||m>12)m=cm;
   const rows=mkRows(y,m,out.events||[]);if(!rows.length)throw {code:'empty'};
   IMP={rows,note:'已讀取 '+rows.length+' 筆（'+y+' 年 '+m+' 月）'};
- }catch(e){const c=(e&&e.code)||'';IMP={err:c==='not_granted'?'你沒有允許 Claude 協助，所以無法讀取照片。':c==='none'||c==='noimg'?'這個環境無法讓網頁讀取照片。請把照片傳到 Claude 對話，請 Claude 幫你整理；或用下方「快速匯入」。':c==='empty'?'沒有讀到活動，請換一張更清楚的照片再試。':c==='cancelled'?'已取消。':'讀取失敗，請稍後再試。'}}
+ }catch(e){const c=(e&&e.code)||'';IMP={err:c==='not_granted'?'你沒有允許 Claude 協助，所以無法讀取照片。':c==='none'||c==='noimg'?'這個網站目前無法讀取照片，請用下方「快速匯入」。':c==='empty'?'沒有讀到活動，請換一張更清楚的照片再試。':c==='cancelled'?'已取消。':'讀取失敗，請稍後再試。'}}
  render()}
 function impBox(){
  const tm=`<div class="grid" style="margin-top:8px"><div class="fl"><span>開始</span><div class="row" style="gap:4px">${tsel2('19:30','imsh','imsm')}</div></div><div class="fl"><span>結束</span><div class="row" style="gap:4px">${tsel2('21:00','imeh','imem')}</div></div></div><div class="sub" style="margin:4px 0">每場都套用這個時間，匯入後仍可單獨修改</div>`;
@@ -785,6 +789,7 @@ document.addEventListener('click',e=>{if(e.target.closest('a[href]'))return;
  else if(d.mkld){const q=P(+d.mkld);if(!q)return;if(!isLd(q)){linkLeader(q);S.arm=null}else if(S.arm!=='ul'+q.id){S.arm='ul'+q.id}else{const l=S.leaders.find(x=>x.pid===q.id);S.people.forEach(z=>{z.leaders=(z.leaders||[]).filter(x=>x!==l.id)});S.leaders=S.leaders.filter(x=>x!==l);S.arm=null}}
  else if(d.ldv){S.ldv=d.ldv;S.hl=null}
  else if(d.bde){S.bdE=S.bdE===d.bde?null:d.bde}
+ else if(d.a==='logout'){window.fbLogout&&fbLogout();return}
  else if(d.a==='bkcopy'){const t=$('bk');if(t&&t.select){t.select();try{document.execCommand('copy')}catch(x){}}S.lastBk=today();save();toast('已複製，貼到備忘錄或傳給自己保存');return}
  else if(d.oex){S.oex=S.oex||{};S.oex[d.oex]=!S.oex[d.oex]}
  else if(d.pfo){S.pfo=S.pfo||{};S.pfo[d.pfo]=!S.pfo[d.pfo]}
@@ -914,7 +919,7 @@ async function cloudPush(){
  try{
   const db=await claude.use('db'),us=await claude.use('user');
   const uid=us&&await us.id();
-  if(!db||!uid){CL.st='⚠︎ 沒有連到雲端（需在登入 Claude 的狀態開啟），資料只存在這支手機';return}
+  if(!db||!uid){CL.st='⚠︎ 沒有連到雲端（請重新登入），資料只存在這支手機';return}
   CL.col=db.collection('data/users/'+uid);
   const snap=await CL.col.get(),docs={};
   snap.docs.forEach(d=>{docs[d.id]=d.data()});
