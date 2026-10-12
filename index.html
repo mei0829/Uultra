@@ -838,6 +838,9 @@ document.addEventListener('click',e=>{if(e.target.closest('a[href]'))return;
  render();
 });
 document.addEventListener('input',e=>{if(e.target.dataset&&e.target.dataset.pkq!==undefined){S.pkq=e.target.value;const pos=e.target.selectionStart;render();const q=$('pkq');if(q){q.focus();q.setSelectionRange(pos,pos)}}});
+// iPhone 的日期選擇器打開時就會觸發 change；若立刻重畫畫面，選擇器會被關掉（閃退）。
+// 所以日期欄位還在選的時候先不處理，等選完（離開欄位）再送出一次 change。
+document.addEventListener('change',e=>{const el=e.target;if(el.type!=='date'||el._dfr||document.activeElement!==el)return;e.stopImmediatePropagation();if(el._dw)return;el._dw=1;el.addEventListener('blur',()=>{el._dw=0;el._dfr=1;el.dispatchEvent(new Event('change',{bubbles:true}));el._dfr=0},{once:true})},true);
 document.addEventListener('change',e=>{
  const el=e.target,p=S.view&&P(S.view);
 if(el.dataset.tr){S.traits[el.dataset.tr]=el.value.trim();save();return}
