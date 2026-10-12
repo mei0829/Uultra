@@ -1,7 +1,7 @@
 // Firebase 帳號登入，並提供 index.html 原本使用的 claude.use('db'/'user') 介面
 import { firebaseConfig, adminEmail } from './firebase-config.js';
 
-const V = '10.14.1', CDN = `https://www.gstatic.com/firebasejs/${V}/`;
+const V = '12.18.0', CDN = `https://www.gstatic.com/firebasejs/${V}/`;
 const box = document.getElementById('auth');
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const LOCAL_KEYS = ['roster-v2', 'roster-t', 'roster-prev'];
@@ -31,7 +31,48 @@ function clearLocal() {
   try { indexedDB.deleteDatabase('roster-photos'); } catch (e) {}
 }
 
-let started = false;
+let started = false, FBAPP = null;
+
+// 用 Gemini（Firebase AI Logic）讀課表照片；index.html 透過 claude.use('sample') 呼叫
+const AI_MODELS = ['gemini-3.6-flash', 'gemini-3-flash', 'gemini-2.5-flash'];
+async function shrink(file) {
+  try {
+    const bm = await createImageBitmap(file), k = Math.min(1, 2000 / Math.max(bm.width, bm.height));
+    const c = document.createElement('canvas'); c.width = Math.round(bm.width * k); c.height = Math.round(bm.height * k);
+    c.getContext('2d').drawImage(bm, 0, 0, c.width, c.height);
+    return { mimeType: 'image/jpeg', data: c.toDataURL('image/jpeg', 0.85).split(',')[1] };
+  } catch (e) {
+    const b = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); });
+    return { mimeType: file.type || 'image/jpeg', data: String(b).split(',')[1] };
+  }
+}
+const sampler = {
+  limits: async () => ({ images: true }),
+  json: async (prompt, opts) => {
+    let aim;
+    try { aim = await import(CDN + 'firebase-ai.js'); } catch (e) { throw { code: 'none' }; }
+    const ai = aim.getAI(FBAPP, { backend: new aim.GoogleAIBackend() });
+    const img = await shrink(opts.images);
+    let last;
+    for (const name of AI_MODELS) {
+      try {
+        const m = aim.getGenerativeModel(ai, { model: name, generationConfig: { responseMimeType: 'application/json' } });
+        const r = await m.generateContent([prompt, { inlineData: img }]);
+        const t = r.response.text().trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/, '');
+        try { return JSON.parse(t); } catch (x) { throw { code: 'empty' }; }
+      } catch (e) {
+        last = e;
+        if (e && e.code === 'empty') throw e;
+        if (!/not.?found|404|not supported/i.test(String(e && e.message))) break;
+      }
+    }
+    const msg = String(last && last.message);
+    console.error('AI', last);
+    if (/quota|429|RESOURCE_EXHAUSTED|rate/i.test(msg)) throw { code: 'quota' };
+    if (/not been used|disabled|PERMISSION_DENIED|403|api-not-enabled|not enabled/i.test(msg)) throw { code: 'none' };
+    throw { code: 'fail' };
+  }
+};
 function startApp(fs, fsm, user) {
   if (started) return;
   started = true;
@@ -49,7 +90,7 @@ function startApp(fs, fsm, user) {
       return { docs: s.docs.map(d => ({ id: d.id, data: () => d.data() })) };
     }
   });
-  window.claude = { use: async n => n === 'db' ? { collection: col } : n === 'user' ? { id: async () => user.uid } : null };
+  window.claude = { use: async n => n === 'db' ? { collection: col } : n === 'user' ? { id: async () => user.uid } : n === 'sample' ? sampler : null };
   const { getDocs: gd, deleteDoc } = fsm;
   const admin = (user.email || '').toLowerCase() === ADMIN;
   window.FBU = { email: user.email, admin };
@@ -171,7 +212,7 @@ async function gate(auth, am, fs, fsm, user) {
       import(CDN + 'firebase-app.js'), import(CDN + 'firebase-auth.js'), import(CDN + 'firebase-firestore.js')
     ]);
   } catch (e) { return fatal('無法載入登入元件，請確認網路連線後重新整理。'); }
-  const app = appm.initializeApp(firebaseConfig);
+  const app = FBAPP = appm.initializeApp(firebaseConfig);
   const auth = am.getAuth(app), fs = fsm.getFirestore(app);
   try { await am.setPersistence(auth, am.browserLocalPersistence); } catch (e) {}
 
