@@ -382,7 +382,7 @@ const hbars=(rows,tot)=>{const mx=Math.max(...rows.map(r=>r[1]),1);return rows.m
 function vCard(){
  const c=A(U.cardId)||S.accts.find(isCard);if(!c)return'<h1>信用卡</h1><div class="card sub">還沒有信用卡，到「設定」新增。</div>';
  const I=cardInfo(c),t0=today(),cards=S.accts.filter(isCard);
- const lab=s=>s.close==='init'?['期初未繳','billed']:s.amt>0&&s.left<=0.5?['✓ 已繳清'+(s.paid?' '+md(s.paid):''),'paid']:s.close<t0?['● 已出帳・'+(s.due<t0?'已過繳款日 ':'')+md(s.due)+' 前繳','billed']:['○ 未出帳（還在累積）','open'];
+ const lab=s=>s.amt>0&&s.left<=0.5?['✓ 已繳清'+(s.paid?' '+md(s.paid):''),'paid']:s.close==='init'||s.close<t0?['● 已出帳・'+(s.due<t0?'已過繳款日 ':'')+md(s.due)+' 前繳','billed']:['○ 未出帳（還在累積）','open'];
  let h=`<button class="back" data-a="tab" data-i="home">‹ 總覽</button><h1>${E(c.name)}</h1>
  ${cards.length>1?`<div class="fs">${cards.map(x=>`<button class="chip ${x.id===c.id?'on':''}" data-a="card" data-i="${x.id}">${E(x.name)}</button>`).join('')}</div>`:''}
  <div class="card"><b>一筆刷卡會經過 4 個階段</b><div class="sub" style="margin-top:6px;line-height:1.9">
@@ -393,7 +393,7 @@ function vCard(){
  <div class="sub" style="margin-top:6px">記帳時用「刷卡那天」記；匯入銀行明細時，會自動跟你記的那筆配對、補上入帳日，不會重複。</div></div>`;
  const list=I.st.slice().reverse().filter(s=>s.amt>0||s.tx.length);
  if(!list.length)return h+'<div class="card sub">這張卡還沒有紀錄。</div>';
- h+=list.map(s=>{const L=lab(s),o=U.cyc===s.close,pend=s.tx.filter(t=>!t.pd).length;return`<div class="card"><div class="row" data-a="cyc" data-i="${s.close}" style="cursor:pointer"><div class="sp"><b>${s.close==='init'?'期初':md(s.close)+' 結帳'}</b>　<span class="st ${L[1]}">${L[0]}</span><div class="sub">${s.tx.length} 筆${pend&&L[1]!=='paid'?`・${pend} 筆未入帳`:''}${s.left>0.5&&s.left<s.amt-0.5?`・已繳 ${M(s.amt-s.left)}`:''}</div></div><div style="text-align:right"><b class="num">${M(s.amt)}</b>${s.left>0.5&&L[1]!=='open'?`<div class="sub num">還要繳 ${M(s.left)}</div>`:''}</div><span class="sub">${o?'▴':'▾'}</span></div>
+ h+=list.map(s=>{const L=lab(s),o=U.cyc===s.close,pend=s.tx.filter(t=>!t.pd).length;return`<div class="card"><div class="row" data-a="cyc" data-i="${s.close}" style="cursor:pointer"><div class="sp"><b>${s.close==='init'?'期初（開始記帳前的卡費）':md(s.close)+' 結帳'}</b>　<span class="st ${L[1]}">${L[0]}</span><div class="sub">${s.close==='init'?'在「設定」填的已出帳未繳金額':s.tx.length+' 筆'}${pend&&L[1]!=='paid'?`・${pend} 筆未入帳`:''}${s.left>0.5&&s.left<s.amt-0.5?`・已繳 ${M(s.amt-s.left)}`:''}</div></div><div style="text-align:right"><b class="num">${M(s.amt)}</b>${s.left>0.5&&L[1]!=='open'?`<div class="sub num">還要繳 ${M(s.left)}</div>`:''}</div><span class="sub">${o?'▴':'▾'}</span></div>
  ${o?`<div style="margin-top:6px">${s.tx.slice().sort((a,b)=>a.d<b.d?1:-1).map(t=>txLine(t)+(t.pd||L[1]==='paid'?'':`<div style="text-align:right;margin:-4px 0 6px"><button class="go q" data-a="posted" data-i="${t.id}">銀行已入帳</button></div>`)).join('')||'<div class="sub">沒有明細（期初金額）</div>'}</div>`:''}
  ${s.left>0.5&&L[1]==='billed'?`<button class="go q" style="margin-top:8px" data-a="paycard" data-i="${c.id}">記錄繳卡費</button>`:''}</div>`}).join('');
  return h;
