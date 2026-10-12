@@ -108,7 +108,7 @@ svg.ch{width:100%;height:auto;display:block;overflow:visible}svg.ch text{font-si
 </head>
 <body>
 <div id="auth" data-title="我的記帳"></div>
-<div id="app"></div><nav id="nav"></nav><div id="sheet"></div><div id="toast"></div><div id="tip"></div>
+<div id="app"></div><nav id="nav"></nav><div id="sheet"></div><div id="toast"></div><div id="tip"></div><input type="file" id="snapf" accept="image/*" style="display:none">
 <script type="module" src="auth.js"></script>
 <script type="text/plain" id="app-src">
 const iso=d=>{const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())},today=()=>iso(new Date());
@@ -194,8 +194,7 @@ function forecast(H){
 function vHome(){
  const F=forecast(U.h),keep=+S.keep||0,short=Math.max(0,keep-F.min),reserve=Math.max(0,F.liq-F.min)+keep;
  let h=`<h1>我的記帳</h1>${guideCard()}${budgetAlert()}
- <div class="card"><div class="sub">手上可用的錢（現金＋銀行）</div><div class="big">${M(F.liq)}</div>
- <div class="chips" style="margin-top:8px">${S.accts.map(a=>`<span class="pill">${E(a.name)} ${isCard(a)?'未繳 '+M(cardInfo(a).owe):M(bal(a))}</span>`).join('')}</div></div>
+ ${assetCard(F.liq)}
  <h2>未來要準備多少錢</h2>
  <div class="chips" style="margin-bottom:8px">${[30,60,90].map(n=>`<button class="chip ${U.h===n?'on':''}" data-a="h" data-i="${n}">${n} 天</button>`).join('')}</div>
  <div class="card ${short>0?'warn':''}">
@@ -436,11 +435,12 @@ function vStock(){
  const val=on.reduce((s,h)=>s+h.val,0),cost=on.reduce((s,h)=>s+h.cost,0),un=on.reduce((s,h)=>s+h.unreal,0),re=hs.reduce((s,h)=>s+h.real,0),dv=hs.reduce((s,h)=>s+h.div,0);
  let h=`<h1>股票</h1><div class="card"><div class="sub">目前市值</div><div class="big">${M(val)}</div><div class="sub">投入成本 ${M(cost)}</div>
  <div class="tiles"><div><span class="sub">還沒賣的賺賠</span><b>${gain(un)}</b></div><div><span class="sub">已經賣掉賺賠</span><b>${gain(re)}</b></div><div><span class="sub">領到的股利</span><b class="num">${M(dv)}</b></div></div>
- <div class="msg">全部加起來：${gain(un+re+dv)}</div><div class="sub" style="margin-top:4px">紅色＝賺、綠色＝賠（台股習慣）。股價要自己更新：點持股的「現價」就能改。</div></div>
- <button class="go" style="width:100%;margin-bottom:10px" data-a="addtrade">＋ 記一筆交易（買、賣、股利）</button>`;
+ <div class="msg">全部加起來：${gain(un+re+dv)}</div><div class="sub" style="margin-top:4px">紅色＝賺、綠色＝賠（台股習慣）。股價要自己更新：每天第一次打開會自動抓上市櫃收盤價，抓不到的點「現價」手動改。</div></div>
+ <button class="go" style="width:100%;margin-bottom:8px" data-a="addtrade">＋ 記一筆交易（買、賣、股利）</button>
+ <div class="row" style="gap:8px;margin-bottom:10px"><button class="go g sp" data-a="snaphold">截圖匯入持股</button>${on.length?'<button class="go g sp" data-a="pxnow">更新股價</button>':''}</div>`;
  if(on.length){
   h+=`<h2>持股</h2><div class="card">${on.sort((a,b)=>b.val-a.val).map(x=>`<div class="li" style="cursor:default;flex-wrap:wrap"><div class="sp"><b>${E(x.sym)}</b> ${E(x.name)}<div class="sub">${x.sh.toLocaleString('zh-TW')} 股${x.sh>=1000?'（'+ +(x.sh/1000).toFixed(3)+' 張）':''}・均價 ${(x.cost/x.sh).toFixed(2)}</div></div>
-  <div style="text-align:right"><button class="go q" data-a="px" data-i="${E(x.sym)}">現價 ${x.px!=null?x.px:'未填'}</button><div style="margin-top:2px">${x.px!=null?gain(x.unreal,x.unreal/x.cost):'<span class="sub">填現價才能算</span>'}</div>${x.pd?`<div class="sub">${md(x.pd)} 更新</div>`:''}</div></div>`).join('')}</div>`;
+  <div style="text-align:right"><button class="go q" data-a="px" data-i="${E(x.sym)}">現價 ${x.px!=null?x.px:'未填'}</button><div style="margin-top:2px">${x.px!=null?gain(x.unreal,x.unreal/x.cost):'<span class="sub">填現價才能算</span>'}</div>${x.pd?`<div class="sub">${md(x.pd)} ${S.prices[x.sym]&&S.prices[x.sym].auto?'收盤':'更新'}</div>`:''}</div></div>`).join('')}</div>`;
   if(on.length>1&&val)h+=`<h2>資金分配</h2><div class="card">${hbars(on.map(x=>[x.sym+' '+x.name,x.val]),val)}</div>`;
  }else h+=`<div class="card sub">還沒有持股。按上面的按鈕記第一筆「買進」。</div>`;
  if(off.length)h+=`<h2>已經全部賣掉</h2><div class="card">${off.map(x=>`<div class="row" style="padding:4px 0"><span class="sp">${E(x.sym)} ${E(x.name)}</span>${gain(x.real+x.div)}</div>`).join('')}</div>`;
@@ -518,7 +518,7 @@ function sheetAcct(o){
  ${c?`<label class="fl"><span>每月幾號結帳</span><input inputmode="numeric" value="${E(o.close)}" data-m="sheet.o.close"></label>
  <label class="fl"><span>每月幾號前要繳</span><input inputmode="numeric" value="${E(o.due)}" data-m="sheet.o.due"></label>
  <label class="fl w"><span>已出帳還沒繳的金額（之後會匯入這期明細的話填 0，避免重複）</span><input inputmode="decimal" value="${E(o.init)}" data-m="sheet.o.init"></label>`
- :`<label class="fl w"><span>現在實際有多少錢${o.id?'（改這裡就是對帳）':''}</span><input inputmode="decimal" value="${E(o.now)}" data-m="sheet.o.now"></label>`}</div>
+ :`<label class="fl w"><span>現在實際有多少錢${o.id?'（改這裡就是對帳）':''}</span><div class="row" style="gap:6px"><input inputmode="decimal" value="${E(o.now)}" data-m="sheet.o.now"><button class="go q" data-a="snapacct">截圖辨識</button></div></label>`}</div>
  ${c?'<div class="sub" style="margin-top:6px">結帳日、繳款日印在信用卡帳單上。之後的刷卡會自動算進對應的那一期帳單。</div>':''}
  <div class="row" style="margin-top:14px;gap:8px">${o.id?'<button class="go r" data-a="delacct">刪除</button>':''}<span class="sp"></span><button class="go" data-a="saveacct">儲存</button></div>`;
 }
@@ -537,7 +537,7 @@ function renderNow(){
  $('tip').style.display='none';
  $('app').innerHTML=(sub?'<button class="back" data-a="tab" data-i="more">‹ 更多</button>':'')+V[U.tab]();
  $('nav').innerHTML=TABS.map(([k,i,n])=>`<button class="${U.tab===k||(k==='more'&&sub)?'on':''}" data-a="tab" data-i="${k}"><b>${i}</b>${n}</button>`).join('');
- const sh=U.sheet,SH={tx:sheetTx,bill:sheetBill,acct:sheetAcct,trade:sheetTrade};$('sheet').innerHTML=sh?`<div class="sheet" data-a="bg"><div>${SH[sh.k](sh.o)}</div></div>`:'';
+ const sh=U.sheet,SH={tx:sheetTx,bill:sheetBill,acct:sheetAcct,trade:sheetTrade,recon:sheetRecon,hold:sheetHold};$('sheet').innerHTML=sh?`<div class="sheet" data-a="bg"><div>${SH[sh.k](sh.o)}</div></div>`:'';
  window.scrollTo(0,y);
  if(am){const f=document.querySelector(`[data-m="${am}"]`);if(f&&f.tagName!=='SELECT'){f.focus();try{f.setSelectionRange(cp,cp)}catch(e){}}}
 }
@@ -642,8 +642,77 @@ async function impAI(){
   I.items=xs.map(x=>({d:pDate(x.date),v:+x.amount,desc:x.desc})).filter(x=>x.d&&x.v).map(x=>mkItem(x.d,x.desc,x.v,'ai'));
   I.busy=0;if(!I.items.length){toast('AI 沒有找到交易紀錄');return render()}
   I.step='pre';render();
- }catch(e){I.busy=0;render();const c=e&&e.code;toast(c==='quota'?'AI 免費額度用完了，請稍後再試':c==='none'?'AI 還沒啟用：請到 Firebase 主控台開啟 AI Logic':c==='empty'?'AI 看不懂這份內容':'AI 辨識失敗，請再試一次')}
+ }catch(e){I.busy=0;render();toast(aiErr(e))}
 }
+
+const aiErr=e=>{const c=e&&e.code;return c==='quota'?'AI 免費額度用完了，請稍後再試':c==='none'?'AI 還沒啟用：請到 Firebase 主控台開啟 AI Logic':c==='empty'?'AI 看不懂這張圖':'AI 辨識失敗，請再試一次'};
+async function askAI(prompt,file){const sm=window.claude&&await claude.use('sample');if(!sm)throw{code:'none'};return sm.json(prompt,file?{images:file}:{})}
+
+// ── 總資產、對帳、截圖辨識、股價 ──
+function assetCard(liq){
+ const hs=holdings().filter(h=>h.sh>0),stk=hs.reduce((s,h)=>s+h.val,0),owe=S.accts.filter(isCard).reduce((s,c)=>s+cardInfo(c).owe,0),nop=hs.filter(h=>h.px==null).length;
+ return`<div class="card"><div class="sub">我的總資產（已扣掉還沒繳的卡費）</div><div class="big">${M(liq+stk-owe)}</div>
+ <div class="tiles"><div><span class="sub">現金＋銀行</span><b>${M(liq)}</b></div><div><span class="sub">股票市值</span><b>${M(stk)}</b></div><div><span class="sub">卡費未繳</span><b>${owe?'−'+M(owe):M(0)}</b></div></div>
+ <div class="chips">${S.accts.map(a=>`<span class="pill">${E(a.name)} ${isCard(a)?'未繳 '+M(cardInfo(a).owe):M(bal(a))}</span>`).join('')}</div>
+ ${nop?`<div class="sub" style="margin-top:6px">有 ${nop} 檔股票還沒有股價，市值先用成本算。</div>`:''}
+ <div class="row" style="gap:6px;margin-top:8px"><button class="go q" data-a="recon">更新銀行餘額</button>${hs.length?`<button class="go q" data-a="pxnow">更新股價</button>`:''}</div></div>`;
+}
+function sheetRecon(o){
+ return`<div class="row"><b class="sp" style="font-size:17px">更新餘額（對帳）</b><button class="x" data-a="close">×</button></div>
+ <div class="sub" style="margin:6px 0">打開網銀 App，把看到的餘額填進來；也可以按「截圖」讓 AI 讀。沒變的空著就好。</div>
+ ${S.accts.filter(a=>!isCard(a)).map(a=>`<label class="fl"><span>${E(a.name)}（網站算的：${M(bal(a))}）</span><div class="row" style="gap:6px"><input inputmode="decimal" placeholder="實際餘額" value="${E(o.v[a.id]==null?'':o.v[a.id])}" data-m="sheet.o.v.${a.id}"><button class="go q" data-a="snapbal" data-i="${a.id}">截圖</button></div></label>`).join('')}
+ <div class="row" style="margin-top:14px"><span class="sp"></span><button class="go" data-a="saverecon">儲存</button></div>`;
+}
+function sheetHold(o){
+ const on=o.items.filter(x=>x.on);
+ return`<div class="row"><b class="sp" style="font-size:17px">截圖讀到的持股</b><button class="x" data-a="close">×</button></div>
+ <div class="sub" style="margin:6px 0">確認一下數字對不對。勾選的會記成一筆「買進」（日期是今天、手續費 0）；有讀到現價的會順便更新股價。</div>
+ ${o.items.map((x,i)=>`<div class="it ${x.on?'':'off'}"><input type="checkbox" data-a="holdon" data-i="${i}" ${x.on?'checked':''}><div class="sp"><div class="row"><b class="sp">${E(x.sym)} ${E(x.name)}</b>${x.px?`<span class="sub">現價 ${x.px}</span>`:''}</div>
+ <div class="grid" style="margin-top:4px"><label class="fl"><span>股數</span><input inputmode="numeric" value="${E(x.sh)}" data-m="sheet.o.items.${i}.sh"></label><label class="fl"><span>平均成本（每股）</span><input inputmode="decimal" value="${E(x.cost)}" data-m="sheet.o.items.${i}.cost"></label></div>
+ ${x.why?`<div class="late" style="font-weight:400">${E(x.why)}</div>`:''}</div></div>`).join('')}
+ <div class="row" style="margin-top:14px"><span class="sp"></span><button class="go" data-a="doHold">匯入 ${on.length} 檔</button></div>`;
+}
+async function runSnap(f){
+ const k=U.snap&&U.snap.k;if(!k)return;
+ toast('AI 辨識中…');
+ try{
+  if(k==='hold'){
+   const r=await askAI('這是證券 App、券商網站或「集保 e手掌握」的台股持股截圖。找出每一檔持股，只回傳 JSON：{"items":[{"code":"股票代號","name":"股票名稱","shares":股數,"cost":每股平均成本或null,"price":現價或null}]}。規則：shares 一律用「股」，畫面寫「張」要乘 1000；cost 是每股成本，如果畫面只有總成本就除以股數；數字不要逗號；看不到的填 null；找不到持股就回傳 {"items":[]}。',f);
+   const have=holdings();
+   const items=((r&&r.items)||[]).map(x=>{const sym=String(x.code||'').trim().toUpperCase(),sh=pAmt(x.shares),px=pAmt(x.price),c=pAmt(x.cost),h=have.find(y=>y.sym===sym&&y.sh>0);
+    const it={sym,name:String(x.name||'').trim(),sh:sh>0?sh:'',px:px>0?px:null,cost:c>0?c:px>0?px:'',on:true};
+    if(!(c>0))it.why='截圖沒有成本，先用現價當成本，可以自己改';
+    if(h){it.on=false;it.why='已經有 '+h.sh+' 股了，勾選會再加一筆買進'}
+    return it}).filter(x=>x.sym);
+   if(!items.length){toast('AI 沒有找到持股');return}
+   items.forEach(x=>{if(x.px)S.prices[x.sym]={p:x.px,d:today()}});save();
+   U.sheet={k:'hold',o:{items}};render();toast('讀到 '+items.length+' 檔');
+  }else{
+   const r=await askAI('這是銀行 App 或網路銀行的截圖。找出帳戶的「可用餘額」或「帳戶餘額」（新台幣），只回傳 JSON：{"balance":數字或null,"account":"畫面上的帳戶名稱"}。數字不要逗號；有好幾個帳戶就選最上面、最明顯的那個；外幣帳戶不算；找不到就回傳 {"balance":null}。',f);
+   const b=pAmt(r&&r.balance);if(isNaN(b)){toast('AI 沒有找到餘額');return}
+   if(k==='bal'){if(!U.sheet||U.sheet.k!=='recon')return;U.sheet.o.v[U.snap.id]=b}else if(U.sheet&&U.sheet.k==='acct')U.sheet.o.now=b;
+   render();toast('讀到餘額 '+M(b)+(r.account?'（'+r.account+'）':'')+'，確認後按儲存');
+  }
+ }catch(e){console.error(e);toast(aiErr(e))}
+}
+// 每天收盤價：證交所（上市）與櫃買中心（上櫃）的公開資料
+const PXSRC=[['https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL','Code','ClosingPrice'],['https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes','SecuritiesCompanyCode','Close']];
+async function fetchPrices(force){
+ const syms=holdings().filter(h=>h.sh>0).map(h=>h.sym);if(!syms.length)return 0;
+ if(!force){try{if(localStorage.getItem('money-pxday')===today())return 0}catch(e){}}
+ const got={};let ok=0,n=0;
+ for(const[u,kc,kp]of PXSRC){
+  if(syms.every(x=>got[x]))break;
+  try{const r=await fetch(u);if(!r.ok)continue;const js=await r.json();if(!Array.isArray(js))continue;ok++;
+   js.forEach(x=>{const c=String(x[kc]||'').trim().toUpperCase();if(!syms.includes(c)||got[c])return;const p=pAmt(x[kp]);if(!(p>0))return;got[c]=1;
+    const d=pDate(x.Date)||today(),old=S.prices[c];if(!old||!old.d||old.d<=d){S.prices[c]={p,d,auto:1};n++}})}catch(e){}
+ }
+ if(ok)try{localStorage.setItem('money-pxday',today())}catch(e){}
+ if(n)save();
+ // -1：連不到；-2：找到了但手上的股價比較新
+ return !ok?-1:n?n:Object.keys(got).length?-2:0;
+}
+const autoPx=()=>fetchPrices(false).then(n=>{if(n>0&&(U.tab==='home'||U.tab==='stock'))render()});
 
 // ── 動作 ──
 const setP=(o,p,v)=>{const k=p.split('.');let a=o;while(k.length>1)a=a[k.shift()];a[k[0]]=v};
@@ -660,7 +729,7 @@ function payBill(b,skip){
  save();render();toast(skip?'已略過這期':'已記錄，下次 '+(+b.freq?md(b.next):'不用再繳'));
 }
 const ACT={
- tab:i=>{U.tab=i;U.sheet=null;render();window.scrollTo(0,0)},
+ tab:i=>{U.tab=i;U.sheet=null;render();window.scrollTo(0,0);if(i==='home'||i==='stock')autoPx()},
  h:i=>{U.h=+i;render()},
  mon:i=>{U.mon=addM(U.mon+'-01',+i).slice(0,7);render()},
  fa:i=>{U.fa=i;render()},
@@ -719,6 +788,17 @@ const ACT={
  logout:()=>window.fbLogout&&fbLogout(),
 };
 Object.assign(ACT,{
+ recon:()=>{U.sheet={k:'recon',o:{v:{}}};render()},
+ saverecon:()=>{const v=U.sheet.o.v;let n=0;S.accts.forEach(a=>{if(isCard(a)||v[a.id]==null||v[a.id]==='')return;const x=pAmt(v[a.id]);if(isNaN(x))return;a.init=(+a.init||0)+x-bal(a);n++});U.sheet=null;if(n)save();render();toast(n?'已更新 '+n+' 個帳戶':'沒有變更')},
+ snapbal:i=>{U.snap={k:'bal',id:i};$('snapf').click()},
+ snapacct:()=>{U.snap={k:'acct'};$('snapf').click()},
+ snaphold:()=>{U.snap={k:'hold'};$('snapf').click()},
+ holdon:i=>{const x=U.sheet.o.items[+i];x.on=!x.on;render()},
+ doHold:()=>{const its=U.sheet.o.items.filter(x=>x.on);let n=0;const ts=Date.now();
+  for(const x of its){const sh=pAmt(x.sh),c=pAmt(x.cost);if(!(sh>0)||!(c>0))return toast(x.sym+' 的股數或成本不對');}
+  its.forEach((x,k)=>{S.trades.push({id:nid()+k,d:today(),type:'buy',sym:x.sym,name:x.name,sh:pAmt(x.sh),px:pAmt(x.cost),fee:0,acct:'',src:'snap',ts:ts+k});n++});
+  U.sheet=null;save();render();toast(n?'已匯入 '+n+' 檔持股':'已更新股價')},
+ pxnow:async()=>{toast('抓收盤價中…');const n=await fetchPrices(true);render();toast(n>0?'已更新 '+n+' 檔收盤價':n===-2?'股價已經是最新的':n===0?'沒有找到你的股票（興櫃或代號不對的要手動填）':'連不到證交所，請點持股的「現價」手動更新')},
  go:i=>i==='addtx'?ACT.addtx():ACT.tab(i),
  guideoff:()=>{S.guideOff=true;save();render();toast('之後可以在「更多 → 新手教學」再打開')},
  guideon:()=>{S.guideOff=false;save();render()},
@@ -764,6 +844,7 @@ document.addEventListener('input',e=>{if(e.target.type!=='checkbox'&&e.target.ta
 document.addEventListener('change',async e=>{
  const el=e.target;
  if(el.id==='impf'&&el.files[0]){const f=el.files[0];if(/^image\//.test(f.type)){U.imp.file=f;U.imp.text=''}else if(/\.xlsx?$/i.test(f.name)){toast('請先用 Excel 另存成 CSV 再匯入')}else{U.imp.file=null;U.imp.text=await readFile(f);impParse()}render();return}
+ if(el.id==='snapf'&&el.files[0]){const f=el.files[0];el.value='';runSnap(f);return}
  if(el.id==='bkf'&&el.files[0]){try{const o=JSON.parse(await readFile(el.files[0])),m=o.money||o;if(!Array.isArray(m.tx)||!Array.isArray(m.accts))throw 0;if(!confirm('用備份檔取代目前全部資料？'))return;S=Object.assign(DEF(),m);save();render();toast('已還原')}catch(x){toast('不是記帳備份檔')}return}
  field(e);
 });
@@ -816,7 +897,7 @@ try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if
  }catch(e){CL.st='⚠︎ 雲端連線失敗，資料只存在這支手機'}
  if(U.tab==='set')render();
 })();
-render();
+render();autoPx();
 </script>
 </body>
 </html>
