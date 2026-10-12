@@ -1,0 +1,13 @@
+{
+  "name": "我的記帳",
+  "short_name": "記帳",
+  "start_url": "./money.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#E9EEF3",
+  "theme_color": "#4F6F8C",
+  "lang": "zh-Hant",
+  "icons": [
+    { "src": "money.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

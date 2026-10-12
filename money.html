@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4F6F8C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="記帳">
+<link rel="manifest" href="money.webmanifest">
+<link rel="icon" href="money.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="money.svg">
+<title>我的記帳</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#E9EEF3;--card:#fff;--ink:#1E2935;--sub:#697686;--line:#D3DCE5;--acc:#4F6F8C;--ok:#3F8A5F;--bad:#D64545;--warn:#FCEBEB}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#11161C;--card:#1A222B;--ink:#E8EEF4;--sub:#93A1B0;--line:#2A3642;--acc:#8DB0D0;--ok:#7CC49A;--warn:#3A2224}}
+:root[data-theme="dark"]{--bg:#11161C;--card:#1A222B;--ink:#E8EEF4;--sub:#93A1B0;--line:#2A3642;--acc:#8DB0D0;--ok:#7CC49A;--warn:#3A2224}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Noto Sans TC","PingFang TC",-apple-system,"Microsoft JhengHei",sans-serif}
+#app{max-width:520px;margin:0 auto;padding:16px 14px 110px}
+h1{font-size:24px;margin:4px 2px 12px;font-weight:700}
+h2{font-size:14px;margin:16px 2px 8px;color:var(--sub);font-weight:500}
+a{color:var(--acc)}
+.card{background:var(--card);border-radius:16px;padding:12px 14px;margin-bottom:10px;border:1px solid var(--line);overflow-wrap:anywhere}
+.card.warn{background:var(--warn);border-color:var(--bad)}
+.row{display:flex;align-items:center;gap:10px}.row>*{min-width:0}.sp{flex:1;min-width:0}
+.sub{color:var(--sub);font-size:13px}.late{color:var(--bad);font-weight:700;font-size:12px}
+.big{font-size:28px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums}
+.in{color:var(--ok)}.neg{color:var(--bad)}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:5}
+nav button{flex:1;border:0;background:none;color:var(--sub);font:inherit;font-size:12px;padding:6px 0;cursor:pointer}
+nav button b{display:block;font-size:20px;line-height:1.2;font-weight:400}nav button.on{color:var(--acc);font-weight:700}
+input,select,textarea,button.go{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0;width:100%}
+input:not([type=checkbox]):not([type=file]),select{height:38px;max-width:100%}
+input[type=date]{-webkit-appearance:none;appearance:none;display:block;line-height:1.2;text-align:left}
+input[type=checkbox]{width:18px;height:18px;flex:none;accent-color:var(--acc)}
+textarea{resize:vertical;max-width:100%}
+button.go{background:var(--acc);color:#fff;border:0;font-weight:700;cursor:pointer;width:auto;padding:9px 14px}
+button.go.g{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+button.go.q{background:var(--bg);color:var(--acc);border:1px solid var(--line);font-weight:600;padding:6px 10px;font-size:13px;flex:none}
+button.go.r{background:var(--bg);color:var(--bad);border:1px solid var(--line)}
+button.go:disabled{opacity:.5}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:20px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}
+.chip.on{background:var(--acc);color:#fff;border-color:transparent}
+.fs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px}.fs .chip{flex:none}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}.grid .w{grid-column:1/3}
+.fl{display:block}.fl span{display:block;font-size:12px;color:var(--sub);margin-bottom:2px}
+.pill{font-size:12px;padding:1px 8px;border-radius:10px;border:1px solid var(--line);color:var(--sub);white-space:nowrap}
+.pill.y{background:var(--acc);color:#fff;border-color:transparent}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:10px 0}
+.tiles div{background:var(--bg);border-radius:10px;padding:6px 8px}.tiles b{display:block;font-size:15px;font-variant-numeric:tabular-nums}
+.msg{font-size:14px;margin-top:4px}
+.li{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);cursor:pointer}
+.card>.li:first-child,.card>.dh+.li{border-top:0}
+.dt{width:42px;flex:none;text-align:center;font-weight:700;line-height:1.15;font-size:14px}.dt small{display:block;font-weight:400;color:var(--sub);font-size:11px}
+.dh{font-size:12px;color:var(--sub);padding:8px 0 2px;display:flex;justify-content:space-between}
+.ic{width:34px;height:34px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--acc);flex:none}
+.bar{height:8px;border-radius:4px;background:var(--bg);overflow:hidden;margin-top:3px}.bar i{display:block;height:100%;background:var(--acc)}
+.x{border:0;background:none;color:var(--sub);font-size:18px;cursor:pointer;padding:0 4px}
+.note{font-size:12px;color:var(--sub);background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:8px 12px;margin:8px 0;line-height:1.7}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(80px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:20px;font-size:13px;z-index:30;display:none;max-width:90vw}
+.fab{position:fixed;right:max(16px,calc(50% - 244px));bottom:calc(76px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;background:var(--acc);color:#fff;font-size:30px;line-height:1;border:0;z-index:6;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet>div{background:var(--card);width:min(100%,520px);max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:14px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+.sheet .fl{margin-top:8px}
+input.amt{font-size:26px;font-weight:700;height:52px!important;text-align:right}
+.mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.mh b{font-size:18px}
+table.pv{width:100%;border-collapse:collapse;font-size:12px}table.pv td,table.pv th{border-bottom:1px solid var(--line);padding:4px;text-align:left;vertical-align:top}
+.it{display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--line)}.it.off{opacity:.55}
+.it select{height:32px!important;padding:4px 6px;font-size:13px}
+#authwrap{max-width:420px;margin:0 auto;padding:40px 16px}#authwrap a{color:var(--acc)}
+.afl{display:block;margin-bottom:10px}.afl span{display:block;font-size:13px;color:var(--sub);margin-bottom:4px}
+</style>
+</head>
+<body>
+<div id="auth" data-title="我的記帳"></div>
+<div id="app"></div><nav id="nav"></nav><div id="sheet"></div><div id="toast"></div>
+<script type="module" src="auth.js"></script>
+<script type="text/plain" id="app-src">
+const iso=d=>{const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())},today=()=>iso(new Date());
+const pd=s=>new Date(s+'T00:00:00'),shiftD=(s,n)=>{const d=pd(s);d.setDate(d.getDate()+n);return iso(d)};
+const dleft=s=>Math.round((pd(s)-pd(today()))/864e5);
+const E=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $=id=>document.getElementById(id);
+const M=v=>(v<-0.5?'-':'')+'$'+Math.round(Math.abs(v)).toLocaleString('zh-TW');
+const md=s=>s==='init'?'期初':+s.slice(5,7)+'/'+ +s.slice(8,10);
+const WD='日一二三四五六',nid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const dim=(y,m)=>new Date(y,m+1,0).getDate();
+const ymd=(y,m,d)=>{const x=new Date(y,m,1),Y=x.getFullYear(),Mo=x.getMonth();return iso(new Date(Y,Mo,Math.min(d,dim(Y,Mo))))};
+const addM=(s,n,day)=>{const d=pd(s);return ymd(d.getFullYear(),d.getMonth()+n,day||d.getDate())};
+
+// 預設分類與自動分類規則（關鍵字不分大小寫，越上面越優先）
+const OUT=['餐飲','交通','停車費','購物','日用品','居家','電信網路','水電瓦斯','保險','醫療','娛樂','學習','稅費','其他'];
+const INC=['薪資','獎金','退款','利息','其他收入'];
+const RULES=[['停車','停車費'],['路邊','停車費'],['PARKING','停車費'],['加油','交通'],['中油','交通'],['台塑石油','交通'],['高鐵','交通'],['台鐵','交通'],['臺鐵','交通'],['捷運','交通'],['悠遊卡','交通'],['一卡通','交通'],['UBER','交通'],['大車隊','交通'],['ETC','交通'],['遠通','交通'],['UBER EATS','餐飲'],['FOODPANDA','餐飲'],['統一超商','餐飲'],['7-ELEVEN','餐飲'],['全家','餐飲'],['萊爾富','餐飲'],['OK超商','餐飲'],['星巴克','餐飲'],['麥當勞','餐飲'],['全聯','日用品'],['家樂福','日用品'],['好市多','日用品'],['COSTCO','日用品'],['屈臣氏','日用品'],['康是美','日用品'],['IKEA','居家'],['中華電信','電信網路'],['台灣大哥大','電信網路'],['遠傳','電信網路'],['電信','電信網路'],['台灣電力','水電瓦斯'],['電費','水電瓦斯'],['水費','水電瓦斯'],['自來水','水電瓦斯'],['瓦斯','水電瓦斯'],['人壽','保險'],['產險','保險'],['保險','保險'],['診所','醫療'],['醫院','醫療'],['藥局','醫療'],['NETFLIX','娛樂'],['SPOTIFY','娛樂'],['YOUTUBE','娛樂'],['APPLE.COM','娛樂'],['GOOGLE','娛樂'],['威秀','娛樂'],['蝦皮','購物'],['MOMO','購物'],['PCHOME','購物'],['博客來','學習'],['稅','稅費'],['監理','稅費'],['薪資','薪資'],['薪轉','薪資'],['利息','利息']];
+const DEF=()=>({accts:[{id:'cash',name:'現金',type:'cash',init:0},{id:'bank',name:'銀行帳戶',type:'bank',init:0},{id:'card1',name:'信用卡',type:'card',init:0,close:5,due:20,since:today()}],tx:[],bills:[],cats:{out:OUT.slice(),in:INC.slice()},rules:RULES.map(([k,c])=>({k,c})),living:null,keep:0,lastAcct:'cash'});
+let S;try{const r=localStorage.getItem('money-v1');S=Object.assign(DEF(),r?JSON.parse(r):{})}catch(e){S=DEF()}
+const U={tab:'home',h:30,mon:today().slice(0,7),fa:'',q:'',sheet:null,imp:null};
+const CL={st:'☁︎ 連線中…',last:{},LT0:0,HAS0:false};try{CL.LT0=+localStorage.getItem('money-t')||0;CL.HAS0=!!localStorage.getItem('money-v1')}catch(e){}
+const save=()=>{try{localStorage.setItem('money-v1',JSON.stringify(S));localStorage.setItem('money-t',String(Date.now()))}catch(e){}cloudQ()};
+function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',2800)}
+
+const A=id=>S.accts.find(a=>a.id===id),isCard=a=>!!a&&a.type==='card';
+const TY={cash:'現金',bank:'銀行',card:'信用卡'},FQ=[[0,'只有一次'],[1,'每月'],[2,'每 2 個月'],[3,'每 3 個月'],[6,'每半年'],[12,'每年']];
+const fqName=f=>(FQ.find(x=>x[0]===+f)||FQ[0])[1];
+const firstBank=()=>(S.accts.find(a=>a.type==='bank')||S.accts.find(a=>a.type==='cash')||{}).id;
+function guess(s,kind){s=String(s||'').toUpperCase();const ok=S.cats[kind==='in'?'in':'out'];for(const r of S.rules)if(r.k&&s.includes(r.k.toUpperCase())&&ok.includes(r.c))return r.c;return ''}
+
+// ── 餘額與信用卡帳單 ──
+function bal(a){let v=+a.init||0;for(const t of S.tx){if(t.acct===a.id)v+=t.type==='in'?t.amt:-t.amt;if(t.type==='xfer'&&t.to===a.id)v+=t.amt}return v}
+const liquid=()=>S.accts.filter(a=>!isCard(a)).reduce((s,a)=>s+bal(a),0);
+// 某天刷卡會在哪天結帳、哪天要繳
+function closeOf(c,s){const d=pd(s),k=+c.close||1,cd=ymd(d.getFullYear(),d.getMonth(),k);return s<=cd?cd:ymd(d.getFullYear(),d.getMonth()+1,k)}
+function dueOf(c,cl){const d=pd(cl),k=+c.due||1;return ymd(d.getFullYear(),d.getMonth()+(k>(+c.close||1)?0:1),k)}
+function nextDue(c,s){const d=pd(s),k=+c.due||1,x=ymd(d.getFullYear(),d.getMonth(),k);return x>=s?x:ymd(d.getFullYear(),d.getMonth()+1,k)}
+// 每一期帳單：刷卡、退款歸到所屬帳期，繳款從最舊的帳期開始抵
+function cardInfo(c){
+ const b={},add=(k,due,v)=>{(b[k]=b[k]||{close:k,due,amt:0}).amt+=v};let pay=0;
+ if(+c.init)add('init',nextDue(c,c.since||today()),+c.init);
+ for(const t of S.tx){
+  if(t.acct===c.id){const k=closeOf(c,t.d);add(k,dueOf(c,k),t.type==='in'?-t.amt:t.amt)}
+  else if(t.type==='xfer'&&t.to===c.id)pay+=t.amt}
+ const st=Object.values(b).sort((x,y)=>x.due<y.due?-1:x.due>y.due?1:0);
+ st.forEach(s=>{if(s.amt<0){pay-=s.amt;s.amt=0}});
+ st.forEach(s=>{const p=Math.min(pay,s.amt);s.left=s.amt-p;pay-=p});
+ const open=st.filter(s=>s.left>0.5),t0=today(),cur=closeOf(c,t0);
+ const billed=open.filter(s=>s.close==='init'||s.close<t0);
+ return{open,billed,owe:open.reduce((x,s)=>x+s.left,0),cur,curAmt:(st.find(s=>s.close===cur)||{amt:0}).amt}
+}
+// 帳單在 end 之前的每一次到期日
+function occ(b,end){const r=[];let s=b.next,n=0;while(s&&s<=end&&n++<400){r.push(s);if(!+b.freq)break;s=addM(s,+b.freq,b.day)}return r}
+function livingAuto(){
+ const t0=today(),from=shiftD(t0,-90),bc=new Set(S.bills.filter(b=>b.kind!=='in').map(b=>b.cat));
+ const xs=S.tx.filter(t=>t.type==='out'&&!t.bill&&t.d>=from&&t.d<=t0&&!bc.has(t.cat));
+ if(!xs.length)return 0;
+ const first=xs.reduce((m,t)=>t.d<m?t.d:m,t0),days=Math.max(30,Math.min(90,1-dleft(first)));
+ return xs.reduce((s,t)=>s+t.amt,0)/days*30.4;
+}
+const living=()=>S.living==null||S.living===''?livingAuto():+S.living||0;
+// 未來 H 天的現金流：信用卡帳單、固定帳單、收入，以及每天的日常花費
+function forecast(H){
+ const t0=today(),end=shiftD(t0,H),ev=[];
+ S.accts.filter(isCard).forEach(c=>cardInfo(c).open.forEach(s=>{if(s.due<=end)ev.push({d:s.due<t0?t0:s.due,late:s.due<t0,amt:-s.left,name:c.name+' 帳單',sub:s.close==='init'?'期初未繳':md(s.close)+' 結帳'+(s.close>=t0?'（還在累積）':''),k:'card'})}));
+ S.bills.forEach(b=>occ(b,end).forEach(o=>{
+  const a=A(b.acct),inc=b.kind==='in';
+  if(isCard(a)&&!inc){const due=dueOf(a,closeOf(a,o));if(due<=end)ev.push({d:due<t0?t0:due,late:due<t0,amt:-b.amt,name:b.name,sub:md(o)+' 刷 '+a.name+'，跟著卡費繳',k:'bill'})}
+  else ev.push({d:o<t0?t0:o,late:o<t0,amt:inc?+b.amt:-b.amt,name:b.name,sub:(a?a.name:'')+(b.auto?' 自動扣繳':''),k:inc?'inc':'bill'})}));
+ ev.sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:x.amt-y.amt);
+ const liq=liquid(),daily=living()/30.4;let cum=0,min=liq,minD=t0;
+ ev.forEach(e=>{cum+=e.amt;e.run=liq+cum-daily*dleft(e.d);if(e.run<min){min=e.run;minD=e.d}});
+ const endRun=liq+cum-daily*H;if(endRun<min){min=endRun;minD=end}
+ const sum=k=>-ev.filter(e=>e.k===k).reduce((s,e)=>s+e.amt,0);
+ const bill=sum('bill'),card=sum('card'),liv=daily*H;
+ return{ev,min,minD,bill,card,liv,inc:-sum('inc'),need:bill+card+liv,liq};
+}
+
+// ── 畫面 ──
+function vHome(){
+ const F=forecast(U.h),keep=+S.keep||0,short=Math.max(0,keep-F.min),reserve=Math.max(0,F.liq-F.min)+keep;
+ let h=`<h1>我的記帳</h1>
+ <div class="card"><div class="sub">手上可用的錢（現金＋銀行）</div><div class="big">${M(F.liq)}</div>
+ <div class="chips" style="margin-top:8px">${S.accts.map(a=>`<span class="pill">${E(a.name)} ${isCard(a)?'未繳 '+M(cardInfo(a).owe):M(bal(a))}</span>`).join('')}</div></div>
+ <h2>未來要準備多少錢</h2>
+ <div class="chips" style="margin-bottom:8px">${[30,60,90].map(n=>`<button class="chip ${U.h===n?'on':''}" data-a="h" data-i="${n}">${n} 天</button>`).join('')}</div>
+ <div class="card ${short>0?'warn':''}">
+  <div class="row"><div class="sp"><div class="sub">建議預留</div><div class="big">${M(reserve)}</div></div>
+  <div style="text-align:right"><div class="sub">預計收入</div><b class="in num">${M(F.inc)}</b></div></div>
+  <div class="tiles"><div><span class="sub">固定帳單</span><b>${M(F.bill)}</b></div><div><span class="sub">信用卡</span><b>${M(F.card)}</b></div><div><span class="sub">日常花費</span><b>${M(F.liv)}</b></div></div>
+  <div class="msg">${short>0?`⚠︎ 錢不夠：<b>${md(F.minD)}</b> 會降到 <b class="neg">${M(F.min)}</b>，還差 <b class="neg">${M(short)}</b>`:`✓ 夠用。最緊的時候是 ${md(F.minD)}，還剩 <b>${M(F.min)}</b>`}</div>
+  <div class="sub" style="margin-top:4px">日常花費以每月 ${M(living())} 估算${S.living==null||S.living===''?'（依最近 3 個月記錄自動算，可在設定改）':''}${keep?`；安全水位 ${M(keep)}`:''}。</div>
+ </div>`;
+ h+=`<h2>時間軸（剩餘金額已扣掉日常花費）</h2><div class="card">${F.ev.length?F.ev.map(e=>`<div class="li" data-a="tab" data-i="${e.k==='card'?'home':'bills'}"><div class="dt">${md(e.d)}<small>週${WD[pd(e.d).getDay()]}</small></div><div class="sp"><div>${E(e.name)}${e.late?' <span class="late">已過期</span>':''}</div><div class="sub">${E(e.sub)}</div></div><div style="text-align:right"><div class="num ${e.amt>0?'in':''}">${e.amt>0?'+':'−'}${M(Math.abs(e.amt))}</div><div class="sub num ${e.run<keep?'neg':''}">剩 ${M(e.run)}</div></div></div>`).join(''):'<div class="sub">這段期間沒有要繳的錢。到「帳單」新增固定費用，或在「設定」填好信用卡的結帳日與繳款日。</div>'}</div>`;
+ const cards=S.accts.filter(isCard);
+ if(cards.length)h+=`<h2>信用卡</h2>`+cards.map(c=>{const I=cardInfo(c);return`<div class="card"><div class="row"><b class="sp">${E(c.name)}</b><span class="sub">每月 ${c.close} 號結帳、${c.due} 號繳款</span></div>
+  <div class="row" style="margin-top:6px"><div class="sp"><div class="sub">本期已刷（${md(I.cur)} 結帳）</div><b class="num">${M(I.curAmt)}</b></div><div class="sp" style="text-align:right"><div class="sub">已出帳未繳</div><b class="num ${I.billed.length?'neg':''}">${M(I.billed.reduce((s,x)=>s+x.left,0))}</b></div></div>
+  ${I.billed.map(s=>`<div class="sub">${md(s.close)} 帳單 ${M(s.left)}，${s.due<today()?'<span class="late">已過繳款日 '+md(s.due)+'</span>':md(s.due)+' 前要繳'}</div>`).join('')}
+  ${I.billed.length?`<button class="go q" style="margin-top:6px" data-a="paycard" data-i="${c.id}">記錄繳卡費</button>`:''}</div>`}).join('');
+ const mon=today().slice(0,7),by={};S.tx.forEach(t=>{if(t.type==='out'&&t.d.startsWith(mon))by[t.cat||'其他']=(by[t.cat||'其他']||0)+t.amt});
+ const ks=Object.keys(by).sort((a,b)=>by[b]-by[a]),mx=ks.length?by[ks[0]]:0,tot=ks.reduce((s,k)=>s+by[k],0);
+ h+=`<h2>這個月花在哪（共 ${M(tot)}）</h2><div class="card">${ks.length?ks.map(k=>`<div style="margin:6px 0"><div class="row"><span class="sp">${E(k)}</span><span class="num">${M(by[k])}</span></div><div class="bar"><i style="width:${by[k]/mx*100}%"></i></div></div>`).join(''):'<div class="sub">這個月還沒有支出紀錄。</div>'}</div>`;
+ return h+`<button class="fab" data-a="addtx" aria-label="記一筆">＋</button>`;
+}
+
+function txLine(t){
+ const a=A(t.acct),to=A(t.to),x=t.type==='xfer';
+ return`<div class="li" data-a="edtx" data-i="${t.id}"><div class="ic">${E(x?'轉':(t.cat||'?').slice(0,1))}</div><div class="sp"><div>${E(t.note||(x?'轉帳':t.cat)||'')}</div><div class="sub">${x?E((a?a.name:'?')+' → '+(to?to.name:'?')):E((t.cat||'')+' · '+(a?a.name:'?'))}${t.bill?' · 帳單':''}${t.src&&t.src!=='m'?' · 匯入':''}</div></div><div class="num ${t.type==='in'?'in':''}">${t.type==='in'?'+':x?'':'−'}${M(t.amt)}</div></div>`;
+}
+function vTx(){
+ const q=U.q.toLowerCase(),xs=S.tx.filter(t=>t.d.startsWith(U.mon)&&(!U.fa||t.acct===U.fa||t.to===U.fa)&&(!q||((t.note||'')+' '+(t.cat||'')).toLowerCase().includes(q)))
+  .sort((a,b)=>a.d<b.d?1:a.d>b.d?-1:(b.ts||0)-(a.ts||0));
+ const out=xs.filter(t=>t.type==='out').reduce((s,t)=>s+t.amt,0),inc=xs.filter(t=>t.type==='in').reduce((s,t)=>s+t.amt,0);
+ let h=`<div class="mh"><button class="go q" data-a="mon" data-i="-1">‹</button><b>${U.mon.slice(0,4)} 年 ${+U.mon.slice(5)} 月</b><button class="go q" data-a="mon" data-i="1">›</button></div>
+ <div class="card"><div class="row"><div class="sp"><div class="sub">支出</div><b class="num">${M(out)}</b></div><div class="sp"><div class="sub">收入</div><b class="num in">${M(inc)}</b></div><div class="sp"><div class="sub">結餘</div><b class="num ${inc-out<0?'neg':''}">${M(inc-out)}</b></div></div></div>
+ <div class="fs"><button class="chip ${U.fa?'':'on'}" data-a="fa" data-i="">全部</button>${S.accts.map(a=>`<button class="chip ${U.fa===a.id?'on':''}" data-a="fa" data-i="${a.id}">${E(a.name)}</button>`).join('')}</div>
+ <input placeholder="搜尋說明或分類" value="${E(U.q)}" data-m="q" data-r="1" style="margin-bottom:8px">`;
+ if(!xs.length)h+=`<div class="card sub">這個月${U.fa||U.q?'沒有符合的紀錄':'還沒有紀錄'}。按右下角「＋」記一筆，或到「匯入」匯入信用卡／銀行明細。</div>`;
+ else{h+='<div class="card">';let last='';xs.forEach(t=>{if(t.d!==last){last=t.d;const day=xs.filter(x=>x.d===t.d&&x.type==='out').reduce((s,x)=>s+x.amt,0);h+=`<div class="dh"><span>${md(t.d)} 週${WD[pd(t.d).getDay()]}</span><span>${day?'支出 '+M(day):''}</span></div>`}h+=txLine(t)});h+='</div>'}
+ return h+`<button class="fab" data-a="addtx" aria-label="記一筆">＋</button>`;
+}
+
+const PRESETS=[{name:'停車費',cat:'停車費',auto:true,freq:1,note:'政府路邊停車費代扣，每月金額不固定，填大概的月平均即可'},{name:'電話費',cat:'電信網路',auto:true,freq:1},{name:'電費',cat:'水電瓦斯',freq:2},{name:'水費',cat:'水電瓦斯',freq:2},{name:'瓦斯費',cat:'水電瓦斯',freq:2},{name:'房租',cat:'居家',freq:1},{name:'保險費',cat:'保險',freq:12},{name:'牌照稅',cat:'稅費',freq:12},{name:'燃料費',cat:'稅費',freq:12},{name:'薪水',cat:'薪資',freq:1,kind:'in'}];
+function vBills(){
+ const bs=S.bills.slice().sort((a,b)=>a.next<b.next?-1:1),t0=today();
+ const pm=k=>S.bills.filter(b=>(b.kind==='in')===k&&+b.freq).reduce((s,b)=>s+b.amt/b.freq,0);
+ let h=`<h1>帳單</h1><div class="card"><div class="row"><div class="sp"><div class="sub">平均每月固定支出</div><b class="num">${M(pm(false))}</b></div><div class="sp"><div class="sub">平均每月固定收入</div><b class="num in">${M(pm(true))}</b></div></div></div>
+ <div class="note">信用卡帳單會自動從刷卡紀錄算出來，不用另外加。這裡放其他要繳的錢：水電、電話、保險、稅、房租，還有政府停車費這種自動扣繳的費用。扣款帳戶選信用卡的話，會算進那張卡下一期的帳單。</div>`;
+ h+=bs.length?'<div class="card">'+bs.map(b=>{const a=A(b.acct),n=dleft(b.next),late=b.next<t0;return`<div class="li" data-a="edbill" data-i="${b.id}" style="flex-wrap:wrap"><div class="dt">${md(b.next)}<small>${late?'<span class="late">逾期</span>':n===0?'今天':n+' 天後'}</small></div><div class="sp"><div>${E(b.name)} ${b.auto?'<span class="pill">自動扣繳</span>':''}</div><div class="sub">${fqName(b.freq)} · ${E(a?a.name:'未指定帳戶')}${b.note?' · '+E(b.note):''}</div></div><div class="num ${b.kind==='in'?'in':''}">${b.kind==='in'?'+':''}${M(b.amt)}</div>
+ ${n<=3?`<div class="row" style="width:100%;justify-content:flex-end;gap:6px"><button class="go q" data-a="skipbill" data-i="${b.id}">${b.kind==='in'?'沒入帳，略過':'已匯入，略過這期'}</button><button class="go q" data-a="paybill" data-i="${b.id}">${b.kind==='in'?'已入帳':'已繳'}（記一筆）</button></div>`:''}</div>`}).join('')+'</div>':'<div class="card sub">還沒有帳單。點下面的常用項目快速新增。</div>';
+ h+=`<h2>新增帳單</h2><div class="chips">${PRESETS.map((p,i)=>`<button class="chip" data-a="addbill" data-i="${i}">${E(p.name)}</button>`).join('')}<button class="chip" data-a="addbill" data-i="-1">＋ 其他</button></div>`;
+ return h;
+}
+
+function vImp(){
+ const I=U.imp||(U.imp={step:'in',acct:(S.accts.find(isCard)||S.accts[0]).id,text:'',file:null,flip:false});
+ const acctSel=`<label class="fl"><span>匯入到哪個帳戶</span><select data-m="imp.acct">${S.accts.map(a=>`<option value="${a.id}" ${I.acct===a.id?'selected':''}>${E(a.name)}（${TY[a.type]}）</option>`).join('')}</select></label>`;
+ let h=`<h1>匯入</h1>`;
+ if(I.step==='in'){
+  h+=`<div class="card">${acctSel}
+  <label class="fl" style="margin-top:10px"><span>選檔案（CSV、文字檔或截圖）</span><input type="file" id="impf" accept=".csv,.txt,.tsv,text/*,image/*"></label>
+  ${I.file?`<div class="sub" style="margin-top:4px">已選圖片：${E(I.file.name)} <button class="x" data-a="impclr">×</button></div>`:''}
+  <label class="fl" style="margin-top:10px"><span>或直接貼上（CSV 內容、帳單文字、刷卡通知簡訊…）</span><textarea rows="6" data-m="imp.text" placeholder="例：&#10;10/03 全聯福利中心 356&#10;10/05 台北市停車管理處 60">${E(I.text)}</textarea></label>
+  <div class="row" style="margin-top:10px;justify-content:flex-end;gap:8px"><button class="go g" data-a="impai" ${I.busy?'disabled':''}>${I.busy?'AI 辨識中…':'用 AI 辨識'}</button><button class="go" data-a="impparse" ${I.file?'disabled':''}>解析表格</button></div></div>
+  <div class="note"><b>怎麼拿到資料</b><br>
+  ・<b>信用卡刷卡紀錄</b>：到發卡銀行的網銀或 App →「帳單／交易明細」→ 下載 CSV（只有 Excel 的話，用 Excel 或 Numbers 另存成 CSV）。也可以直接把網頁上的明細全選複製貼上，或截圖用 AI 辨識。<br>
+  ・<b>政府停車費自動扣繳</b>：扣款會出現在綁定的信用卡帳單或銀行明細裡，照上面方式匯入，名稱有「停車」的會自動歸到「停車費」。<br>
+  ・<b>現金花費（電子發票）</b>：如果有用手機條碼載具，到「財政部電子發票整合服務平台」→ 個人化服務 → 載具消費明細 → 下載 CSV，直接選檔匯入，帳戶選「現金」。用信用卡付款的發票也會在裡面，跟卡片明細重複的會自動標出來。<br>
+  ・<b>簡訊／App 刷卡通知</b>：複製貼上，按「用 AI 辨識」。<br>
+  重複的紀錄（同金額、前後 3 天內）預設不勾選，匯入前可以再檢查。</div>`;
+ }else if(I.step==='map'){
+  const R=I.rows,n=Math.max(...R.map(r=>r.length)),head=I.map.h>=0?R[I.map.h]:[];
+  const opt=(key,none)=>`<select data-m="imp.map.${key}" data-r="1" data-n="1">${none?'<option value="-1">（沒有）</option>':''}${Array.from({length:n},(_,j)=>`<option value="${j}" ${+I.map[key]===j?'selected':''}>第 ${j+1} 欄：${E((head[j]||sample(j)).slice(0,14))}</option>`).join('')}</select>`;
+  const sample=j=>{const r=R.find(r=>pDate(r[I.map.d])&&r[j]);return r?r[j]:''};
+  const prev=buildRows().slice(0,5);
+  h+=`<div class="card">${acctSel}<div class="sub" style="margin:8px 0">找到 ${R.length} 列。確認每個欄位對應對不對：</div>
+  <div class="grid"><label class="fl"><span>日期</span>${opt('d')}</label><label class="fl"><span>說明／商店</span>${opt('t')}</label><label class="fl"><span>金額（支出）</span>${opt('a')}</label><label class="fl"><span>收入／存入（選填）</span>${opt('i',1)}</label></div>
+  <label class="row" style="margin-top:8px"><input type="checkbox" data-m="imp.flip" data-r="1" ${I.flip?'checked':''}><span class="sub">金額是「負數＝支出」（有些銀行明細這樣寫）</span></label>
+  <h2>預覽</h2><table class="pv"><tr><th>日期</th><th>說明</th><th style="text-align:right">金額</th></tr>${prev.map(r=>`<tr><td>${md(r.d)}</td><td>${E(r.desc)}</td><td class="num" style="text-align:right">${r.v<0?'+'+M(-r.v):M(r.v)}</td></tr>`).join('')||'<tr><td colspan="3" class="sub">對不到資料，請換欄位</td></tr>'}</table>
+  <div class="row" style="margin-top:10px;justify-content:space-between"><button class="go g" data-a="impreset">重來</button><button class="go" data-a="impmap">下一步</button></div></div>`;
+ }else{
+  const on=I.items.filter(x=>x.on),tot=on.reduce((s,x)=>s+(x.type==='out'?x.amt:0),0);
+  h+=`<div class="card"><div class="row"><div class="sp">共 ${I.items.length} 筆，勾選 ${on.length} 筆<div class="sub">支出合計 ${M(tot)}</div></div><button class="go q" data-a="impall">${on.length===I.items.length?'全不選':'全選'}</button></div>
+  ${I.items.map((x,i)=>{const cs=S.cats[x.type==='in'?'in':'out'],a=A(x.acct),to=A(x.to);return`<div class="it ${x.on?'':'off'}"><input type="checkbox" data-a="impon" data-i="${i}" ${x.on?'checked':''}><div class="sp"><div class="row"><span class="sp">${md(x.d)} ${E(x.desc)}</span><b class="num ${x.type==='in'?'in':''}">${x.type==='in'?'+':''}${M(x.amt)}</b></div>
+  ${x.type==='xfer'?`<div class="sub">繳卡費：${E(a?a.name:'?')} → ${E(to?to.name:'?')}</div>`:`<select data-m="imp.items.${i}.cat">${cs.map(c=>`<option ${c===x.cat?'selected':''}>${E(c)}</option>`).join('')}</select>`}
+  ${x.why?`<div class="late" style="font-weight:400">${E(x.why)}</div>`:''}</div></div>`}).join('')}
+  <div class="row" style="margin-top:10px;justify-content:space-between"><button class="go g" data-a="impreset">重來</button><button class="go" data-a="impdo" ${on.length?'':'disabled'}>匯入 ${on.length} 筆</button></div></div>`;
+ }
+ return h;
+}
+
+function vSet(){
+ const la=livingAuto();
+ let h=`<h1>設定</h1><h2>帳戶</h2><div class="card">${S.accts.map(a=>`<div class="li" data-a="edacct" data-i="${a.id}"><div class="ic">${TY[a.type].slice(0,1)}</div><div class="sp"><div>${E(a.name)}</div><div class="sub">${TY[a.type]}${isCard(a)?` · ${a.close} 號結帳、${a.due} 號繳款`:''}</div></div><div class="num">${isCard(a)?'未繳 '+M(cardInfo(a).owe):M(bal(a))}</div></div>`).join('')}
+ <button class="go q" style="margin-top:8px" data-a="addacct">＋ 新增帳戶／信用卡</button></div>
+ <h2>預留現金的估算</h2><div class="card"><div class="grid">
+ <label class="fl"><span>每月日常花費（空白＝自動，目前 ${M(la)}）</span><input inputmode="numeric" data-m="living" data-s="1" data-n="1" value="${S.living==null?'':E(S.living)}" placeholder="${Math.round(la)}"></label>
+ <label class="fl"><span>安全水位（最少想留的錢）</span><input inputmode="numeric" data-m="keep" data-s="1" data-n="1" value="${E(S.keep||'')}" placeholder="0"></label></div>
+ <div class="sub" style="margin-top:6px">日常花費是吃飯、交通這類不固定的支出；自動估算會用最近 3 個月的紀錄，扣掉已經列在「帳單」裡的分類。</div></div>
+ <h2>自動分類規則（說明裡有關鍵字就歸到該分類）</h2><div class="card">
+ <div class="row" style="gap:6px"><input id="rk" placeholder="關鍵字，例：停車"><select id="rc">${S.cats.out.concat(S.cats.in).map(c=>`<option>${E(c)}</option>`).join('')}</select><button class="go q" data-a="ruleadd">新增</button></div>
+ <div class="chips" style="margin-top:8px">${S.rules.map((r,i)=>`<span class="pill">${E(r.k)} → ${E(r.c)} <button class="x" style="font-size:14px" data-a="ruledel" data-i="${i}">×</button></span>`).join('')}</div></div>
+ <h2>分類（用逗號分開）</h2><div class="card"><label class="fl"><span>支出</span><textarea rows="2" data-m="cats.out" data-s="1" data-l="1">${E(S.cats.out.join('，'))}</textarea></label><label class="fl" style="margin-top:6px"><span>收入</span><textarea rows="2" data-m="cats.in" data-s="1" data-l="1">${E(S.cats.in.join('，'))}</textarea></label></div>
+ <h2>帳號與備份</h2><div class="card">
+ ${window.FBU?`<div class="row" style="margin-bottom:8px"><span class="sp sub">帳號：${E(FBU.email)}</span><button class="go q" data-a="logout">登出</button></div>`:''}
+ <div class="sub" style="margin-bottom:8px">${E(CL.st)}</div>
+ <div class="row" style="gap:6px;flex-wrap:wrap"><button class="go q" data-a="export">下載備份檔</button><button class="go q" data-a="importjson">從備份還原</button><a href="./" class="sp" style="text-align:right">新人名單 →</a></div>
+ <input type="file" id="bkf" accept=".json,application/json" style="display:none"></div>`;
+ return h;
+}
+
+// ── 編輯視窗 ──
+function sheetTx(o){
+ const cs=S.cats[o.type==='in'?'in':'out'],x=o.type==='xfer';
+ const acs=(k,lbl)=>`<label class="fl"><span>${lbl}</span><select data-m="sheet.o.${k}" data-r="1">${S.accts.map(a=>`<option value="${a.id}" ${o[k]===a.id?'selected':''}>${E(a.name)}</option>`).join('')}</select></label>`;
+ return`<div class="row"><b class="sp" style="font-size:17px">${o.id?'編輯':'記一筆'}</b><button class="x" data-a="close">×</button></div>
+ <div class="chips" style="margin:8px 0">${[['out','支出'],['in','收入'],['xfer','轉帳／繳卡費']].map(([k,n])=>`<button class="chip ${o.type===k?'on':''}" data-a="ty" data-i="${k}">${n}</button>`).join('')}</div>
+ <input class="amt" id="famt" inputmode="decimal" placeholder="0" value="${E(o.amt)}" data-m="sheet.o.amt">
+ <div class="grid">${x?acs('acct','從')+acs('to','轉到'):acs('acct','帳戶')}<label class="fl"><span>日期</span><input type="date" value="${o.d}" data-m="sheet.o.d"></label>${x?'':'<span></span>'}</div>
+ <label class="fl"><span>說明</span><input value="${E(o.note)}" data-m="sheet.o.note" data-g="1" placeholder="${x?'例：繳卡費、提款':'例：午餐、停車費'}"></label>
+ ${x?'':`<div class="fl" style="margin-top:8px"><span class="sub">分類</span><div class="chips" style="margin-top:4px">${cs.map(c=>`<button class="chip ${o.cat===c?'on':''}" data-a="cat" data-i="${E(c)}">${E(c)}</button>`).join('')}</div></div>
+ ${o.note&&o.cat&&o.catSet&&guess(o.note,o.type)!==o.cat?`<div class="sub" style="margin-top:6px"><a href="#" data-a="rule">以後說明有「${E(o.note.slice(0,12))}」都分到「${E(o.cat)}」</a></div>`:''}`}
+ <div class="row" style="margin-top:14px;gap:8px">${o.id?'<button class="go r" data-a="deltx">刪除</button>':''}<span class="sp"></span><button class="go" data-a="savetx">儲存</button></div>`;
+}
+function sheetBill(o){
+ const cs=S.cats[o.kind==='in'?'in':'out'];
+ return`<div class="row"><b class="sp" style="font-size:17px">${o.id?'編輯帳單':'新增帳單'}</b><button class="x" data-a="close">×</button></div>
+ <div class="chips" style="margin:8px 0">${[['out','要繳的錢'],['in','固定收入']].map(([k,n])=>`<button class="chip ${o.kind===k?'on':''}" data-a="bk" data-i="${k}">${n}</button>`).join('')}</div>
+ <div class="grid"><label class="fl w"><span>名稱</span><input value="${E(o.name)}" data-m="sheet.o.name"></label>
+ <label class="fl"><span>金額（不固定就填大概）</span><input inputmode="decimal" value="${E(o.amt)}" data-m="sheet.o.amt"></label>
+ <label class="fl"><span>多久一次</span><select data-m="sheet.o.freq" data-n="1">${FQ.map(([v,n])=>`<option value="${v}" ${+o.freq===v?'selected':''}>${n}</option>`).join('')}</select></label>
+ <label class="fl"><span>下次${o.kind==='in'?'入帳':'繳費／扣款'}日</span><input type="date" value="${o.next}" data-m="sheet.o.next"></label>
+ <label class="fl"><span>${o.kind==='in'?'入帳帳戶':'從哪裡付'}</span><select data-m="sheet.o.acct">${S.accts.filter(a=>o.kind!=='in'||!isCard(a)).map(a=>`<option value="${a.id}" ${o.acct===a.id?'selected':''}>${E(a.name)}</option>`).join('')}</select></label>
+ <label class="fl"><span>分類</span><select data-m="sheet.o.cat">${cs.map(c=>`<option ${c===o.cat?'selected':''}>${E(c)}</option>`).join('')}</select></label>
+ <label class="row" style="align-self:end;height:38px"><input type="checkbox" data-m="sheet.o.auto" ${o.auto?'checked':''}><span>自動扣繳</span></label>
+ <label class="fl w"><span>備註</span><input value="${E(o.note)}" data-m="sheet.o.note"></label></div>
+ <div class="row" style="margin-top:14px;gap:8px">${o.id?'<button class="go r" data-a="delbill">刪除</button>':''}<span class="sp"></span><button class="go" data-a="savebill">儲存</button></div>`;
+}
+function sheetAcct(o){
+ const c=o.type==='card';
+ return`<div class="row"><b class="sp" style="font-size:17px">${o.id?'編輯帳戶':'新增帳戶'}</b><button class="x" data-a="close">×</button></div>
+ <div class="chips" style="margin:8px 0">${Object.keys(TY).map(k=>`<button class="chip ${o.type===k?'on':''}" data-a="at" data-i="${k}">${TY[k]}</button>`).join('')}</div>
+ <div class="grid"><label class="fl w"><span>名稱</span><input value="${E(o.name)}" data-m="sheet.o.name" placeholder="${c?'例：國泰 CUBE 卡':'例：郵局、錢包'}"></label>
+ ${c?`<label class="fl"><span>每月幾號結帳</span><input inputmode="numeric" value="${E(o.close)}" data-m="sheet.o.close"></label>
+ <label class="fl"><span>每月幾號前要繳</span><input inputmode="numeric" value="${E(o.due)}" data-m="sheet.o.due"></label>
+ <label class="fl w"><span>已出帳還沒繳的金額（之後會匯入這期明細的話填 0，避免重複）</span><input inputmode="decimal" value="${E(o.init)}" data-m="sheet.o.init"></label>`
+ :`<label class="fl w"><span>現在實際有多少錢${o.id?'（改這裡就是對帳）':''}</span><input inputmode="decimal" value="${E(o.now)}" data-m="sheet.o.now"></label>`}</div>
+ ${c?'<div class="sub" style="margin-top:6px">結帳日、繳款日印在信用卡帳單上。之後的刷卡會自動算進對應的那一期帳單。</div>':''}
+ <div class="row" style="margin-top:14px;gap:8px">${o.id?'<button class="go r" data-a="delacct">刪除</button>':''}<span class="sp"></span><button class="go" data-a="saveacct">儲存</button></div>`;
+}
+
+const TABS=[['home','◎','總覽'],['tx','≡','記帳'],['bills','▦','帳單'],['imp','⇣','匯入'],['set','⚙︎','設定']];
+let RD=0,RD2=0,KF=0;
+function render(){
+ // 換掉畫面時，正在輸入的欄位失焦會觸發 change；那次重畫延後到這次畫完再做
+ if(RD){RD2=1;return}RD=1;
+ try{renderNow()}finally{RD=0}
+ if(RD2){RD2=0;render()}
+}
+function renderNow(){
+ const y=window.scrollY,V={home:vHome,tx:vTx,bills:vBills,imp:vImp,set:vSet},ae=KF&&document.activeElement,am=ae&&ae.dataset&&ae.dataset.m,cp=am&&ae.selectionStart;KF=0;
+ $('app').innerHTML=V[U.tab]();
+ $('nav').innerHTML=TABS.map(([k,i,n])=>`<button class="${U.tab===k?'on':''}" data-a="tab" data-i="${k}"><b>${i}</b>${n}</button>`).join('');
+ const sh=U.sheet;$('sheet').innerHTML=sh?`<div class="sheet" data-a="bg"><div>${sh.k==='tx'?sheetTx(sh.o):sh.k==='bill'?sheetBill(sh.o):sheetAcct(sh.o)}</div></div>`:'';
+ window.scrollTo(0,y);
+ if(am){const f=document.querySelector(`[data-m="${am}"]`);if(f&&f.tagName!=='SELECT'){f.focus();try{f.setSelectionRange(cp,cp)}catch(e){}}}
+}
+
+// ── 匯入解析 ──
+function pDate(s){
+ s=String(s||'').trim();let m,y,mo,d;
+ if(m=s.match(/^(\d{4})[\/\-.年](\d{1,2})[\/\-.月](\d{1,2})/))[y,mo,d]=[+m[1],+m[2],+m[3]];
+ else if(m=s.match(/^(\d{2,3})[\/\-.年](\d{1,2})[\/\-.月](\d{1,2})/))[y,mo,d]=[+m[1]+1911,+m[2],+m[3]];
+ else if(m=s.match(/^(\d{4})(\d{2})(\d{2})$/))[y,mo,d]=[+m[1],+m[2],+m[3]];
+ else if(m=s.match(/^(\d{3})(\d{2})(\d{2})$/))[y,mo,d]=[+m[1]+1911,+m[2],+m[3]];
+ else if(m=s.match(/^(\d{1,2})[\/\-月](\d{1,2})日?$/)){y=new Date().getFullYear();mo=+m[1];d=+m[2];if(mo>=1&&mo<=12&&dleft(iso(new Date(y,mo-1,d)))>31)y--}
+ else return '';
+ if(mo<1||mo>12||d<1||d>dim(y,mo-1)||y<1990||y>2100)return '';
+ return iso(new Date(y,mo-1,d));
+}
+function pAmt(s){
+ s=String(s==null?'':s).trim();if(!s)return NaN;let neg=false;
+ if(/^\(.*\)$/.test(s)){neg=true;s=s.slice(1,-1)}
+ s=s.replace(/NT\$?|TWD|\$|＄|元|,|，|\s/gi,'');
+ if(/-$/.test(s)){neg=!neg;s=s.slice(0,-1)}
+ if(!/^[-+]?\d+(\.\d+)?$/.test(s))return NaN;
+ const v=parseFloat(s);return neg?-v:v;
+}
+function csv(text){
+ const head=text.split(/\r?\n/).slice(0,30).join('\n');
+ const sep=[',','\t',';','|'].map(s=>[s,head.split(s).length]).sort((a,b)=>b[1]-a[1])[0][0];
+ const rows=[];let row=[],cur='',q=false;
+ for(let i=0;i<text.length;i++){const ch=text[i];
+  if(q){if(ch==='"'){if(text[i+1]==='"'){cur+='"';i++}else q=false}else cur+=ch}
+  else if(ch==='"')q=true;else if(ch===sep){row.push(cur);cur=''}
+  else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(cur);rows.push(row);row=[];cur=''}
+  else cur+=ch}
+ if(cur||row.length){row.push(cur);rows.push(row)}
+ return rows.map(r=>r.map(c=>c.replace(/^﻿/,'').trim().replace(/^="?|"$/g,'').trim())).filter(r=>r.some(c=>c));
+}
+// 財政部電子發票「載具消費明細」CSV：M|載具名稱|載具號碼|發票日期|商店統編|商店店名|發票號碼|總金額|發票狀態 、D|發票號碼|小計|品項名稱
+function parseEinv(text){
+ const inv={},out=[];
+ text.split(/\r?\n/).forEach(ln=>{ln=ln.replace(/^﻿/,'').trim();if(!ln)return;
+  const f=ln.split(ln.includes('|')?'|':',').map(x=>x.trim().replace(/^"|"$/g,''));
+  if(f[0]==='M'){if(/作廢|折讓/.test(f[8]||''))return;const d=pDate(f[3]),a=pAmt(f[7]);if(!d||isNaN(a))return;inv[f[6]]={d,shop:f[5],amt:a,items:[]};out.push(inv[f[6]])}
+  else if(f[0]==='D'&&inv[f[1]])inv[f[1]].items.push(f[3])});
+ return out;
+}
+function guessMap(R){
+ const n=Math.max(...R.map(r=>r.length)),js=Array.from({length:n},(_,j)=>j);
+ const di=js.map(j=>[j,R.filter(r=>pDate(r[j])).length]).sort((a,b)=>b[1]-a[1]||a[0]-b[0])[0][0];
+ const data=R.filter(r=>pDate(r[di])),hi=R.indexOf(data[0])-1,H=j=>(hi>=0&&R[hi][j])||'';
+ const nums=js.filter(j=>{if(j===di)return false;const ne=data.filter(r=>r[j]).length,k=data.filter(r=>r[j]&&!isNaN(pAmt(r[j]))&&!pDate(r[j])).length;return k>0&&k>=ne*0.8&&!/卡號|帳號|編號|序號|末四|外幣|幣別/.test(H(j))});
+ let ai=nums.find(j=>/支出|提款|扣款|消費|台幣|臺幣|入帳金額|金額/.test(H(j))&&!/外幣|餘額|存入|收入/.test(H(j)));
+ if(ai==null)ai=nums.find(j=>!/餘額|存入|收入/.test(H(j)));
+ const ii=nums.find(j=>j!==ai&&/存入|收入|轉入/.test(H(j)));
+ const avg=j=>data.reduce((s,r)=>s+(r[j]||'').length,0)/(data.length||1);
+ const tj=js.filter(j=>j!==di&&!nums.includes(j)&&!pDate((data[0]||[])[j])).sort((a,b)=>avg(b)-avg(a))[0];
+ return{d:di,a:ai==null?-1:ai,i:ii==null?-1:ii,t:tj==null?di:tj,h:hi};
+}
+function buildRows(){
+ const I=U.imp,m=I.map,out=[];
+ I.rows.forEach(r=>{const d=pDate(r[m.d]);if(!d)return;
+  const a=pAmt(r[m.a]),inc=+m.i>=0?pAmt(r[m.i]):NaN;let v;
+  if(!isNaN(inc)&&inc>0)v=-inc;else if(!isNaN(a))v=I.flip?-a:a;else return;
+  if(v)out.push({d,desc:r[m.t]||'',v})});
+ return out;
+}
+// v：正數＝從這個帳戶花出去，負數＝退款／存入／繳卡費
+function mkItem(d,desc,v,src){
+ const I=U.imp,a=A(I.acct),it={d,desc:String(desc||'').replace(/\s+/g,' ').trim(),on:true,src,amt:Math.round(Math.abs(v)*100)/100};
+ const card=S.accts.find(isCard);
+ if(v<0){if(isCard(a)&&/繳款|扣繳|感謝|謝謝|轉帳繳|ACH/.test(it.desc)){it.type='xfer';it.acct=firstBank();it.to=a.id}else{it.type='in';it.acct=a.id}}
+ else if(!isCard(a)&&card&&/信用卡|卡費|卡款/.test(it.desc)){it.type='xfer';it.acct=a.id;it.to=card.id}
+ else{it.type='out';it.acct=a.id}
+ it.cat=it.type==='xfer'?'':guess(it.desc,it.type)||(it.type==='in'?(isCard(a)?'退款':'其他收入'):'其他');
+ if(/上期|本期應繳|應繳總額|最低應繳|前期餘額|本期帳單/.test(it.desc)){it.on=false;it.why='看起來是帳單彙總列'}
+ const dup=S.tx.find(t=>t.type===it.type&&Math.abs(t.amt-it.amt)<0.01&&Math.abs(dleft(t.d)-dleft(it.d))<=3&&(src==='einv'||t.acct===it.acct||(it.to&&t.to===it.to)));
+ if(dup){it.on=false;it.why='可能重複：已有 '+md(dup.d)+' '+(dup.note||dup.cat||'')+' '+M(dup.amt)}
+ return it;
+}
+async function readFile(f){
+ const buf=await f.arrayBuffer();
+ try{return new TextDecoder('utf-8',{fatal:true}).decode(buf)}catch(e){return new TextDecoder('big5').decode(buf)}
+}
+function impParse(){
+ const I=U.imp,t=(I.text||'').trim();
+ if(!t)return toast('請先選檔案或貼上內容');
+ if(/^﻿?(表頭=)?M[|,]/m.test(t)){
+  const inv=parseEinv(t);if(!inv.length)return toast('讀不到發票資料');
+  I.items=inv.map(x=>mkItem(x.d,x.shop.replace(/股份有限公司|有限公司/g,' ')+(x.items.length?'｜'+x.items.slice(0,3).join('、'):''),x.amt,'einv'));I.step='pre';return render();
+ }
+ const R=csv(t);
+ if(R.length<1||Math.max(...R.map(r=>r.length))<2||!R.some(r=>r.some(c=>pDate(c)))){toast('看不出表格格式，改用 AI 辨識試試');return}
+ I.rows=R;I.map=guessMap(R);I.step='map';render();
+}
+async function impAI(){
+ const I=U.imp;if(!I.file&&!(I.text||'').trim())return toast('請先選圖片或貼上文字');
+ const sm=window.claude&&await claude.use('sample');if(!sm)return toast('目前無法使用 AI');
+ I.busy=1;render();
+ const prompt=`你是記帳助理。請從${I.file?'這張圖片（信用卡帳單、銀行明細、收據或通知截圖）':'下面的文字'}找出每一筆交易，只回傳 JSON：{"items":[{"date":"YYYY-MM-DD","desc":"商店或說明","amount":數字}]}。
+規則：今天是 ${today()}；沒寫年份就用不晚於今天、最接近的年份；民國年加 1911 換成西元。amount 用新台幣：消費、刷卡、扣款、付款為正數；退款、存入、收入、繳卡費為負數；外幣交易用換算後的台幣金額。不要包含「本期應繳總額」「最低應繳」「上期餘額」這類彙總列。找不到就回傳 {"items":[]}。`+(I.file?'':'\n\n文字：\n'+I.text);
+ try{
+  const r=await sm.json(prompt,I.file?{images:I.file}:{}),xs=(r&&r.items)||[];
+  I.items=xs.map(x=>({d:pDate(x.date),v:+x.amount,desc:x.desc})).filter(x=>x.d&&x.v).map(x=>mkItem(x.d,x.desc,x.v,'ai'));
+  I.busy=0;if(!I.items.length){toast('AI 沒有找到交易紀錄');return render()}
+  I.step='pre';render();
+ }catch(e){I.busy=0;render();const c=e&&e.code;toast(c==='quota'?'AI 免費額度用完了，請稍後再試':c==='none'?'AI 還沒啟用：請到 Firebase 主控台開啟 AI Logic':c==='empty'?'AI 看不懂這份內容':'AI 辨識失敗，請再試一次')}
+}
+
+// ── 動作 ──
+const setP=(o,p,v)=>{const k=p.split('.');let a=o;while(k.length>1)a=a[k.shift()];a[k[0]]=v};
+const getP=(o,p)=>p.split('.').reduce((a,k)=>a==null?a:a[k],o);
+function openTx(o){U.sheet={k:'tx',o};render();if(!o.id)setTimeout(()=>{const f=$('famt');f&&f.focus()},50)}
+function openBill(o){U.sheet={k:'bill',o};render()}
+function payBill(b,skip){
+ if(!skip){
+  const v=prompt(`${b.name} 這期實際金額`,b.amt);if(v===null)return;const n=pAmt(v);if(!(n>0))return toast('金額不正確');
+  const d=b.next<=today()?b.next:today();
+  S.tx.push({id:nid(),d,type:b.kind==='in'?'in':'out',amt:n,acct:b.acct,cat:b.cat,note:b.name,bill:b.id,src:'m',ts:Date.now()});
+ }
+ if(+b.freq)b.next=addM(b.next,+b.freq,b.day);else S.bills=S.bills.filter(x=>x!==b);
+ save();render();toast(skip?'已略過這期':'已記錄，下次 '+(+b.freq?md(b.next):'不用再繳'));
+}
+const ACT={
+ tab:i=>{U.tab=i;U.sheet=null;render();window.scrollTo(0,0)},
+ h:i=>{U.h=+i;render()},
+ mon:i=>{U.mon=addM(U.mon+'-01',+i).slice(0,7);render()},
+ fa:i=>{U.fa=i;render()},
+ bg:(i,el,e)=>{if(e.target===el){U.sheet=null;render()}},
+ close:()=>{U.sheet=null;render()},
+ addtx:()=>openTx({type:'out',amt:'',acct:A(S.lastAcct)?S.lastAcct:S.accts[0].id,to:'',cat:'',d:today(),note:''}),
+ edtx:i=>{const t=S.tx.find(x=>x.id===i);if(t)openTx(Object.assign({to:''},t,{catSet:1}))},
+ paycard:i=>{const c=A(i),I=cardInfo(c);openTx({type:'xfer',amt:Math.round(I.billed.reduce((s,x)=>s+x.left,0)),acct:firstBank(),to:i,cat:'',d:today(),note:'繳 '+c.name})},
+ ty:i=>{const o=U.sheet.o;o.type=i;if(!o.catSet||!S.cats[i==='in'?'in':'out'].includes(o.cat))o.cat=guess(o.note,i),o.catSet=0;if(i==='xfer'&&(!o.to||o.to===o.acct))o.to=(S.accts.find(a=>a.id!==o.acct&&isCard(a))||S.accts.find(a=>a.id!==o.acct)||{}).id;render()},
+ cat:i=>{const o=U.sheet.o;o.cat=i;o.catSet=1;render()},
+ rule:()=>{const o=U.sheet.o,k=o.note.trim().slice(0,12);S.rules=S.rules.filter(r=>r.k!==k);S.rules.unshift({k,c:o.cat});save();render();toast('已新增規則：'+k+' → '+o.cat)},
+ savetx:()=>{const o=U.sheet.o,amt=pAmt(o.amt);
+  if(!(amt>0))return toast('請輸入金額');if(!o.d)return toast('請選日期');
+  if(o.type==='xfer'&&(!o.to||o.to===o.acct))return toast('請選不同的轉出、轉入帳戶');
+  const t={id:o.id||nid(),d:o.d,type:o.type,amt,acct:o.acct,cat:o.type==='xfer'?'':(o.cat||guess(o.note,o.type)||(o.type==='in'?'其他收入':'其他')),note:(o.note||'').trim(),src:o.src||'m',ts:o.ts||Date.now()};
+  if(o.type==='xfer')t.to=o.to;if(o.bill)t.bill=o.bill;
+  const k=S.tx.findIndex(x=>x.id===t.id);if(k>=0)S.tx[k]=t;else S.tx.push(t);
+  S.lastAcct=o.acct;U.sheet=null;save();render();toast(o.id?'已更新':'已記下 '+M(amt))},
+ deltx:()=>{if(!confirm('刪除這筆紀錄？'))return;S.tx=S.tx.filter(x=>x.id!==U.sheet.o.id);U.sheet=null;save();render()},
+ addbill:i=>{const p=PRESETS[+i]||{name:'',cat:'其他',freq:1};openBill({name:p.name,kind:p.kind||'out',amt:'',freq:p.freq,next:today(),acct:p.kind==='in'?firstBank():(p.auto&&S.accts.find(isCard)||A(firstBank())||S.accts[0]).id,cat:p.cat,auto:!!p.auto,note:p.note||''})},
+ edbill:i=>{const b=S.bills.find(x=>x.id===i);if(b)openBill(Object.assign({},b))},
+ bk:i=>{const o=U.sheet.o;o.kind=i;const cs=S.cats[i==='in'?'in':'out'];if(!cs.includes(o.cat))o.cat=cs[0];if(i==='in'&&isCard(A(o.acct)))o.acct=firstBank();render()},
+ savebill:()=>{const o=U.sheet.o,amt=pAmt(o.amt);
+  if(!o.name.trim())return toast('請輸入名稱');if(!(amt>=0))return toast('請輸入金額');if(!o.next)return toast('請選日期');
+  const b={id:o.id||nid(),name:o.name.trim(),kind:o.kind,amt,freq:+o.freq,next:o.next,day:+o.next.slice(8,10),acct:o.acct,cat:o.cat,auto:!!o.auto,note:(o.note||'').trim()};
+  const k=S.bills.findIndex(x=>x.id===b.id);if(k>=0)S.bills[k]=b;else S.bills.push(b);U.sheet=null;save();render()},
+ delbill:()=>{if(!confirm('刪除這個帳單？（已記錄的支出不會被刪）'))return;S.bills=S.bills.filter(x=>x.id!==U.sheet.o.id);U.sheet=null;save();render()},
+ paybill:i=>{const b=S.bills.find(x=>x.id===i);if(b)payBill(b,false)},
+ skipbill:i=>{const b=S.bills.find(x=>x.id===i);if(b)payBill(b,true)},
+ addacct:()=>{U.sheet={k:'acct',o:{type:'bank',name:'',now:'',close:5,due:20,init:0}};render()},
+ edacct:i=>{const a=A(i);U.sheet={k:'acct',o:Object.assign({},a,{now:isCard(a)?'':Math.round(bal(a)*100)/100})};render()},
+ at:i=>{U.sheet.o.type=i;render()},
+ saveacct:()=>{const o=U.sheet.o;if(!o.name.trim())return toast('請輸入名稱');
+  const old=o.id&&A(o.id),a=old||{id:nid()};
+  if(old&&old.type!==o.type&&(isCard(old)||o.type==='card')&&S.tx.some(t=>t.acct===old.id||t.to===old.id))return toast('已經有紀錄的帳戶不能在信用卡和現金／銀行之間切換');
+  a.name=o.name.trim();a.type=o.type;
+  if(o.type==='card'){const c=+o.close,d=+o.due;if(!(c>=1&&c<=31&&d>=1&&d<=31))return toast('結帳日、繳款日請填 1～31');
+   if(!old||+old.init!==(pAmt(o.init)||0)||!old.since)a.since=today();a.close=c;a.due=d;a.init=pAmt(o.init)||0}
+  else{delete a.close;delete a.due;delete a.since;const now=pAmt(o.now)||0;a.init=0;a.init=now-bal(a)}
+  if(!old)S.accts.push(a);U.sheet=null;save();render()},
+ delacct:()=>{const id=U.sheet.o.id;if(S.tx.some(t=>t.acct===id||t.to===id)||S.bills.some(b=>b.acct===id))return toast('這個帳戶還有紀錄或帳單，不能刪除');if(S.accts.length<2)return toast('至少要留一個帳戶');if(!confirm('刪除這個帳戶？'))return;S.accts=S.accts.filter(a=>a.id!==id);U.sheet=null;save();render()},
+ ruleadd:()=>{const k=$('rk').value.trim(),c=$('rc').value;if(!k)return toast('請輸入關鍵字');S.rules=S.rules.filter(r=>r.k!==k);S.rules.unshift({k,c});save();render()},
+ ruledel:i=>{S.rules.splice(+i,1);save();render()},
+ impparse:()=>impParse(),
+ impai:()=>impAI(),
+ impclr:()=>{U.imp.file=null;render()},
+ impreset:()=>{U.imp=null;render()},
+ impmap:()=>{const rs=buildRows();if(!rs.length)return toast('對不到資料，請換欄位');U.imp.items=rs.map(r=>mkItem(r.d,r.desc,r.v,'csv'));U.imp.step='pre';render();window.scrollTo(0,0)},
+ impon:i=>{const x=U.imp.items[+i];x.on=!x.on;render()},
+ impall:()=>{const its=U.imp.items,all=its.every(x=>x.on);its.forEach(x=>x.on=!all);render()},
+ impdo:()=>{const its=U.imp.items.filter(x=>x.on),ts=Date.now();
+  its.forEach((x,k)=>{const t={id:nid()+k,d:x.d,type:x.type,amt:x.amt,acct:x.acct,cat:x.cat,note:x.desc,src:x.src,ts:ts+k};if(x.type==='xfer')t.to=x.to;S.tx.push(t)});
+  const last=its.reduce((m,x)=>x.d>m?x.d:m,'');U.imp=null;U.tab='tx';U.fa='';U.q='';if(last)U.mon=last.slice(0,7);save();render();window.scrollTo(0,0);toast('已匯入 '+its.length+' 筆')},
+ export:()=>{const b=new Blob([JSON.stringify({v:1,money:S})],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='記帳備份-'+today()+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)},
+ importjson:()=>$('bkf').click(),
+ logout:()=>window.fbLogout&&fbLogout(),
+};
+document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;if(el.tagName==='A')e.preventDefault();const f=ACT[el.dataset.a];if(f)f(el.dataset.i,el,e)});
+function field(e){
+ const el=e.target,p=el.dataset&&el.dataset.m;if(!p)return;
+ let v=el.type==='checkbox'?el.checked:el.value;
+ if(el.dataset.n)v=v===''?(p==='living'?null:''):+v;
+ if(el.dataset.l)v=String(v).split(/[,，、\s]+/).map(x=>x.trim()).filter(Boolean);
+ if(el.dataset.l&&!v.length)return;
+ setP(p.startsWith('imp.')||p.startsWith('sheet.')||p==='q'?U:S,p,v);
+ if(el.dataset.s)save();
+ if(el.dataset.g){const o=U.sheet.o;if(!o.catSet){const g=guess(o.note,o.type);if(g&&g!==o.cat){o.cat=g;document.querySelectorAll('[data-a="cat"]').forEach(b=>b.classList.toggle('on',b.dataset.i===g))}}}
+ if(el.dataset.r&&(e.type==='input'||el.tagName==='SELECT'||el.type==='checkbox')){KF=e.type==='input';render()}
+}
+document.addEventListener('input',e=>{if(e.target.type!=='checkbox'&&e.target.tagName!=='SELECT'&&!e.target.dataset.l)field(e)});
+document.addEventListener('change',async e=>{
+ const el=e.target;
+ if(el.id==='impf'&&el.files[0]){const f=el.files[0];if(/^image\//.test(f.type)){U.imp.file=f;U.imp.text=''}else if(/\.xlsx?$/i.test(f.name)){toast('請先用 Excel 另存成 CSV 再匯入')}else{U.imp.file=null;U.imp.text=await readFile(f);impParse()}render();return}
+ if(el.id==='bkf'&&el.files[0]){try{const o=JSON.parse(await readFile(el.files[0])),m=o.money||o;if(!Array.isArray(m.tx)||!Array.isArray(m.accts))throw 0;if(!confirm('用備份檔取代目前全部資料？'))return;S=Object.assign(DEF(),m);save();render();toast('已還原')}catch(x){toast('不是記帳備份檔')}return}
+ field(e);
+});
+
+// ── 雲端同步：每種資料一個文件，交易紀錄按月份分開 ──
+function parts(){
+ const o={},by={};
+ Object.keys(S).forEach(k=>{if(k!=='tx')o[k]=JSON.stringify(S[k])});
+ S.tx.forEach(t=>{(by[t.d.slice(0,7)]=by[t.d.slice(0,7)]||[]).push(t)});
+ Object.keys(by).forEach(m=>{o['tx_'+m]=JSON.stringify(by[m])});
+ Object.keys(CL.last).forEach(k=>{if(k.startsWith('tx_')&&!(k in o))o[k]='[]'});
+ return o;
+}
+function cloudQ(){if(!CL.col)return;clearTimeout(CL.tm);CL.st='☁︎ 等待同步…';CL.tm=setTimeout(cloudPush,1500)}
+async function cloudPush(){
+ if(CL.busy){CL.again=1;return}
+ CL.busy=1;
+ try{
+  if(!localStorage.getItem('money-t'))localStorage.setItem('money-t',String(Date.now()));
+  const t=+localStorage.getItem('money-t'),o=parts();
+  for(const k of Object.keys(o)){const j=o[k];if(j===undefined||j===CL.last[k])continue;if(j.length>900000){CL.st='⚠︎「'+k+'」資料太大，無法同步';continue}await CL.col.doc('m_'+k).set({j});CL.last[k]=j}
+  await CL.col.doc('m__meta').set({t});
+  CL.st='☁︎ 已同步到雲端 '+new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+ }catch(e){CL.st='⚠︎ 雲端同步失敗，資料仍存在這支手機（'+((e&&e.code)||'錯誤')+'）'}
+ CL.busy=0;if(CL.again){CL.again=0;cloudQ()}
+}
+(async()=>{
+ try{
+  const db=await claude.use('db'),us=await claude.use('user');
+  const uid=us&&await us.id();
+  if(!db||!uid){CL.st='⚠︎ 沒有連到雲端（請重新登入），資料只存在這支手機';return}
+  CL.col=db.collection('data/users/'+uid);
+  const snap=await CL.col.get(),docs={};
+  snap.docs.forEach(d=>{if(d.id.startsWith('m_'))docs[d.id]=d.data()});
+  const ct=docs.m__meta?(+docs.m__meta.t||0):0,lt=CL.LT0,hasLocal=CL.HAS0;
+  if(ct>lt){
+   let rl='';try{rl=sessionStorage.getItem('mrl')}catch(e){}
+   if(rl!==String(ct)){
+    const o={tx:[]};
+    try{localStorage.setItem('money-prev',localStorage.getItem('money-v1')||'')}catch(e){}
+    Object.keys(docs).forEach(id=>{if(id==='m__meta')return;const k=id.slice(2);try{const v=JSON.parse(docs[id].j);if(k.startsWith('tx_'))o.tx.push(...v);else o[k]=v}catch(e){}});
+    localStorage.setItem('money-v1',JSON.stringify(o));localStorage.setItem('money-t',String(ct));
+    try{sessionStorage.setItem('mrl',String(ct))}catch(e){}
+    location.reload();return}
+  }
+  Object.keys(docs).forEach(id=>{if(id!=='m__meta')CL.last[id.slice(2)]=docs[id].j});
+  if((ct===0&&hasLocal)||lt>ct)cloudPush();else CL.st='☁︎ 已同步到雲端';
+ }catch(e){CL.st='⚠︎ 雲端連線失敗，資料只存在這支手機'}
+ if(U.tab==='set')render();
+})();
+render();
+</script>
+</body>
+</html>

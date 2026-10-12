@@ -4,7 +4,8 @@ import { firebaseConfig, adminEmail } from './firebase-config.js';
 const V = '12.18.0', CDN = `https://www.gstatic.com/firebasejs/${V}/`;
 const box = document.getElementById('auth');
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const LOCAL_KEYS = ['roster-v2', 'roster-t', 'roster-prev'];
+const LOCAL_KEYS = ['roster-v2', 'roster-t', 'roster-prev', 'money-v1', 'money-t', 'money-prev'];
+const TITLE = box.dataset.title || '新人名單與組織';
 
 const ERR = {
   'auth/invalid-credential': 'Email 或密碼錯誤',
@@ -22,18 +23,18 @@ const ADMIN = String(adminEmail || '').trim().toLowerCase();
 const errMsg = e => ERR[e && e.code] || ('發生錯誤（' + ((e && e.code) || e) + '）');
 
 function shell(inner) {
-  box.innerHTML = `<div id="authwrap"><h1>新人名單與組織</h1><div class="card">${inner}</div></div>`;
+  box.innerHTML = `<div id="authwrap"><h1>${esc(TITLE)}</h1><div class="card">${inner}</div></div>`;
 }
 function fatal(msg) { shell(`<div class="sub" style="color:var(--bad)">${esc(msg)}</div>`); }
 
 function clearLocal() {
-  try { LOCAL_KEYS.forEach(k => localStorage.removeItem(k)); sessionStorage.removeItem('rl'); } catch (e) {}
+  try { LOCAL_KEYS.forEach(k => localStorage.removeItem(k)); sessionStorage.removeItem('rl'); sessionStorage.removeItem('mrl'); } catch (e) {}
   try { indexedDB.deleteDatabase('roster-photos'); } catch (e) {}
 }
 
 let started = false, FBAPP = null;
 
-// 用 Gemini（Firebase AI Logic）讀課表照片；index.html 透過 claude.use('sample') 呼叫
+// 用 Gemini（Firebase AI Logic）讀照片或文字；頁面透過 claude.use('sample') 呼叫
 const AI_MODELS = ['gemini-3.6-flash', 'gemini-3-flash', 'gemini-2.5-flash'];
 async function shrink(file) {
   try {
@@ -52,12 +53,13 @@ const sampler = {
     let aim;
     try { aim = await import(CDN + 'firebase-ai.js'); } catch (e) { throw { code: 'none' }; }
     const ai = aim.getAI(FBAPP, { backend: new aim.GoogleAIBackend() });
-    const img = await shrink(opts.images);
+    const parts = [prompt];
+    if (opts && opts.images) parts.push({ inlineData: await shrink(opts.images) });
     let last;
     for (const name of AI_MODELS) {
       try {
         const m = aim.getGenerativeModel(ai, { model: name, generationConfig: { responseMimeType: 'application/json' } });
-        const r = await m.generateContent([prompt, { inlineData: img }]);
+        const r = await m.generateContent(parts);
         const t = r.response.text().trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/, '');
         try { return JSON.parse(t); } catch (x) { throw { code: 'empty' }; }
       } catch (e) {
