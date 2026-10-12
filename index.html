@@ -180,7 +180,18 @@ function fuCard(){const hasR=o=>o&&MR3.some(([k])=>(o.my||{})[k]),sdOf=id=>S.sid
  ${sdb.length?`<div class="sub" style="margin-top:10px;font-size:12px">我要照顧的旁線（${sdb.length}）</div>${sRows}`:''}</div>`}
 function sideEvCard(){const td=today(),l=S.events.filter(e=>e.date>=td&&(e.sw||[]).length).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,8);if(!l.length)return '';
  return `<div class="card"><b>📅 接下來約了這些旁線</b>${l.map(e=>`<div style="padding:7px 0;border-top:1px solid var(--line);margin-top:6px"><div class="row" data-hev="${e.id}" style="cursor:pointer"><span class="pill" style="flex:none">${+e.date.slice(5,7)}/${+e.date.slice(8)}</span><b class="sp">${E(e.title)}</b></div><div style="margin-top:4px">${e.sw.map(id=>S.side.find(x=>x.id===id)).filter(Boolean).map(o=>{const st=(e.sst||{})[o.id]||'已約';return `<span data-gp="s|${o.id}" style="cursor:pointer;display:inline-block;margin:2px 8px 2px 0;font-size:13px"><b style="color:var(--acc)">${sdName(o)}</b> <span style="color:${STC[st]};font-size:12px">${st}</span></span>`}).join('')}</div></div>`).join('')}</div>`}
+const QS=()=>(S.quotes=S.quotes||[]);
+const dayNum=d=>Math.floor(new Date(d+'T00:00:00').getTime()/864e5);
+function quoteCard(){const a=QS();if(!a.length)return `<div class="card" style="padding:10px 12px"><div class="row"><span class="sp sub">💬 還沒有金玉良言，加幾句進來，每天首頁會出現一句</span><button class="go q" data-a="qmgr">＋ 新增</button></div></div>`;
+ const i=((dayNum(S.pd)+(S.qoff||0))%a.length+a.length)%a.length,q=a[i];
+ return `<div class="card" style="padding:12px 14px;border-left:4px solid var(--acc)"><div class="row" style="margin-bottom:6px"><b class="sp" style="font-size:13px;color:var(--acc)">💬 今日金玉良言</b><button class="x" data-a="qnext" title="換一句" style="font-size:13px;color:var(--sub);padding:2px 6px">↻ 換一句</button><button class="x" data-a="qmgr" style="font-size:13px;color:var(--acc);padding:2px 6px">全部 ${a.length} ›</button></div><div style="font-size:16px;line-height:1.7;white-space:pre-wrap">${E(q.t)}</div><div style="text-align:right;margin-top:4px"><button class="x" data-a="qcopy" data-z1="${i}" style="font-size:12px;color:var(--sub);padding:0">⧉ 複製</button></div></div>`}
+function quoteMgr(){const a=QS(),qs=(S.qs||'').trim().toLowerCase(),l=a.map((x,i)=>({x,i})).filter(o=>!qs||o.x.t.toLowerCase().includes(qs)).reverse();
+ return `<div class="row" style="margin-bottom:8px"><button class="go q" data-a="qmgr">‹ 回首頁</button><b class="sp" style="font-size:18px;text-align:center">💬 金玉良言</b></div>
+ <div class="card"><b>新增</b><div class="sub" style="font-size:12px;margin:2px 0 6px">一行就是一句，可以一次貼很多行</div><textarea id="qin" rows="5" placeholder="把金玉良言貼在這裡&#10;換行就是下一句"></textarea><div class="row" style="margin-top:6px"><span class="sp sub" style="font-size:12px">重複的句子會自動略過</span><button class="go" data-a="qadd">加入</button></div></div>
+ <div class="card"><input id="qsearch" placeholder="🔍 搜尋金玉良言" value="${E(S.qs||'')}"><div class="sub" style="margin:8px 0 2px;font-size:12px">${qs?'找到 '+l.length+' 句・':''}共 ${a.length} 句・最新加入的在最上面</div>
+ ${l.map(o=>`<div class="row" style="gap:8px;padding:8px 0;border-top:1px solid var(--line);align-items:flex-start"><span class="sp" style="white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6">${E(o.x.t)}</span><button class="x" data-a="qcopy" data-z1="${o.i}" style="font-size:12px;color:var(--acc);flex:none;padding:2px 4px">⧉</button><button class="x" data-a="qdel" data-z1="${o.i}" style="flex:none;padding:2px 4px">×</button></div>`).join('')||`<div class="sub" style="margin-top:8px">${qs?'找不到符合的句子':'還沒有金玉良言'}</div>`}</div>`}
 function today_v(){
+ if(S.qm)return quoteMgr();
  const pl=plan(),ids=pl.ids.filter(P),wd=WD[new Date(S.pd+'T00:00:00').getDay()];
  const dueIds=S.people.filter(p=>dleft(p.next)<=0&&!ids.includes(p.id)).length;
  let tot=0,dn=0;
@@ -192,6 +203,7 @@ function today_v(){
   <div class="chips" style="margin-top:8px"><span class="sub" style="align-self:center">下次跟進</span>${[[1,'明天'],[3,'3 天後'],[7,'一週後']].map(([n,l])=>`<button class="chip ${p.next===shiftD(S.pd,n)?'on':''}" data-nx="${id}|${n}">${l}</button>`).join('')}</div></div>`}).join('');
  return `<h1>跟進計畫</h1>${bkWarn()}${promoCard()}${evCard()}${rnHome()}${pfCard()}${bdCard()}
  <div class="row" style="margin-bottom:8px"><button class="go g" data-pd="-1">‹</button><div class="sp" style="text-align:center"><b>${S.pd}（週${wd}）</b>${S.pd===today()?'':' <button class="chip" data-pd="0">回今天</button>'}</div><button class="go g" data-pd="1">›</button></div>
+ ${quoteCard()}
  ${todoCard()}
  ${fuCard()}
  ${sideEvCard()}
@@ -881,6 +893,11 @@ document.addEventListener('click',e=>{if(e.target.closest('a[href]'))return;
  else if(d.ldv){S.ldv=d.ldv;S.hl=null}
  else if(d.bde){S.bdE=S.bdE===d.bde?null:d.bde}
  else if(d.a==='logout'){window.fbLogout&&fbLogout();return}
+ else if(d.a==='qmgr'){S.qm=!S.qm;render();scrollTo(0,0);return}
+ else if(d.a==='qnext'){S.qoff=(S.qoff||0)+1;render();return}
+ else if(d.a==='qadd'){const a=QS(),have=new Set(a.map(x=>x.t)),ls=v('qin').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);let n=0;ls.forEach(t=>{if(!have.has(t)){a.push({t,at:today()});have.add(t);n++}});if(!ls.length){toast('請先輸入金玉良言');return}save();render();toast(n?'已加入 '+n+' 句'+(ls.length>n?'（'+(ls.length-n)+' 句重複略過）':''):'都是重複的句子');return}
+ else if(d.a==='qdel'){const a=QS(),i=+d.z1;if(a[i]&&confirm('刪除這句？\n\n'+a[i].t)){a.splice(i,1);save();render()}return}
+ else if(d.a==='qcopy'){const q=QS()[+d.z1];if(!q)return;const done=()=>toast('已複製');try{navigator.clipboard.writeText(q.t).then(done,()=>{const t=document.createElement('textarea');t.value=q.t;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();done()})}catch(x){}return}
  else if(d.a==='ess'){const e=S.events.find(x=>x.id===+d.z1);if(e){e.sst=e.sst||{};e.sst[d.z2]=d.z3;save();render()}return}
  else if(d.a==='esrm'){const e=S.events.find(x=>x.id===+d.z1);if(e){e.sw=(e.sw||[]).filter(x=>x!==+d.z2);save();render()}return}
  else if(d.a==='smr'){const o=S.side.find(x=>x.id===+d.z1);if(o){o.my=o.my||{};o.my[d.z2]=!o.my[d.z2];save();render()}return}
@@ -1015,7 +1032,7 @@ if(el.dataset.pkg!==undefined){S.pkg=+el.value;render();return}
  if(el.dataset.pa){const[i,k]=el.dataset.pa.split('|'),q=P(+i),a=(plan().acts[i]||[]).find(x=>x.k===k);if(a){if(a.path){set(q,a.path,el.checked);if(a.path==='joined'&&!el.checked)kids(q.id).forEach(c=>c.up=q.up)}else plan().done[i+'|'+k]=el.checked}render();return}
  if(el.dataset.p&&p){set(p,el.dataset.p,el.dataset.num?+el.value:el.value);if(el.dataset.p==='jd'&&p.jd&&!p.rd)p.rd=addMo(p.jd,12);save();{const hs=$('hdrsum');if(hs)hs.innerHTML=hdrSum(p)}if(el.dataset.p==='live'){p.live2='';save()}if(['name','next','live','ig','jd','rd','life','mbti'].includes(el.dataset.p))render()}
 });
-document.addEventListener('input',e=>{if(e.target.id==='aq'){S.aq=e.target.value;const pos=e.target.selectionStart;render();const q=$('aq');q.focus();q.setSelectionRange(pos,pos);return}if(e.target.dataset.no!==undefined)e.target.value=e.target.value.replace(/\D/g,'').slice(0,3);if(e.target.id==='q'){S.q=e.target.value;const pos=e.target.selectionStart;render();const q=$('q');q.focus();q.setSelectionRange(pos,pos)}});
+document.addEventListener('input',e=>{if(e.target.id==='qsearch'){S.qs=e.target.value;const pos=e.target.selectionStart;render();const q=$('qsearch');if(q){q.focus();q.setSelectionRange(pos,pos)}return}if(e.target.id==='aq'){S.aq=e.target.value;const pos=e.target.selectionStart;render();const q=$('aq');q.focus();q.setSelectionRange(pos,pos);return}if(e.target.dataset.no!==undefined)e.target.value=e.target.value.replace(/\D/g,'').slice(0,3);if(e.target.id==='q'){S.q=e.target.value;const pos=e.target.selectionStart;render();const q=$('q');q.focus();q.setSelectionRange(pos,pos)}});
 let LDR=null;
 function moveLeader(id,to){const k=S.leaders.findIndex(x=>x.id===id),j=S.leaders.findIndex(x=>x.id===to);if(k<0||j<0||k===j)return false;const[x]=S.leaders.splice(k,1);S.leaders.splice(j,0,x);return true}
 document.addEventListener('pointerdown',e=>{const h=e.target.closest&&e.target.closest('[data-lh]');if(!h)return;LDR={id:+h.dataset.lh,z:null};e.preventDefault&&e.preventDefault()});
@@ -1029,7 +1046,7 @@ const odzAt=(x,y)=>{const el=document.elementFromPoint&&document.elementFromPoin
 document.addEventListener('pointermove',e=>{if(!ODR)return;const z=odzAt(e.clientX,e.clientY);if(z!==ODR.z){document.querySelectorAll('[data-dz]').forEach(n=>n.style.outline='');ODR.z=z;const n=z&&document.querySelector('[data-dz="'+z+'"]');if(n&&z!==String(ODR.id))n.style.outline='2px solid var(--acc)'}});
 const odend=e=>{if(!ODR)return;const z=ODR.z||odzAt(e.clientX,e.clientY),id=ODR.id;ODR=null;document.querySelectorAll('[data-dz]').forEach(n=>n.style.outline='');if(z!==null&&dropObj(id,z)){save();render()}else if(z!==null)toast('不能放到自己或自己的下層')};
 document.addEventListener('pointerup',odend);document.addEventListener('pointercancel',()=>{ODR=null});
-const CTR=['rco','rcall','mrp','osort','cto','ctall','area','trip','pm','pnew','pkgw','tab','view','q','flt','cf','lv','fb','fs','fl','fc','pn','aq','pkg','pd','cm','av'];
+const CTR=['qm','qs','qoff','rco','rcall','mrp','osort','cto','ctall','area','trip','pm','pnew','pkgw','tab','view','q','flt','cf','lv','fb','fs','fl','fc','pn','aq','pkg','pd','cm','av'];
 CL.msg=()=>CL.st;
 function cloudQ(){if(!CL.col)return;clearTimeout(CL.tm);CL.st='☁︎ 等待同步…';CL.tm=setTimeout(cloudPush,1500)}
 async function cloudPush(){
