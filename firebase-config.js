@@ -8,3 +8,6 @@ export const firebaseConfig = {
   messagingSenderId: "487260862381",
   appId: "1:487260862381:web:e06cc3aa82aad10cea9324"
 };
+
+// 管理員 Email：可以在「設定」頁管理邀請名單（要和 firestore.rules 裡的一樣）
+export const adminEmail = "lee19977889@gmail.com";

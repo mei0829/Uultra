@@ -1,5 +1,5 @@
 // Firebase 帳號登入，並提供 index.html 原本使用的 claude.use('db'/'user') 介面
-import { firebaseConfig } from './firebase-config.js';
+import { firebaseConfig, adminEmail } from './firebase-config.js';
 
 const V = '10.14.1', CDN = `https://www.gstatic.com/firebasejs/${V}/`;
 const box = document.getElementById('auth');
@@ -18,6 +18,7 @@ const ERR = {
   'auth/network-request-failed': '網路連線失敗，請確認網路後再試',
   'auth/operation-not-allowed': 'Firebase 尚未啟用「電子郵件/密碼」登入'
 };
+const ADMIN = String(adminEmail || '').trim().toLowerCase();
 const errMsg = e => ERR[e && e.code] || ('發生錯誤（' + ((e && e.code) || e) + '）');
 
 function shell(inner) {
@@ -49,7 +50,28 @@ function startApp(fs, fsm, user) {
     }
   });
   window.claude = { use: async n => n === 'db' ? { collection: col } : n === 'user' ? { id: async () => user.uid } : null };
-  window.FBU = { email: user.email };
+  const { getDocs: gd, deleteDoc } = fsm;
+  const admin = (user.email || '').toLowerCase() === ADMIN;
+  window.FBU = { email: user.email, admin };
+  if (admin) {
+    window.FBA = { list: null };
+    const load = async () => {
+      try { const s = await gd(collection(fs, 'allow')); FBA.list = s.docs.map(d => d.id).sort(); }
+      catch (e) { FBA.list = []; FBA.err = errMsg(e); }
+      if (typeof render === 'function') render();
+    };
+    FBA.add = async em => {
+      em = String(em || '').trim().toLowerCase();
+      if (!/^[^\s@\/]+@[^\s@\/]+\.[^\s@\/]+$/.test(em)) return 'Email 格式不正確';
+      try { await setDoc(doc(fs, 'allow', em), { by: user.email, at: Date.now() }); await load(); return ''; }
+      catch (e) { return errMsg(e); }
+    };
+    FBA.remove = async em => {
+      try { await deleteDoc(doc(fs, 'allow', em)); await load(); return ''; }
+      catch (e) { return errMsg(e); }
+    };
+    setTimeout(load, 0);
+  }
   box.innerHTML = '';
   const s = document.createElement('script');
   s.textContent = document.getElementById('app-src').textContent;
@@ -62,7 +84,7 @@ function loginForm(auth, am, mode, note) {
     <div style="font-weight:700;font-size:17px;margin-bottom:10px">${reg ? '註冊新帳號' : '登入'}</div>
     <label class="afl"><span>Email</span><input id="ae" type="email" autocomplete="username" required></label>
     <label class="afl"><span>密碼</span><input id="ap" type="password" autocomplete="${reg ? 'new-password' : 'current-password'}" minlength="6" required></label>
-    ${reg ? '<label class="afl"><span>再輸入一次密碼</span><input id="ap2" type="password" autocomplete="new-password" minlength="6" required></label>' : ''}
+    ${reg ? '<label class="afl"><span>再輸入一次密碼</span><input id="ap2" type="password" autocomplete="new-password" minlength="6" required></label><div class="sub">需要管理員先把你的 Email 加入邀請名單，才能使用。</div>' : ''}
     <div id="amsg" class="sub" style="min-height:20px;margin:4px 0 8px">${note ? esc(note) : ''}</div>
     <button class="go" type="submit" style="width:100%">${reg ? '註冊並登入' : '登入'}</button>
     <div class="row" style="justify-content:space-between;margin-top:12px">
@@ -84,10 +106,61 @@ function loginForm(auth, am, mode, note) {
     if (reg && pw !== $('ap2').value) return msg('兩次輸入的密碼不一樣', true);
     const btn = e.target.querySelector('button'); btn.disabled = true; msg(reg ? '註冊中…' : '登入中…');
     try {
-      if (reg) await am.createUserWithEmailAndPassword(auth, em, pw);
+      if (reg) {
+        const c = await am.createUserWithEmailAndPassword(auth, em, pw);
+        try { await am.sendEmailVerification(c.user); } catch (x) {}
+      }
       else await am.signInWithEmailAndPassword(auth, em, pw);
     } catch (x) { msg(errMsg(x), true); btn.disabled = false; }
   };
+}
+
+function verifyScreen(auth, am, user, note) {
+  shell(`<div style="font-weight:700;font-size:17px;margin-bottom:8px">請驗證你的 Email</div>
+    <div class="sub" style="margin-bottom:10px">我們寄了一封驗證信到 <b>${esc(user.email)}</b>。<br>請打開信，點裡面的連結，再回來按下面的按鈕。<br>（找不到的話，看看垃圾郵件）</div>
+    <div id="amsg" class="sub" style="min-height:20px;margin-bottom:8px">${note ? esc(note) : ''}</div>
+    <button class="go" id="avd" style="width:100%">我已經驗證了</button>
+    <div class="row" style="justify-content:space-between;margin-top:12px"><a href="#" id="avr">重寄驗證信</a><a href="#" id="avo">登出</a></div>`);
+  const $ = id => document.getElementById(id);
+  $('avd').onclick = async () => {
+    $('amsg').textContent = '確認中…';
+    try { await user.reload(); } catch (e) {}
+    if (auth.currentUser && auth.currentUser.emailVerified) { await auth.currentUser.getIdToken(true); location.reload(); }
+    else { $('amsg').textContent = '還沒驗證成功，請先點信裡的連結。'; $('amsg').style.color = 'var(--bad)'; }
+  };
+  $('avr').onclick = async e => {
+    e.preventDefault();
+    try { await am.sendEmailVerification(user); $('amsg').textContent = '已重寄，請到信箱收信'; $('amsg').style.color = ''; }
+    catch (x) { $('amsg').textContent = errMsg(x); $('amsg').style.color = 'var(--bad)'; }
+  };
+  $('avo').onclick = e => { e.preventDefault(); am.signOut(auth); };
+}
+
+function deniedScreen(auth, am, user, msg) {
+  shell(`<div style="font-weight:700;font-size:17px;margin-bottom:8px">${msg ? '暫時無法確認' : '還沒有被邀請'}</div>
+    <div class="sub" style="margin-bottom:12px">${msg ? esc(msg) : `你的帳號 <b>${esc(user.email)}</b> 還不在邀請名單上。<br>請把這個 Email 告訴管理員，請他幫你加入後，再按「重新檢查」。`}</div>
+    <button class="go" id="adr" style="width:100%">重新檢查</button>
+    <div class="row" style="justify-content:flex-end;margin-top:12px"><a href="#" id="ado">登出</a></div>`);
+  document.getElementById('adr').onclick = () => location.reload();
+  document.getElementById('ado').onclick = e => { e.preventDefault(); am.signOut(auth); };
+}
+
+async function gate(auth, am, fs, fsm, user) {
+  if (!user.emailVerified) return verifyScreen(auth, am, user);
+  const em = (user.email || '').toLowerCase();
+  if (em === ADMIN) return startApp(fs, fsm, user);
+  shell('<div class="sub">確認權限中…</div>');
+  try {
+    const d = await fsm.getDoc(fsm.doc(fs, 'allow', em));
+    if (d.exists()) startApp(fs, fsm, user);
+    else deniedScreen(auth, am, user);
+  } catch (e) {
+    // 沒有網路時，這支手機之前已經用這個帳號登入過，就先讓他用本機資料
+    let prev = false;
+    try { prev = localStorage.getItem('roster-owner') === user.uid; } catch (x) {}
+    if (prev && e && e.code !== 'permission-denied') startApp(fs, fsm, user);
+    else deniedScreen(auth, am, user, e && e.code === 'permission-denied' ? '' : '無法連線，請確認網路後按「重新檢查」。');
+  }
 }
 
 (async () => {
@@ -120,7 +193,7 @@ function loginForm(auth, am, mode, note) {
 
   shell('<div class="sub">載入中…</div>');
   am.onAuthStateChanged(auth, user => {
-    if (user) startApp(fs, fsm, user);
+    if (user) { if (!started) gate(auth, am, fs, fsm, user); }
     else if (!started) loginForm(auth, am, 'in');
     else location.reload();
   });

@@ -1,9 +1,26 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 每個使用者只能讀寫自己的資料：data/users/{uid}/{doc}
+    function verified() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    function myEmail() {
+      return request.auth.token.email.lower();
+    }
+    function isAdmin() {
+      return verified() && myEmail() == 'lee19977889@gmail.com';
+    }
+    function invited() {
+      return isAdmin() || (verified() && exists(/databases/$(database)/documents/allow/$(myEmail())));
+    }
+    // 邀請名單：只有管理員能改；每個人只能查自己有沒有被邀請
+    match /allow/{email} {
+      allow read: if isAdmin() || (verified() && email == myEmail());
+      allow write: if isAdmin();
+    }
+    // 每個被邀請的人只能讀寫自己的資料：data/users/{uid}/{doc}
     match /data/users/{uid}/{docId} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if invited() && request.auth.uid == uid;
     }
   }
 }
