@@ -282,9 +282,10 @@ const gname=n=>{n=String(n||'').trim();return /^[\u4e00-\u9fff]{2,}$/.test(n)?n.
 const invOpts=iv=>S.leaders.map(l=>`<option value="${l.id}" ${l.id===iv?'selected':''}>${E(l.name)}</option><option value="${-l.id}" ${-l.id===iv?'selected':''}>${E(gname(l.name))}/旁線</option>`).join('');
 const nm=p=>(p.no?'#'+p.no+' ':'')+E(p.nick||p.name);
 const mnoTag=p=>p.mno?` <span class="sub" style="font-size:12px;font-weight:400">${E(p.mno)}</span>`:'';
-const kids=id=>S.people.filter(x=>x.joined&&x.up===id).sort(byNo);
-function branch(id){const k=kids(id);return k.length?'<ul>'+k.map(n=>`<li><div class="node" data-open="${n.id}"><span class="av">${E((n.nick||n.name).replace('示範：','')[0])}</span><div class="sp"><b>${nm(n)}${mnoTag(n)}${n.cat==='B'?` <span class="pill" style="font-size:11px;font-weight:400;background:${CAT.B.bg};color:#2b2b2b;border-color:transparent">顧客</span>`:''}</b><div class="sub">${[E(n.job),kids(n.id).length?'下線 '+kids(n.id).length+' 人':'',due(n)].filter(Boolean).join('・')}</div>${ldb(n)?'<div style="margin-top:3px">'+ldb(n)+'</div>':''}</div></div>${branch(n.id)}</li>`).join('')+'</ul>':''}
-function org_v(){const j=S.people.filter(x=>x.joined).length;return `<h1>架構圖</h1><div class="sub" style="margin:-6px 2px 10px">已加入 ${j} 人・名單中尚未加入 ${S.people.length-j} 人</div>
+const kids=id=>S.people.filter(x=>x.joined&&x.up===id).sort((a,b)=>((a.ord==null?1e9:a.ord)-(b.ord==null?1e9:b.ord))||byNo(a,b));
+const omvBtns=n=>{if(!S.osort)return '';const sb=kids(n.up),i=sb.indexOf(n),L=sb.length-1,b=(k,t,dis,tl)=>`<button class="chip" data-a="omv" data-z1="${n.id}" data-z2="${k}" title="${tl}" style="padding:3px 8px;font-size:13px;${dis?'opacity:.3;pointer-events:none':''}">${t}</button>`;return `<span class="row" style="gap:3px;flex:none">${b('top','⤒',i===0,'移到最上面')}${b('up','▲',i===0,'往上')}${b('down','▼',i===L,'往下')}${b('bottom','⤓',i===L,'移到最下面')}</span>`};
+function branch(id){const k=kids(id);return k.length?'<ul>'+k.map(n=>`<li><div class="node" data-open="${n.id}"><span class="av">${E((n.nick||n.name).replace('示範：','')[0])}</span><div class="sp"><b>${nm(n)}${mnoTag(n)}${n.cat==='B'?` <span class="pill" style="font-size:11px;font-weight:400;background:${CAT.B.bg};color:#2b2b2b;border-color:transparent">顧客</span>`:''}</b><div class="sub">${[E(n.job),kids(n.id).length?'下線 '+kids(n.id).length+' 人':'',due(n)].filter(Boolean).join('・')}</div>${ldb(n)?'<div style="margin-top:3px">'+ldb(n)+'</div>':''}</div>${omvBtns(n)}</div>${branch(n.id)}</li>`).join('')+'</ul>':''}
+function org_v(){const j=S.people.filter(x=>x.joined).length;return `<h1>架構圖</h1><div class="row" style="margin:-6px 2px 10px;gap:8px"><span class="sub sp">已加入 ${j} 人・名單中尚未加入 ${S.people.length-j} 人</span><button class="go q" data-a="osort" style="${S.osort?'background:var(--acc);color:#fff;border-color:transparent':''}">${S.osort?'✓ 完成':'↕ 調整順序'}</button></div>${S.osort?'<div class="sub" style="margin:-4px 2px 10px;font-size:12px">按 ⤒ ▲ ▼ ⤓ 移動，整條線（他的下線）會一起移動</div>':''}
  <div class="tree"><ul><li><div class="node" data-tab="bk" style="border-color:var(--acc);cursor:pointer"><span class="av">我</span><div class="sp"><b>${E(S.me)}</b><div class="sub">${S.meI.lv?E(S.meI.lv)+'・':''}直屬 ${kids(0).length} 人</div>${S.meI.note?`<div class="sub">${E(S.meI.note)}</div>`:''}</div></div>${branch(0)}</li></ul></div>`}
 
 const SKINS=[["forest", "森林鼠尾草", "#4E7A62", "#EEF1EC"], ["rose", "奶茶玫瑰", "#B9726E", "#F6EEEA"], ["blue", "霧藍灰", "#587A99", "#E9EEF3"], ["olive", "橄欖奶油", "#7F8A4F", "#F5F1E1"]];
@@ -829,6 +830,8 @@ document.addEventListener('click',e=>{if(e.target.closest('a[href]'))return;
  else if(d.ldv){S.ldv=d.ldv;S.hl=null}
  else if(d.bde){S.bdE=S.bdE===d.bde?null:d.bde}
  else if(d.a==='logout'){window.fbLogout&&fbLogout();return}
+ else if(d.a==='osort'){S.osort=!S.osort;render();return}
+ else if(d.a==='omv'){const n=P(+d.z1);if(!n)return;const sb=kids(n.up),i=sb.indexOf(n);sb.splice(i,1);const j=d.z2==='top'?0:d.z2==='bottom'?sb.length:d.z2==='up'?Math.max(0,i-1):Math.min(sb.length,i+1);sb.splice(j,0,n);sb.forEach((x,k)=>x.ord=k);save();render();return}
  else if(d.a==='ctopen'){S.cto=S.cto===+d.z1?null:+d.z1;render();if(S.cto){const t=$('ctt');if(t)t.focus()}return}
  else if(d.a==='ctadd'){const q=P(+d.z1),tx=v('ctt').trim();if(!q)return;if(!tx){toast('請先寫聊了什麼');return}(q.ct=q.ct||[]).push({date:v('ctd')||today(),text:tx});S.cto=null;save();render();toast('已記錄');return}
  else if(d.a==='ctdel'){const q=P(+d.z1);if(q&&q.ct&&confirm('刪除這筆聯絡紀錄？')){q.ct.splice(+d.z2,1);save();render()}return}
@@ -960,7 +963,7 @@ const odzAt=(x,y)=>{const el=document.elementFromPoint&&document.elementFromPoin
 document.addEventListener('pointermove',e=>{if(!ODR)return;const z=odzAt(e.clientX,e.clientY);if(z!==ODR.z){document.querySelectorAll('[data-dz]').forEach(n=>n.style.outline='');ODR.z=z;const n=z&&document.querySelector('[data-dz="'+z+'"]');if(n&&z!==String(ODR.id))n.style.outline='2px solid var(--acc)'}});
 const odend=e=>{if(!ODR)return;const z=ODR.z||odzAt(e.clientX,e.clientY),id=ODR.id;ODR=null;document.querySelectorAll('[data-dz]').forEach(n=>n.style.outline='');if(z!==null&&dropObj(id,z)){save();render()}else if(z!==null)toast('不能放到自己或自己的下層')};
 document.addEventListener('pointerup',odend);document.addEventListener('pointercancel',()=>{ODR=null});
-const CTR=['cto','ctall','area','trip','pm','pnew','pkgw','tab','view','q','flt','cf','lv','fb','fs','fl','fc','pn','aq','pkg','pd','cm','av'];
+const CTR=['osort','cto','ctall','area','trip','pm','pnew','pkgw','tab','view','q','flt','cf','lv','fb','fs','fl','fc','pn','aq','pkg','pd','cm','av'];
 CL.msg=()=>CL.st;
 function cloudQ(){if(!CL.col)return;clearTimeout(CL.tm);CL.st='☁︎ 等待同步…';CL.tm=setTimeout(cloudPush,1500)}
 async function cloudPush(){
