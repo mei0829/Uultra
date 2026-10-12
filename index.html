@@ -160,15 +160,17 @@ const fuDays=n=>{const a=[];for(let i=n-1;i>=0;i--)a.push(shiftD(S.pd,-i));retur
 const fuStreak=o=>{let n=0,d=S.pd;if(!(o.fu||{})[d])d=shiftD(d,-1);while((o.fu||{})[d]){n++;d=shiftD(d,-1)}return n};
 function fuCard(){const hasR=o=>o&&MR3.some(([k])=>(o.my||{})[k]),sdOf=id=>S.side.find(x=>x.id===id);
  const top=S.side.filter(hasR);
- const bot=S.leaders.filter(l=>{const q=l.pid&&P(l.pid);return (q&&q.joined)||(l.sid&&sdOf(l.sid))}).filter(l=>!(l.sid&&hasR(sdOf(l.sid))));
- if(!top.length&&!bot.length)return '';const days=fuDays(7);
+ const ppl=S.people.slice().sort(byNo),sdb=S.side.filter(o=>!hasR(o));
+ if(!top.length&&!ppl.length&&!sdb.length)return '';const days=fuDays(7);
  const pill=(t,bg)=>` <span class="pill" style="font-size:11px;white-space:nowrap;${bg?`background:${bg};color:#fff;border-color:transparent`:''}">${t}</span>`;
  const row=(t,o,name,tags,gp)=>{const on=!!(o.fu||{})[S.pd],sk=fuStreak(o);return `<div class="row" style="gap:8px;padding:7px 0;border-top:1px solid var(--line)"><label style="flex:none;cursor:pointer;display:flex"><input type="checkbox" data-fu="${t}|${o.id}" ${on?'checked':''} style="width:20px;height:20px"></label><span class="sp" style="min-width:0"><b data-gp="${gp||t+'|'+o.id}" style="cursor:pointer;color:var(--acc)">${name}</b>${tags}<div style="display:flex;gap:3px;margin-top:3px;align-items:center">${days.map(d=>`<i title="${d}" style="display:block;width:9px;height:9px;border-radius:50%;background:${(o.fu||{})[d]?'var(--acc)':'var(--line)'}"></i>`).join('')}<span class="sub" style="font-size:11px;margin-left:4px">${sk?'連續 '+sk+' 天':'今天還沒跟進'}</span></div></span></div>`};
  const topRows=top.map(o=>{const isL=o.ld&&S.leaders.some(l=>l.id===o.ld);return row('s',o,sdName(o),(isL?pill('領導人','#A98FB8'):'')+MR3.filter(([k])=>(o.my||{})[k]).map(([,n])=>pill('我是'+n)).join('')+(sdLd(o)?` <span class="sub" style="font-size:11px">${E(sdLd(o))}</span>`:''))}).join('');
- const botRows=bot.map(l=>{const sd=l.sid&&sdOf(l.sid);return sd?row('s',sd,E(l.name),pill('領導人','#A98FB8')+` <span class="sub" style="font-size:11px">旁線</span>`,'l|'+l.id):row('l',l,E(l.name),pill('領導人','#A98FB8'))}).join('');
+ const pRows=ppl.map(q=>row('p',q,nm(q),(isLd(q)?pill('領導人','#A98FB8'):'')+(q.cat==='B'?pill('顧客',CAT.B.bg):''),'p|'+q.id)).join('');
+ const sRows=sdb.map(o=>{const isL=o.ld&&S.leaders.some(l=>l.id===o.ld);return row('s',o,sdName(o),(isL?pill('領導人','#A98FB8'):'')+(sdLd(o)?` <span class="sub" style="font-size:11px">${E(sdLd(o))}</span>`:''))}).join('');
  return `<div class="card"><div class="row"><b class="sp">🌱 每日跟進</b><span class="sub" style="font-size:12px">${S.pd===today()?'今天':S.pd.slice(5).replace('-','/')}　勾＝已跟進</span></div>
  ${top.length?`<div class="sub" style="margin-top:8px;font-size:12px">我是保母／教練／老師（${top.length}）</div>${topRows}`:''}
- ${bot.length?`<div class="sub" style="margin-top:10px;font-size:12px">我要照顧的旁線・下線領導人（${bot.length}）</div>${botRows}`:''}</div>`}
+ ${ppl.length?`<div class="sub" style="margin-top:10px;font-size:12px">我的新人（${ppl.length}）</div>${pRows}`:''}
+ ${sdb.length?`<div class="sub" style="margin-top:10px;font-size:12px">我要照顧的旁線（${sdb.length}）</div>${sRows}`:''}</div>`}
 function sideEvCard(){const td=today(),l=S.events.filter(e=>e.date>=td&&(e.sw||[]).length).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,8);if(!l.length)return '';
  return `<div class="card"><b>📅 接下來約了這些旁線</b>${l.map(e=>`<div style="padding:7px 0;border-top:1px solid var(--line);margin-top:6px"><div class="row" data-hev="${e.id}" style="cursor:pointer"><span class="pill" style="flex:none">${+e.date.slice(5,7)}/${+e.date.slice(8)}</span><b class="sp">${E(e.title)}</b></div><div style="margin-top:4px">${e.sw.map(id=>S.side.find(x=>x.id===id)).filter(Boolean).map(o=>{const st=(e.sst||{})[o.id]||'已約';return `<span data-gp="s|${o.id}" style="cursor:pointer;display:inline-block;margin:2px 8px 2px 0;font-size:13px"><b style="color:var(--acc)">${sdName(o)}</b> <span style="color:${STC[st]};font-size:12px">${st}</span></span>`}).join('')}</div></div>`).join('')}</div>`}
 function today_v(){
@@ -953,7 +955,7 @@ document.addEventListener('change',e=>{
 if(el.dataset.tr){S.traits[el.dataset.tr]=el.value.trim();save();return}
 if(el.dataset.esadd!==undefined){const e=S.events.find(x=>x.id===+el.dataset.esadd),id=+el.value;if(e&&id){e.sw=e.sw||[];if(!e.sw.includes(id))e.sw.push(id);e.sst=e.sst||{};e.sst[id]=e.sst[id]||'已約'}save();render();return}
 if(el.dataset.esn!==undefined){const[a,b]=el.dataset.esn.split('|'),e=S.events.find(x=>x.id===+a);if(e){e.snote=e.snote||{};e.snote[b]=el.value.trim();save()}return}
-if(el.dataset.fu!==undefined){const[t,i]=el.dataset.fu.split('|'),o=t==='s'?S.side.find(x=>x.id===+i):S.leaders.find(x=>x.id===+i);if(o){o.fu=o.fu||{};if(el.checked)o.fu[S.pd]=true;else delete o.fu[S.pd]}save();render();return}
+if(el.dataset.fu!==undefined){const[t,i]=el.dataset.fu.split('|'),o=t==='s'?S.side.find(x=>x.id===+i):t==='p'?P(+i):S.leaders.find(x=>x.id===+i);if(o){o.fu=o.fu||{};if(el.checked)o.fu[S.pd]=true;else delete o.fu[S.pd]}save();render();return}
 if(el.dataset.acity!==undefined){S.area=el.value||null;S.trip=null;render();window.scrollTo(0,0);return}
 if(el.dataset.tf){const[i,k]=el.dataset.tf.split('|'),t=(S.trips||[]).find(x=>x.id===+i);if(t){t[k]=el.value.trim();save()}return}
 if(el.dataset.ti){const[i,ty,oid,fld]=el.dataset.ti.split('|'),key=ty+'|'+oid,t=(S.trips||[]).find(x=>x.id===+i);if(t){t.inv=t.inv||{};(t.inv[key]=t.inv[key]||{})[fld]=el.value.trim();save()}return}
