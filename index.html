@@ -291,7 +291,7 @@ const mentorHtml=l=>{const out=[];MR.forEach(([k,lb])=>{const a=S.people.filter(
 function leadText(p){const ev=S.events.filter(e=>e.who.includes(p.id)&&(e.st||{})[p.id]==='有來').sort((a,b)=>a.date.localeCompare(b.date)).map(e=>e.title),acts=(p.acts||[]).map(a=>a.text),tags=TAGS.filter(k=>(p.tags||{})[k]);
  const att=[p.courses&&('課程：'+p.courses),(ev.length||acts.length)&&('活動：'+[...ev,...acts].join('、')),tags.length&&('類型：'+tags.join('、'))].filter(Boolean).join('；');
  const L=(a,b)=>'🌀'+a+'：'+(b||''),Y=v=>v?'⭕️':'❌',nmx=(S.me&&S.me!=='我')?S.me:(S.watch||'');
- return [nmx+'新人資料',L('姓名',p.name),L('職業',p.job),L('年齡',ageOf(p)||p.age),L('破題',Y(p.broke)),L('進教室',Y(p.room)),L('加入',Y(p.joined)),L('參加過的課程與活動',att),'🌀其他資訊','F 家庭：'+(p.family||''),'R 休閒：'+(p.hobby||''),'M 金錢觀：'+(p.money||''),'H 健康：'+(p.health||''),'D 夢想：'+(p.dream||''),L('想請領導人協助',p.help),L('補充',p.toL)].join('\n')}
+ return [nmx+'新人資料',L('姓名',p.name),L('性別',p.gender),L('職業',p.job),L('年齡',ageOf(p)||p.age),L('破題',Y(p.broke)),L('進教室',Y(p.room)),L('加入',Y(p.joined)),L('參加過的課程與活動',att),'🌀其他資訊','F 家庭：'+(p.family||''),'R 休閒：'+(p.hobby||''),'M 金錢觀：'+(p.money||''),'H 健康：'+(p.health||''),'D 夢想：'+(p.dream||''),L('想請領導人協助',p.help),L('補充',p.toL)].join('\n')}
 function evPerson(e,p){const st=(e.st||{})[p.id]||'已約',iv=(e.inv||{})[p.id]||0,k=e.id+'_'+p.id,fu=(e.fu||{})[p.id],res=st==='有來'||st==='沒來'||st==='無法來';
  const ph=st==='有來'?'他的反應（來了之後怎麼說）':(st==='沒來'||st==='無法來')?'沒來的原因':'備註';
  return `<div style="margin:8px 0;padding-top:8px;border-top:1px solid var(--line)"><div class="row"><span class="pill">${e.date.slice(5).replace('-','/')}</span><b class="sp">${E(e.title)}</b></div><div class="sub">${[e.start?e.start+'–'+e.end:'',e.speaker?'講師 '+E(e.speaker):''].filter(Boolean).join('・')}</div>
