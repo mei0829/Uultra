@@ -222,6 +222,13 @@ const ctBox=p=>{const a=(p.ct||[]).map((x,i)=>Object.assign({i},x)).sort((x,y)=>
  ${op?`<div class="row" style="gap:6px;margin-top:8px"><input type="date" id="ctd" value="${today()}" style="width:auto;flex:none;padding:3px 6px;font-size:13px"><input id="ctt" placeholder="聊了什麼"><button class="go q" data-a="ctadd" data-z1="${p.id}">送出</button></div>`:''}
  ${vs.map(x=>`<div class="row" style="gap:8px;margin-top:6px;font-size:13px;align-items:flex-start"><span class="sub" style="flex:none;font-variant-numeric:tabular-nums">${roc(x.date)}</span><span class="sp" style="overflow-wrap:anywhere">${E(x.text)}</span><button class="x" style="font-size:12px;padding:0 2px;flex:none" data-a="ctdel" data-z1="${p.id}" data-z2="${x.i}">×</button></div>`).join('')||'<div class="sub" style="font-size:13px;margin-top:4px">還沒有聯絡紀錄</div>'}
  ${a.length>3?`<button class="x" style="font-size:12px;color:var(--acc);margin-top:4px;padding:0" data-a="ctall" data-z1="${p.id}">${all?'只看最近 3 筆':'看全部 '+a.length+' 筆'}</button>`:''}</div>`};
+const RECS={pf:{t:'💰 業績紀錄',f:[['m','month','月份'],['v','text','業績（例：PV 300）'],['n','text','備註（選填）']]},pin:{t:'📌 上 Pin 紀錄',f:[['d','date','日期'],['v','text','Pin 位（例：翡翠）'],['n','text','備註（選填）']]}};
+const rocM=m=>{const x=/^(\d{4})-(\d{2})/.exec(m||'');return x?(+x[1]-1911)+'/'+x[2]:''};
+const recBox=(p,k)=>{const R=RECS[k],a=((p.recs||{})[k]||[]).map((x,i)=>Object.assign({i},x)).sort((x,y)=>((y.d||y.m||'').localeCompare(x.d||x.m||''))||y.i-x.i),key=k+p.id,all=S.rcall===key,vs=all?a:a.slice(0,3),op=S.rco===key,dt=x=>x.m?rocM(x.m):roc(x.d);
+ return `<div class="card" style="padding:10px 12px;margin-top:10px"><div class="row"><b class="sp">${R.t}${a.length?`<span class="sub" style="font-weight:400">（${a.length}）</span>`:''}${k==='pin'&&a[0]?`<span class="sub" style="font-weight:400">・目前 ${E(a[0].v)}</span>`:''}</b><button class="go q" data-a="rcopen" data-z1="${p.id}" data-z2="${k}">${op?'收起':'＋ 記一筆'}</button></div>
+ ${op?`<div class="grid" style="margin-top:8px"><input type="${R.f[0][1]}" id="rc_${k}_0" value="${R.f[0][1]==='month'?today().slice(0,7):today()}" style="padding:3px 6px;font-size:13px"><input id="rc_${k}_1" placeholder="${R.f[1][2]}"></div><div class="row" style="gap:6px;margin-top:6px"><input id="rc_${k}_2" placeholder="${R.f[2][2]}"><button class="go q" data-a="rcadd" data-z1="${p.id}" data-z2="${k}">送出</button></div>`:''}
+ ${vs.map(x=>`<div class="row" style="gap:8px;margin-top:6px;font-size:13px;align-items:flex-start"><span class="sub" style="flex:none;font-variant-numeric:tabular-nums">${dt(x)}</span><span class="sp" style="overflow-wrap:anywhere"><b style="font-weight:600">${E(x.v)}</b>${x.n?`<span class="sub">　${E(x.n)}</span>`:''}</span><button class="x" style="font-size:12px;padding:0 2px;flex:none" data-a="rcdel" data-z1="${p.id}" data-z2="${k}" data-z3="${x.i}">×</button></div>`).join('')||'<div class="sub" style="font-size:13px;margin-top:4px">還沒有紀錄</div>'}
+ ${a.length>3?`<button class="x" style="font-size:12px;color:var(--acc);margin-top:4px;padding:0" data-a="rcall" data-z1="${key}">${all?'只看最近 3 筆':'看全部 '+a.length+' 筆'}</button>`:''}</div>`};
 const memberSec=p=>`<h2>會員資料</h2><div class="card"><div class="grid"><label class="fl"><span>會員編號</span><input data-p="mno" inputmode="numeric" value="${E(p.mno||'')}"></label><label class="fl"><span>密碼</span><div class="row" style="gap:4px"><input data-p="pw" type="${S.pwv===p.id?'text':'password'}" autocomplete="off" value="${E(p.pw||'')}"><button class="x" style="font-size:12px;color:var(--acc);flex:none" data-pwv="${p.id}">${S.pwv===p.id?'隱藏':'顯示'}</button></div></label><label class="fl"><span>加入日期</span><input type="date" data-p="jd" value="${E(p.jd||'')}"></label><label class="fl"><span>續約日期</span><input type="date" data-p="rd" value="${E(p.rd||'')}"></label></div>${rdOk(p)?`<div class="row" style="margin-top:8px;gap:8px"><span class="sub" style="font-size:12px">${rnTxt(p)}</span><button class="chip" style="font-size:12px;flex:none;margin-left:auto" data-rnw="${p.id}">已續約（延一年）</button></div>`:''}</div>`;
 const MR=[['nanny','保母'],['coach','教練'],['teacher','老師']];
 const s6done=(p,i)=>{if(p.s6&&p.s6[i]!==undefined)return !!p.s6[i];if(i===1)return !!((p.nannies||[]).length&&(p.mentorL||{}).coach&&(p.mentorL||{}).teacher);if(i===2)return !!p.phone;if(i===3)return !!p.list;if(i===4)return MG.length>0&&MG.every(k=>get(p,'mg.'+k));if(i===5)return NDO.length>0&&NDO.every(k=>get(p,'ndo.'+k));return !!p.every};
@@ -266,7 +273,7 @@ function detail(p){
  ${SN(p,4,'4 '+T6(4))}<div class="chips">${MG.map(k=>tg2(p,'mg.'+k,k)).join('')}</div>
  ${SN(p,5,'5 '+T6(5))}<div class="chips">${NDO.map(k=>tg2(p,'ndo.'+k,k)).join('')}</div>
  ${SN(p,6,'6 '+T6(6))}<div class="chips">${tg2(p,'every',T6(6))}</div></div></details>
- ${p.joined?memberSec(p):''}
+ ${p.joined?memberSec(p)+recBox(p,'pf')+recBox(p,'pin'):''}
  ${sec('對答案記錄',logForm('p|'+p.id)+logList('p|'+p.id,p)+`<label class="fl" style="margin-top:10px"><span>希望團隊幫忙什麼</span><textarea rows="2" data-p="help">${E(p.help)}</textarea></label>`)}${ctBox(p)}
  ${sec('基本資料',`<div class="grid"><label class="fl"><span>編號</span><input type="text" inputmode="numeric" maxlength="3" placeholder="例：12" data-no="1" value="${E(p.no)}"></label>${inp(p,'name','姓名')}${inp(p,'nick','綽號（有填就顯示綽號）')}${igcell(p)}${inp(p,'line','Line')}${inp(p,'mobile','手機','tel')}${ageCell(p)}${inp(p,'job','工作職業'+en('Occupation'))}${inp(p,'zodiac','星座')}${sel(p,'live','居住縣市')}${ds(p)}${moreLive(p)}${sel(p,'blood','血型')}${inp(p,'money','金錢觀'+en('Money'),'text','w')}${inp(p,'family','<span style="white-space:nowrap">家庭'+en('Family')+' <span style="display:inline;opacity:.7;font-size:11px">（同住、排行）</span></span>','text','w')}${inp(p,'hobby','休閒興趣'+en('Relaxation'),'text','w')}${inp(p,'health','健康狀況'+en('Health'),'text','w')}${inp(p,'dream','夢想與目標'+en('Dream'),'text','w')}${inp(p,'backer','背後的人','text','w')}</div>`)}
  <div class="row" style="align-items:flex-end"><h2 id="sc_an" class="sp">性格分析</h2><button class="chip" data-a="rf" style="margin-bottom:6px">↻ 重新整理解讀</button></div><div class="card">${lifeBox(p)}${namo(p)}${mbtiBox(p)}</div>
@@ -834,6 +841,10 @@ document.addEventListener('click',e=>{if(e.target.closest('a[href]'))return;
  else if(d.ldv){S.ldv=d.ldv;S.hl=null}
  else if(d.bde){S.bdE=S.bdE===d.bde?null:d.bde}
  else if(d.a==='logout'){window.fbLogout&&fbLogout();return}
+ else if(d.a==='rcopen'){const key=d.z2+d.z1;S.rco=S.rco===key?null:key;render();return}
+ else if(d.a==='rcadd'){const q=P(+d.z1),k=d.z2,R=RECS[k];if(!q||!R)return;const dv=v('rc_'+k+'_0'),vv=v('rc_'+k+'_1').trim(),nv=v('rc_'+k+'_2').trim();if(!vv){toast('請先填'+R.f[1][2].replace(/（.*）/,''));return}q.recs=q.recs||{};(q.recs[k]=q.recs[k]||[]).push({[R.f[0][0]]:dv,v:vv,n:nv});S.rco=null;save();render();toast('已記錄');return}
+ else if(d.a==='rcdel'){const q=P(+d.z1),a=q&&q.recs&&q.recs[d.z2];if(a&&confirm('刪除這筆紀錄？')){a.splice(+d.z3,1);save();render()}return}
+ else if(d.a==='rcall'){S.rcall=S.rcall===d.z1?null:d.z1;render();return}
  else if(d.a==='mrp'){S.mrp=d.z1;render();return}
  else if(d.a==='noop'){return}
  else if(d.a==='mrx'){S.mrp=null;render();return}
@@ -970,7 +981,7 @@ const odzAt=(x,y)=>{const el=document.elementFromPoint&&document.elementFromPoin
 document.addEventListener('pointermove',e=>{if(!ODR)return;const z=odzAt(e.clientX,e.clientY);if(z!==ODR.z){document.querySelectorAll('[data-dz]').forEach(n=>n.style.outline='');ODR.z=z;const n=z&&document.querySelector('[data-dz="'+z+'"]');if(n&&z!==String(ODR.id))n.style.outline='2px solid var(--acc)'}});
 const odend=e=>{if(!ODR)return;const z=ODR.z||odzAt(e.clientX,e.clientY),id=ODR.id;ODR=null;document.querySelectorAll('[data-dz]').forEach(n=>n.style.outline='');if(z!==null&&dropObj(id,z)){save();render()}else if(z!==null)toast('不能放到自己或自己的下層')};
 document.addEventListener('pointerup',odend);document.addEventListener('pointercancel',()=>{ODR=null});
-const CTR=['mrp','osort','cto','ctall','area','trip','pm','pnew','pkgw','tab','view','q','flt','cf','lv','fb','fs','fl','fc','pn','aq','pkg','pd','cm','av'];
+const CTR=['rco','rcall','mrp','osort','cto','ctall','area','trip','pm','pnew','pkgw','tab','view','q','flt','cf','lv','fb','fs','fl','fc','pn','aq','pkg','pd','cm','av'];
 CL.msg=()=>CL.st;
 function cloudQ(){if(!CL.col)return;clearTimeout(CL.tm);CL.st='☁︎ 等待同步…';CL.tm=setTimeout(cloudPush,1500)}
 async function cloudPush(){
