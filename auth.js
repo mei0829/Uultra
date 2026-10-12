@@ -4,7 +4,7 @@ import { firebaseConfig, adminEmail } from './firebase-config.js';
 const V = '12.18.0', CDN = `https://www.gstatic.com/firebasejs/${V}/`;
 const box = document.getElementById('auth');
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const LOCAL_KEYS = ['roster-v2', 'roster-t', 'roster-prev'];
+const LOCAL_KEYS = ['roster-v2', 'roster-t', 'roster-prev', 'gemini-key'];
 
 const ERR = {
   'auth/invalid-credential': 'Email 或密碼錯誤',
@@ -46,9 +46,54 @@ async function shrink(file) {
     return { mimeType: file.type || 'image/jpeg', data: String(b).split(',')[1] };
   }
 }
+// 使用者自己的 Gemini 金鑰（只存在這支手機）：有填就用他自己的免費額度
+const GAPI = 'https://generativelanguage.googleapis.com/v1beta/';
+const gkGet = () => { try { return localStorage.getItem('gemini-key') || ''; } catch (e) { return ''; } };
+async function gkModels(key) {
+  const r = await fetch(GAPI + 'models?pageSize=200', { headers: { 'x-goog-api-key': key } });
+  if (!r.ok) throw { code: r.status === 429 ? 'quota' : 'badkey' };
+  const j = await r.json();
+  const names = (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => m.name.replace(/^models\//, ''));
+  const pick = AI_MODELS.filter(n => names.includes(n));
+  const flash = names.filter(n => /flash/.test(n) && !/lite|image|tts|live|audio|thinking|exp/.test(n)).sort().reverse();
+  return [...pick, ...flash];
+}
+window.FBK = {
+  get: gkGet,
+  set: async key => {
+    key = String(key || '').trim();
+    if (!/^[A-Za-z0-9_\-]{20,}$/.test(key)) return '這不像是金鑰，請再複製一次（通常是 AIza 開頭的一長串）';
+    try { const ms = await gkModels(key); if (!ms.length) return '這把金鑰不能讀照片，請重新建立一把'; }
+    catch (e) { return e && e.code === 'badkey' ? '金鑰無效，請回 Google 重新複製一次' : '無法確認金鑰，請確認網路後再試'; }
+    try { localStorage.setItem('gemini-key', key); } catch (e) {}
+    return '';
+  },
+  clear: () => { try { localStorage.removeItem('gemini-key'); } catch (e) {} }
+};
+async function ownKeyJson(key, prompt, img) {
+  let ms;
+  try { ms = await gkModels(key); } catch (e) { throw e && e.code ? e : { code: 'fail' }; }
+  let last = 'fail';
+  for (const name of ms.slice(0, 4)) {
+    const r = await fetch(GAPI + 'models/' + name + ':generateContent', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: img.mimeType, data: img.data } }] }], generationConfig: { responseMimeType: 'application/json' } })
+    });
+    if (r.status === 429) { last = 'quota'; continue; }
+    if (r.status === 400 || r.status === 403) { const t = await r.text(); if (/API_KEY|api key/i.test(t)) throw { code: 'badkey' }; last = 'fail'; continue; }
+    if (!r.ok) { last = 'fail'; continue; }
+    const j = await r.json();
+    const t = ((((j.candidates || [])[0] || {}).content || {}).parts || []).map(p => p.text || '').join('').trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/, '');
+    try { return JSON.parse(t); } catch (x) { throw { code: 'empty' }; }
+  }
+  throw { code: last };
+}
+
 const sampler = {
   limits: async () => ({ images: true }),
   json: async (prompt, opts) => {
+    const own = gkGet();
+    if (own) return ownKeyJson(own, prompt, await shrink(opts.images));
     let aim;
     try { aim = await import(CDN + 'firebase-ai.js'); } catch (e) { throw { code: 'none' }; }
     const ai = aim.getAI(FBAPP, { backend: new aim.GoogleAIBackend() });

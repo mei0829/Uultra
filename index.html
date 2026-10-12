@@ -325,11 +325,22 @@ async function readPhoto(file){
   const[cy,cm]=S.cm.split('-').map(Number);if(!y)y=cy;if(m<1||m>12)m=cm;
   const rows=mkRows(y,m,out.events||[]);if(!rows.length)throw {code:'empty'};
   IMP={rows,note:'已讀取 '+rows.length+' 筆（'+y+' 年 '+m+' 月）'};
- }catch(e){const c=(e&&e.code)||'';IMP={err:c==='not_granted'?'你沒有允許 Claude 協助，所以無法讀取照片。':c==='quota'?'今天的免費讀取次數用完了，請明天再試，或用上方「＋ 新增」手動加入。':c==='none'||c==='noimg'?'AI 讀照片功能還沒開啟，請管理員到 Firebase 開啟「AI Logic」。也可以用上方「＋ 新增」手動加入。':c==='empty'?'沒有讀到活動，請換一張更清楚的照片再試。':c==='cancelled'?'已取消。':'讀取失敗，請稍後再試。'}}
+ }catch(e){const c=(e&&e.code)||'';IMP={err:c==='not_granted'?'你沒有允許 Claude 協助，所以無法讀取照片。':c==='badkey'?'你的 Gemini 金鑰無效，請在下方「改用自己的免費額度」重新設定，或改回共用額度。':c==='quota'?'今天的免費讀取次數用完了，請明天再試，或用上方「＋ 新增」手動加入。':c==='none'||c==='noimg'?'AI 讀照片功能還沒開啟，請管理員到 Firebase 開啟「AI Logic」。也可以用上方「＋ 新增」手動加入。':c==='empty'?'沒有讀到活動，請換一張更清楚的照片再試。':c==='cancelled'?'已取消。':'讀取失敗，請稍後再試。'}}
  render()}
+function gkBox(){if(!window.FBK||(window.FBU&&FBU.admin))return '';const k=FBK.get(),G=window.GKUI;
+ if(!G)return `<div class="row" style="gap:6px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)"><span class="sp sub">🔑 讀照片使用：${k?'<b>你自己的免費額度</b> ✅':'管理員的共用額度'}</span><button class="go q" data-a="gkui">${k?'設定':'改用自己的額度'}</button></div>`;
+ return `<div class="an" style="margin-top:12px"><div class="an-t">改用自己的免費額度<span class="an-r">免費・不用信用卡・約 2 分鐘</span></div>
+ <div style="margin-top:10px"><b>第 1 步</b>　<a class="go" style="display:inline-block;text-decoration:none;color:#fff" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">打開 Google 拿金鑰</a></div>
+ <div class="sub" style="margin:4px 0 10px">用你的 Google 帳號登入 → 按「Create API key（建立 API 金鑰）」→ 按金鑰旁邊的「複製」</div>
+ <div><b>第 2 步</b>　回到這裡按 <button class="go" data-a="gkpaste">貼上金鑰</button></div>
+ <div class="row" style="gap:6px;margin-top:8px"><input id="gkin" placeholder="按不了的話，長按這裡貼上" autocomplete="off"><button class="go q" data-a="gksave">儲存</button></div>
+ ${G.msg?`<div class="sub ${G.bad?'late':''}" style="margin-top:8px">${E(G.msg)}</div>`:''}
+ <div class="sub" style="margin-top:8px">金鑰只存在這支手機，別人看不到；換手機要再貼一次。</div>
+ <div class="row" style="justify-content:space-between;margin-top:8px">${k?'<button class="go q" data-a="gkdel">改回共用額度</button>':'<span></span>'}<button class="go q" data-a="gkui">收起</button></div></div>`}
+function gkTry(key){window.GKUI={msg:'確認中…'};render();FBK.set(key).then(r=>{window.GKUI=r?{msg:r,bad:1}:null;render();if(!r)toast('設定完成！之後讀照片都用你自己的額度')})}
 function impBox(){
  const tm=`<div class="grid" style="margin-top:8px"><div class="fl"><span>開始</span><div class="row" style="gap:4px">${tsel2('19:30','imsh','imsm')}</div></div><div class="fl"><span>結束</span><div class="row" style="gap:4px">${tsel2('21:00','imeh','imem')}</div></div></div><div class="sub" style="margin:4px 0">每場都套用這個時間，匯入後仍可單獨修改</div>`;
- if(!IMP)return `<div class="sub" style="margin-top:8px">選一張課表照片，AI 會幫你整理，只留活動名稱和講師，輪值組、會場標題不會放進去。匯入前可以先檢查和修改。</div><label class="go" style="display:inline-block;margin-top:8px;cursor:pointer">選擇課表照片<input type="file" accept="image/*" style="display:none" data-imf="1"></label>${tm}`;
+ if(!IMP)return `<div class="sub" style="margin-top:8px">選一張課表照片，AI 會幫你整理，只留活動名稱和講師，輪值組、會場標題不會放進去。匯入前可以先檢查和修改。</div><label class="go" style="display:inline-block;margin-top:8px;cursor:pointer">選擇課表照片<input type="file" accept="image/*" style="display:none" data-imf="1"></label>${tm}${gkBox()}`;
  if(IMP.busy)return `<div style="margin-top:8px">${E(IMP.busy)}</div>`;
  if(IMP.err)return `<div style="margin-top:8px">${E(IMP.err)}</div><button class="go g" data-a="impx" style="margin-top:8px">返回</button>`;
  return `<div class="sub" style="margin-top:8px">${E(IMP.note||'')}　請檢查，不要的取消勾選，錯的直接改</div><label class="chip" style="display:inline-block;cursor:pointer;margin-top:6px">📷 換一張照片<input type="file" accept="image/*" style="display:none" data-imf="1"></label>${tm}${IMP.rows.map((r,i)=>`<div style="border-top:1px solid var(--line);padding:8px 0;margin-top:6px"><div class="row"><input type="checkbox" data-ipc="${i}" ${r.inc?'checked':''} style="width:20px;height:20px;flex:none"><input type="date" data-ip="${i}|date" value="${r.date}"></div><input data-ip="${i}|title" value="${E(r.title)}" style="margin-top:4px"><input data-ip="${i}|speaker" value="${E(r.speaker)}" placeholder="講師" style="margin-top:4px"><input data-ip="${i}|crew" value="${E(r.crew||'')}" placeholder="主持／分享（標注用）" style="margin-top:4px;font-size:13px">${r.fix?'<div class="sub">⚠ 照片上的日期和星期對不上，已依星期校正，請確認</div>':''}</div>`).join('')}<div class="row" style="margin-top:10px"><button class="go" data-a="impgo">匯入勾選的項目</button><button class="go g" data-a="impx">取消</button></div>`}
@@ -791,6 +802,10 @@ document.addEventListener('click',e=>{if(e.target.closest('a[href]'))return;
  else if(d.ldv){S.ldv=d.ldv;S.hl=null}
  else if(d.bde){S.bdE=S.bdE===d.bde?null:d.bde}
  else if(d.a==='logout'){window.fbLogout&&fbLogout();return}
+ else if(d.a==='gkui'){window.GKUI=window.GKUI?null:{};render();return}
+ else if(d.a==='gkpaste'){if(navigator.clipboard&&navigator.clipboard.readText)navigator.clipboard.readText().then(gkTry).catch(()=>{window.GKUI={msg:'沒辦法自動貼上，請長按下面的框框貼上，再按「儲存」',bad:1};render()});else{window.GKUI={msg:'請長按下面的框框貼上，再按「儲存」',bad:1};render()}return}
+ else if(d.a==='gksave'){gkTry(v('gkin'));return}
+ else if(d.a==='gkdel'){FBK.clear();window.GKUI=null;render();toast('已改回共用額度');return}
  else if(d.a==='invadd'){const em=v('inv');FBA.err='';FBA.add(em).then(r=>{if(r){FBA.err=r;render()}else toast('已邀請 '+em.trim().toLowerCase())});return}
  else if(d.a==='invdel'){if(confirm('確定要把 '+d.e+' 從邀請名單移除？移除後他就不能再使用。'))FBA.remove(d.e).then(r=>{if(r){FBA.err=r;render()}else toast('已移除')});return}
  else if(d.a==='bkcopy'){const t=$('bk');if(t&&t.select){t.select();try{document.execCommand('copy')}catch(x){}}S.lastBk=today();save();toast('已複製，貼到備忘錄或傳給自己保存');return}
