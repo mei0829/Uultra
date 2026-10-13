@@ -218,7 +218,7 @@ function vHome(){
   <div class="row"><div class="sp"><div class="sub">建議預留</div><div class="big">${M(reserve)}</div></div>
   <div style="text-align:right"><div class="sub">預計收入</div><b class="in num">${M(F.inc)}</b></div></div>
   <div class="tiles"><div><span class="sub">固定帳單</span><b>${M(F.bill)}</b></div><div><span class="sub">信用卡</span><b>${M(F.card)}</b></div><div><span class="sub">日常花費</span><b>${M(F.liv)}</b></div></div>
-  <div class="msg">${short>0?`⚠︎ 錢不夠：<b>${md(F.minD)}</b> 會降到 <b class="neg">${M(F.min)}</b>，還差 <b class="neg">${M(short)}</b>`:`✓ 夠用。最緊的時候是 ${md(F.minD)}，還剩 <b>${M(F.min)}</b>`}</div>
+  <div class="msg">${F.liq<-0.5&&short>0&&!F.ev.length?`⚠︎ 現在帳戶餘額是負的（${M(F.liq)}），所以顯示不夠。先按上面「更新銀行餘額」填實際餘額，這裡就會算對。`:short>0?`⚠︎ 錢不夠：<b>${md(F.minD)}</b> 會降到 <b class="neg">${M(F.min)}</b>，還差 <b class="neg">${M(short)}</b>`:`✓ 夠用。最緊的時候是 ${md(F.minD)}，還剩 <b>${M(F.min)}</b>`}</div>
   <div class="sub" style="margin-top:4px">日常花費以每月 ${M(living())} 估算${S.living==null||S.living===''?'（依最近 3 個月記錄自動算，可在設定改）':''}${keep?`；安全水位 ${M(keep)}`:''}。</div>
  </div>`;
  h+=`<h2>時間軸（剩餘金額已扣掉日常花費）</h2><div class="card">${F.ev.length?F.ev.map(e=>`<div class="li" data-a="tab" data-i="${e.k==='card'?'home':'bills'}"><div class="dt">${md(e.d)}<small>週${WD[pd(e.d).getDay()]}</small></div><div class="sp"><div>${E(e.name)}${e.late?' <span class="late">已過期</span>':''}</div><div class="sub">${E(e.sub)}</div></div><div style="text-align:right"><div class="num ${e.amt>0?'in':''}">${e.amt>0?'+':'−'}${M(Math.abs(e.amt))}</div><div class="sub num ${e.run<keep?'neg':''}">剩 ${M(e.run)}</div></div></div>`).join(''):'<div class="sub">這段期間沒有要繳的錢。到「帳單」新增固定費用，或在「設定」填好信用卡的結帳日與繳款日。</div>'}</div>`;
@@ -706,6 +706,7 @@ function assetCard(liq){
  <div class="tiles"><div><span class="sub">現金＋銀行</span><b>${M(liq)}</b></div><div><span class="sub">股票市值</span><b>${M(stk)}</b></div><div><span class="sub">卡費未繳</span><b>${owe?'−'+M(owe):M(0)}</b></div></div>
  <div class="chips">${S.accts.map(a=>`<span class="pill">${E(a.name)} ${isCard(a)?'未繳 '+M(cardInfo(a).owe):M(bal(a))}</span>`).join('')}</div>
  ${nop?`<div class="sub" style="margin-top:6px">有 ${nop} 檔股票還沒有股價，市值先用成本算。</div>`:''}
+ ${S.accts.filter(a=>!isCard(a)&&bal(a)<-0.5).map(a=>`<div class="note" style="border-color:var(--bad)">⚠︎ <b>${E(a.name)}</b> 顯示 ${M(bal(a))}，這通常不是真的欠錢，而是還沒填這個帳戶「現在實際有多少錢」，網站從 0 開始算，扣掉繳出去的錢就變負的。按下面「更新銀行餘額」填網銀 App 上看到的數字就會正確。</div>`).join('')}
  <div class="row" style="gap:6px;margin-top:8px"><button class="go q" data-a="recon">更新銀行餘額</button>${hs.length?`<button class="go q" data-a="pxnow">更新股價</button>`:''}</div></div>`;
 }
 function sheetRecon(o){
@@ -798,7 +799,8 @@ const ACT={
   const t={id:o.id||nid(),d:o.d,type:o.type,amt,acct:o.acct,cat:o.type==='xfer'?'':(o.cat||guess(o.note,o.type)||(o.type==='in'?'其他收入':'其他')),note:(o.note||'').trim(),src:o.src||'m',ts:o.ts||Date.now()};
   if(o.type==='xfer')t.to=o.to;if(o.bill)t.bill=o.bill;if(o.type!=='xfer'&&isCard(A(o.acct))&&o.pd)t.pd=o.pd;
   const k=S.tx.findIndex(x=>x.id===t.id);if(k>=0)S.tx[k]=t;else S.tx.push(t);
-  S.lastAcct=o.acct;U.sheet=null;save();render();toast(o.id?'已更新':'已記下 '+M(amt))},
+  S.lastAcct=o.acct;U.sheet=null;save();render();const neg=[o.acct,o.to].map(A).find(a=>a&&!isCard(a)&&bal(a)<-0.5);
+  toast(neg?neg.name+' 變成負的了，記得按「更新銀行餘額」填實際餘額':o.id?'已更新':'已記下 '+M(amt))},
  deltx:()=>{if(!confirm('刪除這筆紀錄？'))return;S.tx=S.tx.filter(x=>x.id!==U.sheet.o.id);U.sheet=null;save();render()},
  addbill:i=>{const p=PRESETS[+i]||{name:'',cat:'其他',freq:1};openBill({name:p.name,kind:p.kind||'out',amt:'',freq:p.freq,next:today(),acct:p.kind==='in'?firstBank():(p.auto&&S.accts.find(isCard)||A(firstBank())||S.accts[0]).id,cat:p.cat,auto:!!p.auto,note:p.note||''})},
  edbill:i=>{const b=S.bills.find(x=>x.id===i);if(b)openBill(Object.assign({},b))},
