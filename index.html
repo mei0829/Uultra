@@ -330,7 +330,8 @@ function detail(p){
 
 const byNo=(a,b)=>{const x=a.no?+a.no:1e9,y=b.no?+b.no:1e9;return x-y||a.id-b.id};
 const gname=n=>{n=String(n||'').trim();return /^[\u4e00-\u9fff]{2,}$/.test(n)?n.slice(1):n};
-const invOpts=iv=>S.leaders.map(l=>`<option value="${l.id}" ${l.id===iv?'selected':''}>${E(l.name)}</option><option value="${-l.id}" ${-l.id===iv?'selected':''}>${E(gname(l.name))}/旁線</option>`).join('');
+const SELF_INV=1e9;
+const invOpts=iv=>`<option value="${SELF_INV}" ${iv===SELF_INV?'selected':''}>自己</option>`+S.leaders.map(l=>`<option value="${l.id}" ${l.id===iv?'selected':''}>${E(l.name)}</option><option value="${-l.id}" ${-l.id===iv?'selected':''}>${E(gname(l.name))}/旁線</option>`).join('');
 const nm=p=>(p.no?'#'+p.no+' ':'')+E(p.nick||p.name);
 const mnoTag=p=>p.mno?` <span class="sub" style="font-size:12px;font-weight:400">${E(p.mno)}</span>`:'';
 const kids=id=>S.people.filter(x=>x.joined&&x.up===id).sort((a,b)=>((a.ord==null?1e9:a.ord)-(b.ord==null?1e9:b.ord))||byNo(a,b));
