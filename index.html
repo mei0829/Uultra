@@ -657,7 +657,7 @@ const CROWN='<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"
 const ldFoc=id=>!!(S.leaders.find(l=>l.id===id)||{}).focus;
 const sdPri=(a,b)=>ldFoc(b.leader)-ldFoc(a.leader);
 const flOf=l=>{const fo=l.ford||[],ix=id=>{const i=fo.indexOf(id);return i<0?1e9:i};return S.people.filter(p=>(p.leaders||[]).includes(l.id)).sort((a,b)=>ix(a.id)-ix(b.id)||byNo(a,b))};
-const SDT=[['room','進教室'],['joined','加入'],['used','用產品']];
+const SDT=[['broke','破題'],['room','進教室'],['joined','加入'],['used','用產品']];
 const sideCard=(s,wl)=>{const own='s|'+s.id,pend=(s.log||[]).filter(x=>x.todo&&!x.done).length;
  const planIn=`<input data-sf="${s.id}|plan" value="${E(s.plan||'')}" placeholder="👉 接下來要約他做什麼" style="margin-top:6px">`;
  const myR=MR3.filter(([k])=>(s.my||{})[k]),sdt=SDT.filter(([k])=>s[k]).map(([,n])=>` <span class="pill" style="font-size:11px;white-space:nowrap;color:var(--acc);border-color:var(--acc)">✓${n}</span>`).join(''),isL=s.ld&&S.leaders.some(l=>l.id===s.ld);
