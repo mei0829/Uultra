@@ -1118,7 +1118,7 @@ const odend=e=>{if(!ODR)return;const z=ODR.z||odzAt(e.clientX,e.clientY),id=ODR.
 document.addEventListener('pointerup',odend);document.addEventListener('pointercancel',()=>{ODR=null});
 const CTR=['fx','lfx','mrk','nxo','nxv','fua','qm','qs','qoff','rco','rcall','mrp','osort','cto','ctall','area','trip','pm','pnew','pkgw','tab','view','q','flt','cf','lv','fb','fs','fl','fc','pn','aq','pkg','pd','cm','av'];
 CL.msg=()=>CL.st;
-function cloudQ(){if(!CL.col)return;clearTimeout(CL.tm);CL.st='☁︎ 等待同步…';CL.tm=setTimeout(cloudPush,1500)}
+function cloudQ(){if(!CL.col||!CL.ok)return;clearTimeout(CL.tm);CL.st='☁︎ 等待同步…';CL.tm=setTimeout(cloudPush,1500)}
 async function cloudPush(){
  if(CL.busy){CL.again=1;return}
  CL.busy=1;
@@ -1128,7 +1128,7 @@ async function cloudPush(){
   for(const k of Object.keys(S)){if(CTR.includes(k))continue;const j=JSON.stringify(S[k]);if(j===undefined||j===CL.last[k])continue;if(j.length>240000){CL.st='⚠︎「'+k+'」資料太大，無法同步';continue}await CL.col.doc('s_'+k).set({j});CL.last[k]=j}
   await CL.col.doc('s__meta').set({t});
   CL.st='☁︎ 已同步到雲端 '+new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
- }catch(e){CL.st='⚠︎ 雲端同步失敗，資料仍存在這支手機（'+((e&&e.code)||'錯誤')+'）'}
+ }catch(e){CL.st=navigator.onLine?'⚠︎ 雲端同步失敗，資料仍存在這支手機（'+((e&&e.code)||'錯誤')+'）':'📴 離線中：資料先存在這支手機，連上網路會自動同步'}
  CL.busy=0;if(CL.again){CL.again=0;cloudQ()}
 }
 (async()=>{
@@ -1150,9 +1150,13 @@ async function cloudPush(){
     location.reload();return}
   }
   Object.keys(docs).forEach(id=>{if(id.startsWith('s_')&&id!=='s__meta')CL.last[id.slice(2)]=docs[id].j});
+  CL.ok=1;
   if((ct===0&&hasLocal)||lt>ct){cloudPush()}else CL.st='☁︎ 已同步到雲端';
- }catch(e){CL.st='⚠︎ 雲端連線失敗，資料只存在這支手機'}
+ }catch(e){CL.st=navigator.onLine?'⚠︎ 雲端連線失敗，資料只存在這支手機':'📴 離線中：資料先存在這支手機，連上網路會自動同步'}
 })();
+// 恢復網路：一開始沒連上雲端就重新載入比對新舊；之前連上過就把沒送出的變更補送
+window.addEventListener('online',()=>{if(CL.ok){if(String(CL.st).startsWith('⚠︎')||String(CL.st).startsWith('📴'))cloudQ();return}const go=()=>{const a=document.activeElement;if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))return setTimeout(go,2000);location.reload()};toast('已恢復網路，正在同步…');setTimeout(go,1500)});
+window.addEventListener('offline',()=>{if(CL.ok){CL.st='📴 離線中：資料先存在這支手機，連上網路會自動同步';try{render()}catch(e){}}});
 render();
 setTimeout(phSync,4000);
 </script>
