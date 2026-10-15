@@ -86,7 +86,7 @@ table.pv{width:100%;border-collapse:collapse;font-size:12px}table.pv td,table.pv
 .it{display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--line)}.it.off{opacity:.55}
 .it select{height:32px!important;padding:4px 6px;font-size:13px}
 .st{display:inline-block;font-size:11px;line-height:1.6;padding:0 7px;border-radius:9px;border:1px solid var(--line);color:var(--sub);white-space:nowrap;margin-top:2px}
-.st.pending{border-style:dashed}.st.open{color:var(--acc);border-color:var(--acc)}.st.billed{color:var(--amber);border-color:var(--amber)}.st.paid{color:var(--ok);border-color:var(--ok)}
+.st.pending{border-style:dashed}.st.pre{opacity:.7}.st.open{color:var(--acc);border-color:var(--acc)}.st.billed{color:var(--amber);border-color:var(--amber)}.st.paid{color:var(--ok);border-color:var(--ok)}
 .up{color:var(--up)}.down{color:var(--down)}
 .back{border:0;background:none;color:var(--acc);font:inherit;font-weight:700;cursor:pointer;padding:4px 0;margin-bottom:2px}
 .tilegrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
@@ -158,7 +158,9 @@ function cardInfo(c){
  if(CI[c.id])return CI[c.id];
  const b={},pays=[],add=(k,due,v,t)=>{const x=b[k]=b[k]||{close:k,due,amt:0,tx:[]};x.amt+=v;if(t)x.tx.push(t)};
  if(+c.init)add('init',nextDue(c,c.since||today()),+c.init);
+ if(c.start&&+c.cur0){const k=closeOf(c,c.start);add(k,dueOf(c,k),+c.cur0)}
  for(const t of S.tx){
+  if(c.start&&(t.acct===c.id?t.pd||t.d:t.d)<c.start)continue;
   if(t.acct===c.id){const k=closeOf(c,t.pd||t.d);add(k,dueOf(c,k),t.type==='in'?-t.amt:t.amt,t)}
   else if(t.type==='xfer'&&t.to===c.id)pays.push({d:t.d,v:t.amt})}
  const st=Object.values(b).sort((x,y)=>x.due<y.due?-1:x.due>y.due?1:0);
@@ -173,6 +175,7 @@ function cardInfo(c){
 // 一筆刷卡現在在哪個階段：未入帳 → 未出帳 → 已出帳待繳 → 已繳清
 function txStatus(t){
  const c=A(t.acct);if(!isCard(c)||t.type==='xfer')return null;
+ if(c.start&&(t.pd||t.d)<c.start)return{k:'pre',txt:'開始記帳前',close:closeOf(c,t.pd||t.d),s:{}};
  const k=closeOf(c,t.pd||t.d),s=cardInfo(c).by[k]||{due:dueOf(c,k),left:1,amt:1},t0=today();
  if(s.amt>0&&s.left<=0.5)return{k:'paid',txt:'✓ 已繳清'+(s.paid?' '+md(s.paid):''),close:k,s};
  if(k<t0)return{k:'billed',txt:'● 已出帳・'+md(s.due)+(s.due<t0?' 已過繳款日':' 前繳'),close:k,s};
@@ -304,7 +307,7 @@ function vImp(){
 function vSet(){
  const la=livingAuto();
  let h=`<h1>設定</h1><h2>風格</h2><div class="card">${skinPicker()}</div><h2>帳戶</h2><div class="card">${S.accts.map(a=>`<div class="li" data-a="edacct" data-i="${a.id}"><div class="ic">${TY[a.type].slice(0,1)}</div><div class="sp"><div>${E(a.name)}</div><div class="sub">${TY[a.type]}${isCard(a)?` · ${a.close} 號結帳、${a.due} 號繳款`:''}</div></div><div class="num">${isCard(a)?'未繳 '+M(cardInfo(a).owe):M(bal(a))}</div></div>`).join('')}
- <button class="go q" style="margin-top:8px" data-a="addacct">＋ 新增帳戶／信用卡</button></div>
+ <div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap"><button class="go q" data-a="addacct">＋ 新增帳戶／信用卡</button><button class="go q" data-a="start">開始記帳（填今天的餘額）</button></div>${S.started?`<div class="sub" style="margin-top:6px">${md(S.started)} 開始記帳</div>`:''}</div>
  <h2>預留現金的估算</h2><div class="card"><div class="grid">
  <label class="fl"><span>每月日常花費（空白＝自動，目前 ${M(la)}）</span><input inputmode="numeric" data-m="living" data-s="1" data-n="1" value="${S.living==null?'':E(S.living)}" placeholder="${Math.round(la)}"></label>
  <label class="fl"><span>安全水位（最少想留的錢）</span><input inputmode="numeric" data-m="keep" data-s="1" data-n="1" value="${E(S.keep||'')}" placeholder="0"></label></div>
@@ -329,7 +332,7 @@ function skinPicker(){
 }
 function guideSteps(){return[
  ['選風格','挑一個喜歡的顏色，晚上用可以選深色。',!!S.skin,'guide'],
- ['填帳戶','到「設定」把現金、銀行改成現在真的有多少錢；信用卡填結帳日、繳款日（印在帳單上）。',S.accts.some(a=>!isCard(a)&&+a.init),'set'],
+ ['開始記帳','先到「設定」把信用卡加好（結帳日、繳款日），再填今天現金、銀行有多少錢、信用卡欠多少。過去的帳不用補。',!!S.started,'start'],
  ['記第一筆','按右下角的「＋」，打金額、選分類，按儲存。',S.tx.some(t=>!t.src||t.src==='m'),'addtx'],
  ['加帳單','把每個月固定要繳的錢加進「帳單」：房租、電話費、停車費、保險…',S.bills.length>0,'bills'],
  ['匯入明細','從銀行網站下載信用卡明細（CSV）匯進來，就不用一筆一筆打。',S.tx.some(t=>t.src&&t.src!=='m'),'imp'],
@@ -394,7 +397,7 @@ function vCard(){
  <div class="sub" style="margin-top:6px">記帳時用「刷卡那天」記；匯入銀行明細時，會自動跟你記的那筆配對、補上入帳日，不會重複。</div></div>`;
  const list=I.st.slice().reverse().filter(s=>s.amt>0||s.tx.length);
  if(!list.length)return h+'<div class="card sub">這張卡還沒有紀錄。</div>';
- h+=list.map(s=>{const L=lab(s),o=U.cyc===s.close,pend=s.tx.filter(t=>!t.pd).length;return`<div class="card"><div class="row" data-a="cyc" data-i="${s.close}" style="cursor:pointer"><div class="sp"><b>${s.close==='init'?'期初（開始記帳前的卡費）':md(s.close)+' 結帳'}</b>　<span class="st ${L[1]}">${L[0]}</span><div class="sub">${s.close==='init'?'在「設定」填的已出帳未繳金額':s.tx.length+' 筆'}${pend&&L[1]!=='paid'?`・${pend} 筆未入帳`:''}${s.left>0.5&&s.left<s.amt-0.5?`・已繳 ${M(s.amt-s.left)}`:''}</div></div><div style="text-align:right"><b class="num">${M(s.amt)}</b>${s.left>0.5&&L[1]!=='open'?`<div class="sub num">還要繳 ${M(s.left)}</div>`:''}</div><span class="sub">${o?'▴':'▾'}</span></div>
+ h+=list.map(s=>{const L=lab(s),o=U.cyc===s.close,pend=s.tx.filter(t=>!t.pd).length;return`<div class="card"><div class="row" data-a="cyc" data-i="${s.close}" style="cursor:pointer"><div class="sp"><b>${s.close==='init'?'期初（開始記帳前的帳單）':md(s.close)+' 結帳'}</b>　<span class="st ${L[1]}">${L[0]}</span><div class="sub">${s.close==='init'?'開始記帳時已出帳、還沒繳的':s.tx.length+' 筆'+(c.start&&+c.cur0&&s.close===closeOf(c,c.start)?'＋開始記帳前已刷 '+M(c.cur0):'')}${pend&&L[1]!=='paid'?`・${pend} 筆未入帳`:''}${s.left>0.5&&s.left<s.amt-0.5?`・已繳 ${M(s.amt-s.left)}`:''}</div></div><div style="text-align:right"><b class="num">${M(s.amt)}</b>${s.left>0.5&&L[1]!=='open'?`<div class="sub num">還要繳 ${M(s.left)}</div>`:''}</div><span class="sub">${o?'▴':'▾'}</span></div>
  ${o?`<div style="margin-top:6px">${s.tx.slice().sort((a,b)=>a.d<b.d?1:-1).map(t=>txLine(t)+(t.pd||L[1]==='paid'?'':`<div style="text-align:right;margin:-4px 0 6px"><button class="go q" data-a="posted" data-i="${t.id}">銀行已入帳</button></div>`)).join('')||'<div class="sub">沒有明細（期初金額）</div>'}</div>`:''}
  ${s.left>0.5&&L[1]==='billed'?`<button class="go q" style="margin-top:8px" data-a="paycard" data-i="${c.id}">記錄繳卡費</button>`:''}</div>`}).join('');
  return h;
@@ -583,7 +586,7 @@ function renderNow(){
  CI={};$('tip').style.display='none';
  $('app').innerHTML=(sub?'<button class="back" data-a="tab" data-i="more">‹ 更多</button>':'')+V[U.tab]();
  $('nav').innerHTML=TABS.map(([k,i,n])=>`<button class="${U.tab===k||(k==='more'&&sub)?'on':''}" data-a="tab" data-i="${k}"><b>${i}</b>${n}</button>`).join('');
- const sh=U.sheet,SH={tx:sheetTx,bill:sheetBill,acct:sheetAcct,trade:sheetTrade,recon:sheetRecon,hold:sheetHold};$('sheet').innerHTML=sh?`<div class="sheet" data-a="bg"><div>${SH[sh.k](sh.o)}</div></div>`:'';
+ const sh=U.sheet,SH={start:sheetStart,tx:sheetTx,bill:sheetBill,acct:sheetAcct,trade:sheetTrade,recon:sheetRecon,hold:sheetHold};$('sheet').innerHTML=sh?`<div class="sheet" data-a="bg"><div>${SH[sh.k](sh.o)}</div></div>`:'';
  window.scrollTo(0,y);
  if(am){const f=document.querySelector(`[data-m="${am}"]`);if(f&&f.tagName!=='SELECT'){f.focus();try{f.setSelectionRange(cp,cp)}catch(e){}}}
 }
@@ -711,6 +714,18 @@ function assetCard(liq){
  ${S.accts.filter(a=>!isCard(a)&&bal(a)<-0.5).map(a=>`<div class="note" style="border-color:var(--bad)">⚠︎ <b>${E(a.name)}</b> 顯示 ${M(bal(a))}，這通常不是真的欠錢，而是還沒填這個帳戶「現在實際有多少錢」，網站從 0 開始算，扣掉繳出去的錢就變負的。按下面「更新銀行餘額」填網銀 App 上看到的數字就會正確。</div>`).join('')}
  <div class="row" style="gap:6px;margin-top:8px"><button class="go q" data-a="recon">更新銀行餘額</button>${hs.length?`<button class="go q" data-a="pxnow">更新股價</button>`:''}</div></div>`;
 }
+function sheetStart(o){
+ const cards=S.accts.filter(isCard),bank=S.accts.filter(a=>!isCard(a));
+ const inp=(k,id,v,ph)=>`<input inputmode="decimal" placeholder="${ph}" value="${E(v==null?'':v)}" data-m="sheet.o.${k}.${id}">`;
+ return`<div class="row"><b class="sp" style="font-size:17px">開始記帳：填今天的狀態</b><button class="x" data-a="close">×</button></div>
+ <div class="note">過去的收入、支出不用補，結果都已經在「現在有多少錢」裡了。<br>從今天（${md(today())}）開始，只要記新的花費就好。今天已經花掉的錢已經算在餘額裡，不用再記。</div>
+ <h2>① 現金和銀行：現在有多少錢</h2>
+ ${bank.map(a=>`<label class="fl"><span>${E(a.name)}${a.type==='cash'?'（錢包裡數一數）':'（看網銀 App）'}</span><div class="row" style="gap:6px">${inp('v',a.id,o.v[a.id],'例：12000')}${a.type==='bank'?`<button class="go q" data-a="snapstart" data-i="${a.id}">截圖</button>`:''}</div></label>`).join('')}
+ ${cards.length?`<h2>② 信用卡：現在欠多少（看銀行 App）</h2>${cards.map(c=>`<div class="card" style="margin-top:6px"><b>${E(c.name)}</b> <span class="sub">${c.close} 號結帳、${c.due} 號繳款</span>
+ <div class="grid" style="margin-top:6px"><label class="fl"><span>已出帳、還沒繳（繳了就填 0）</span>${inp('b',c.id,o.b[c.id],'0')}</label><label class="fl"><span>已經刷了、還沒出帳</span>${inp('u',c.id,o.u[c.id],'0')}</label></div></div>`).join('')}
+ <div class="sub">銀行 App 的信用卡頁通常會寫「本期應繳」和「未出帳消費」，照抄就好。</div>`:'<div class="sub" style="margin-top:8px">還沒有信用卡。有的話先到「設定 → 新增帳戶」加信用卡，再回來填。</div>'}
+ <div class="row" style="margin-top:14px"><span class="sp"></span><button class="go" data-a="savestart">從今天開始記帳</button></div>`;
+}
 function sheetRecon(o){
  return`<div class="row"><b class="sp" style="font-size:17px">更新餘額（對帳）</b><button class="x" data-a="close">×</button></div>
  <div class="sub" style="margin:6px 0">打開網銀 App，把看到的餘額填進來；也可以按「截圖」讓 AI 讀。沒變的空著就好。</div>
@@ -744,7 +759,7 @@ async function runSnap(f){
   }else{
    const r=await askAI('這是銀行 App 或網路銀行的截圖。找出帳戶的「可用餘額」或「帳戶餘額」（新台幣），只回傳 JSON：{"balance":數字或null,"account":"畫面上的帳戶名稱"}。數字不要逗號；有好幾個帳戶就選最上面、最明顯的那個；外幣帳戶不算；找不到就回傳 {"balance":null}。',f);
    const b=pAmt(r&&r.balance);if(isNaN(b)){toast('AI 沒有找到餘額');return}
-   if(k==='bal'){if(!U.sheet||U.sheet.k!=='recon')return;U.sheet.o.v[U.snap.id]=b}else if(U.sheet&&U.sheet.k==='acct')U.sheet.o.now=b;
+   if(k==='bal'||k==='start'){if(!U.sheet||U.sheet.k!==(k==='bal'?'recon':'start'))return;U.sheet.o.v[U.snap.id]=b}else if(U.sheet&&U.sheet.k==='acct')U.sheet.o.now=b;
    render();toast('讀到餘額 '+M(b)+(r.account?'（'+r.account+'）':'')+'，確認後按儲存');
   }
  }catch(e){console.error(e);toast(aiErr(e))}
@@ -846,6 +861,12 @@ const ACT={
   U.imp=null;U.sheet=null;U.fa='';U.tab='guide';save();render();window.scrollTo(0,0);toast('已清空，照著教學一步一步來')},
 };
 Object.assign(ACT,{
+ start:()=>{const b={};S.accts.filter(isCard).forEach(c=>{const I=cardInfo(c);b[c.id]=Math.round(I.billed.reduce((s,x)=>s+x.left,0))});U.sheet={k:'start',o:{v:{},b,u:{}}};render()},
+ snapstart:i=>{U.snap={k:'start',id:i};$('snapf').click()},
+ savestart:()=>{const o=U.sheet.o,t0=today();
+  for(const a of S.accts){if(isCard(a))continue;const v=o.v[a.id];if(v==null||v==='')continue;const x=pAmt(v);if(isNaN(x))return toast(a.name+' 的金額不對');a.init=(+a.init||0)+x-bal(a)}
+  for(const c of S.accts.filter(isCard)){const b=pAmt(o.b[c.id]||0),u=pAmt(o.u[c.id]||0);if(isNaN(b)||isNaN(u))return toast(c.name+' 的金額不對');c.start=t0;c.since=t0;c.init=b;c.cur0=u}
+  S.started=t0;U.sheet=null;save();U.tab='home';render();window.scrollTo(0,0);toast('好了！從今天開始記新的花費就好')},
  card:i=>{U.cardId=i;U.cyc='';U.sheet=null;U.tab='card';render();window.scrollTo(0,0)},
  cyc:i=>{U.cyc=U.cyc===i?'':i;render()},
  fst:i=>{U.fs=i;render()},
@@ -863,7 +884,7 @@ Object.assign(ACT,{
   its.forEach((x,k)=>{S.trades.push({id:nid()+k,d:today(),type:'buy',sym:x.sym,name:x.name,sh:pAmt(x.sh),px:pAmt(x.cost),fee:0,acct:'',src:'snap',ts:ts+k});n++});
   U.sheet=null;save();render();toast(n?'已匯入 '+n+' 檔持股':'已更新股價')},
  pxnow:async()=>{toast('抓收盤價中…');const n=await fetchPrices(true);render();toast(n>0?'已更新 '+n+' 檔收盤價':n===-2?'股價已經是最新的':n===0?'沒有找到你的股票（興櫃或代號不對的要手動填）':'連不到證交所，請點持股的「現價」手動更新')},
- go:i=>i==='addtx'?ACT.addtx():ACT.tab(i),
+ go:i=>i==='addtx'?ACT.addtx():i==='start'?ACT.start():ACT.tab(i),
  guideoff:()=>{S.guideOff=true;save();render();toast('之後可以在「更多 → 新手教學」再打開')},
  guideon:()=>{S.guideOff=false;save();render()},
  skin:i=>{S.skin=i;applyTheme(S.skin,S.mode);save();render()},
