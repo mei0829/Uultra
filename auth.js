@@ -3,6 +3,8 @@ import { firebaseConfig, adminEmail } from './firebase-config.js';
 
 const V = '12.18.0', CDN = `https://www.gstatic.com/firebasejs/${V}/`;
 const box = document.getElementById('auth');
+// 離線使用：註冊 service worker，把網頁存在手機裡
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const LOCAL_KEYS = ['roster-v2', 'roster-t', 'roster-prev', 'money-v1', 'money-t', 'money-prev', 'ph-cloud'];
 const TITLE = box.dataset.title || '新人名單與組織';
@@ -209,6 +211,8 @@ async function gate(auth, am, fs, fsm, user) {
   if (!user.emailVerified) return verifyScreen(auth, am, user);
   const em = (user.email || '').toLowerCase();
   if (em === ADMIN) return startApp(fs, fsm, user);
+  // 沒有網路：這支手機之前用這個帳號登入過，就直接用本機資料
+  try { if (!navigator.onLine && localStorage.getItem('roster-owner') === user.uid) return startApp(fs, fsm, user); } catch (x) {}
   shell('<div class="sub">確認權限中…</div>');
   try {
     const d = await fsm.getDoc(fsm.doc(fs, 'allow', em));
