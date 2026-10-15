@@ -529,12 +529,13 @@ function cardNote(o){
  return`這筆算在 <b>${md(t.close)} 結帳</b>的帳單，<b>${md(dueOf(c,t.close))}</b> 前要繳。現在：<span class="st ${t.k}">${t.txt}</span>${t.edge&&!o.pd?'<br>離結帳日很近，銀行如果晚幾天入帳，會算到下一期。':''}`;
 }
 function sheetTx(o){
- const cs=S.cats[o.type==='in'?'in':'out'],x=o.type==='xfer',cd=!x&&isCard(A(o.acct));
- const acs=(k,lbl)=>`<label class="fl"><span>${lbl}</span><select data-m="sheet.o.${k}" data-r="1">${S.accts.map(a=>`<option value="${a.id}" ${o[k]===a.id?'selected':''}>${E(a.name)}</option>`).join('')}</select></label>`;
+ const cs=S.cats[o.type==='in'?'in':'out'],x=o.type==='xfer',inc=o.type==='in',cd=o.type==='out'&&isCard(A(o.acct)),badInc=inc&&isCard(A(o.acct))&&o.cat!=='退款';
+ const acs=(k,lbl)=>`<label class="fl"><span>${lbl}</span><select data-m="sheet.o.${k}" data-r="1">${S.accts.filter(a=>!(inc&&k==='acct'&&isCard(a)&&a.id!==o.acct)).map(a=>`<option value="${a.id}" ${o[k]===a.id?'selected':''}>${E(a.name)}</option>`).join('')}</select></label>`;
  return`<div class="row"><b class="sp" style="font-size:17px">${o.id?'編輯':'記一筆'}</b><button class="x" data-a="close">×</button></div>
  <div class="chips" style="margin:8px 0">${[['out','支出'],['in','收入'],['xfer','轉帳／繳卡費']].map(([k,n])=>`<button class="chip ${o.type===k?'on':''}" data-a="ty" data-i="${k}">${n}</button>`).join('')}</div>
  <input class="amt" id="famt" inputmode="decimal" placeholder="0" value="${E(o.amt)}" data-m="sheet.o.amt">
- <div class="grid">${x?acs('acct','從')+acs('to','轉到'):acs('acct','帳戶')}<label class="fl"><span>${cd?'消費日（刷卡那天）':'日期'}</span><input type="date" value="${o.d}" data-m="sheet.o.d" data-cn="1"></label>${cd?`<label class="fl"><span>銀行入帳日（還沒就空著）</span><input type="date" value="${o.pd||''}" data-m="sheet.o.pd" data-cn="1"></label><div class="fl" style="align-self:end">${o.pd?'<button class="go q" data-a="pdclr">清除入帳日</button>':'<button class="go q" data-a="pdset">銀行已入帳</button>'}</div>`:x?'':'<span></span>'}</div>
+ <div class="grid">${x?acs('acct','從')+acs('to','轉到'):acs('acct','帳戶')}<label class="fl"><span>${cd?'消費日（刷卡那天）':inc?(o.cat==='薪資'?'薪資入帳日':'入帳日'):'日期'}</span><input type="date" value="${o.d}" data-m="sheet.o.d" data-cn="1"></label>${cd?`<label class="fl"><span>銀行入帳日（還沒就空著）</span><input type="date" value="${o.pd||''}" data-m="sheet.o.pd" data-cn="1"></label><div class="fl" style="align-self:end">${o.pd?'<button class="go q" data-a="pdclr">清除入帳日</button>':'<button class="go q" data-a="pdset">銀行已入帳</button>'}</div>`:x?'':'<span></span>'}</div>
+ ${badInc?'<div class="note" style="border-color:var(--bad)">⚠︎ 收入不會進信用卡。薪資請把「帳戶」改成薪水匯進去的銀行帳戶。</div>':''}
  ${cd?`<div class="note" id="cardnote" style="margin-top:8px">${cardNote(o)}</div>`:''}
  <label class="fl"><span>說明</span><input value="${E(o.note)}" data-m="sheet.o.note" data-g="1" placeholder="${x?'例：繳卡費、提款':'例：午餐、停車費'}"></label>
  ${x?'':`<div class="fl" style="margin-top:8px"><span class="sub">分類</span><div class="chips" style="margin-top:4px">${cs.map(c=>`<button class="chip ${o.cat===c?'on':''}" data-a="cat" data-i="${E(c)}">${E(c)}</button>`).join('')}</div></div>
@@ -791,14 +792,14 @@ const ACT={
  addtx:i=>openTx({type:'out',amt:'',acct:A(S.lastAcct)?S.lastAcct:S.accts[0].id,to:'',cat:'',d:i||today(),note:''}),
  edtx:i=>{const t=S.tx.find(x=>x.id===i);if(t)openTx(Object.assign({to:''},t,{catSet:1}))},
  paycard:i=>{const c=A(i),I=cardInfo(c);openTx({type:'xfer',amt:Math.round(I.billed.reduce((s,x)=>s+x.left,0)),acct:firstBank(),to:i,cat:'',d:today(),note:'繳 '+c.name})},
- ty:i=>{const o=U.sheet.o;o.type=i;if(!o.catSet||!S.cats[i==='in'?'in':'out'].includes(o.cat))o.cat=guess(o.note,i),o.catSet=0;if(i==='xfer'&&(!o.to||o.to===o.acct))o.to=(S.accts.find(a=>a.id!==o.acct&&isCard(a))||S.accts.find(a=>a.id!==o.acct)||{}).id;render()},
+ ty:i=>{const o=U.sheet.o;o.type=i;if(i==='in'&&isCard(A(o.acct)))o.acct=firstBank();if(!o.catSet||!S.cats[i==='in'?'in':'out'].includes(o.cat))o.cat=guess(o.note,i),o.catSet=0;if(i==='xfer'&&(!o.to||o.to===o.acct))o.to=(S.accts.find(a=>a.id!==o.acct&&isCard(a))||S.accts.find(a=>a.id!==o.acct)||{}).id;render()},
  cat:i=>{const o=U.sheet.o;o.cat=i;o.catSet=1;render()},
  rule:()=>{const o=U.sheet.o,k=o.note.trim().slice(0,12);S.rules=S.rules.filter(r=>r.k!==k);S.rules.unshift({k,c:o.cat});save();render();toast('已新增規則：'+k+' → '+o.cat)},
  savetx:()=>{const o=U.sheet.o,amt=pAmt(o.amt);
   if(!(amt>0))return toast('請輸入金額');if(!o.d)return toast('請選日期');
   if(o.type==='xfer'&&(!o.to||o.to===o.acct))return toast('請選不同的轉出、轉入帳戶');
   const t={id:o.id||nid(),d:o.d,type:o.type,amt,acct:o.acct,cat:o.type==='xfer'?'':(o.cat||guess(o.note,o.type)||(o.type==='in'?'其他收入':'其他')),note:(o.note||'').trim(),src:o.src||'m',ts:o.ts||Date.now()};
-  if(o.type==='xfer')t.to=o.to;if(o.bill)t.bill=o.bill;if(o.type!=='xfer'&&isCard(A(o.acct))&&o.pd)t.pd=o.pd;
+  if(o.type==='xfer')t.to=o.to;if(o.bill)t.bill=o.bill;if(o.type==='out'&&isCard(A(o.acct))&&o.pd)t.pd=o.pd;
   const k=S.tx.findIndex(x=>x.id===t.id);if(k>=0)S.tx[k]=t;else S.tx.push(t);
   S.lastAcct=o.acct;U.sheet=null;save();render();const neg=[o.acct,o.to].map(A).find(a=>a&&!isCard(a)&&bal(a)<-0.5);
   toast(neg?neg.name+' 變成負的了，記得按「更新銀行餘額」填實際餘額':o.id?'已更新':'已記下 '+M(amt))},
