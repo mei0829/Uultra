@@ -123,6 +123,11 @@ const E=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>
 const $=id=>document.getElementById(id);
 let HIDE=false;try{HIDE=localStorage.getItem('money-hide')==='1'}catch(e){}
 const M=v=>HIDE?'$ ••••':(v<-0.5?'-':'')+'$'+Math.round(Math.abs(v)).toLocaleString('zh-TW');
+// 美元：匯率每天自動更新一次（抓不到就用上次的，或自己填）
+const rate=c=>c==='USD'?(+((S.fx||{}).USD)||32):1;
+const conv=(v,f,t)=>(f||'TWD')===(t||'TWD')?v:v*rate(f)/rate(t);
+const MC=(v,c)=>c==='USD'?(HIDE?'US$ ••••':(v<-0.005?'-':'')+'US$'+Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})):M(v);
+const MA=a=>MC(bal(a),a.cur);
 const md=s=>s==='init'?'期初':+s.slice(5,7)+'/'+ +s.slice(8,10);
 const WD='日一二三四五六',nid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const dim=(y,m)=>new Date(y,m+1,0).getDate();
@@ -133,7 +138,7 @@ const addM=(s,n,day)=>{const d=pd(s);return ymd(d.getFullYear(),d.getMonth()+n,d
 const OUT=['餐飲','交通','停車費','購物','日用品','居家','房貸','電信網路','水電瓦斯','保險','醫療','娛樂','學習','稅費','其他'];
 const INC=['薪資','獎金','退款','利息','其他收入'];
 const RULES=[['停車','停車費'],['路邊','停車費'],['PARKING','停車費'],['加油','交通'],['中油','交通'],['台塑石油','交通'],['高鐵','交通'],['台鐵','交通'],['臺鐵','交通'],['捷運','交通'],['悠遊卡','交通'],['一卡通','交通'],['UBER','交通'],['大車隊','交通'],['ETC','交通'],['遠通','交通'],['UBER EATS','餐飲'],['FOODPANDA','餐飲'],['統一超商','餐飲'],['7-ELEVEN','餐飲'],['全家','餐飲'],['萊爾富','餐飲'],['OK超商','餐飲'],['星巴克','餐飲'],['麥當勞','餐飲'],['全聯','日用品'],['家樂福','日用品'],['好市多','日用品'],['COSTCO','日用品'],['屈臣氏','日用品'],['康是美','日用品'],['IKEA','居家'],['中華電信','電信網路'],['台灣大哥大','電信網路'],['遠傳','電信網路'],['電信','電信網路'],['台灣電力','水電瓦斯'],['電費','水電瓦斯'],['水費','水電瓦斯'],['自來水','水電瓦斯'],['瓦斯','水電瓦斯'],['人壽','保險'],['產險','保險'],['保險','保險'],['診所','醫療'],['醫院','醫療'],['藥局','醫療'],['NETFLIX','娛樂'],['SPOTIFY','娛樂'],['YOUTUBE','娛樂'],['APPLE.COM','娛樂'],['GOOGLE','娛樂'],['威秀','娛樂'],['蝦皮','購物'],['MOMO','購物'],['PCHOME','購物'],['博客來','學習'],['稅','稅費'],['監理','稅費'],['薪資','薪資'],['薪轉','薪資'],['利息','利息']];
-const DEF=()=>({accts:[{id:'cash',name:'現金',type:'cash',init:0},{id:'bank',name:'銀行帳戶',type:'bank',init:0},{id:'card1',name:'信用卡',type:'card',init:0,close:5,due:20,since:today()}],tx:[],bills:[],cats:{out:OUT.slice(),in:INC.slice()},rules:RULES.map(([k,c])=>({k,c})),living:null,keep:0,lastAcct:'cash',plan:{income:'',from:'',items:[],done:''},payees:[],trades:[],prices:{},fee:{disc:1,min:20},budget:{total:0,cats:{}},calc:{p:100000,c:5000,r:6,y:20,goal:3000000},skin:'',mode:'auto',guideOff:false});
+const DEF=()=>({accts:[{id:'cash',name:'現金',type:'cash',init:0},{id:'bank',name:'銀行帳戶',type:'bank',init:0},{id:'card1',name:'信用卡',type:'card',init:0,close:5,due:20,since:today()}],tx:[],bills:[],cats:{out:OUT.slice(),in:INC.slice()},rules:RULES.map(([k,c])=>({k,c})),living:null,keep:0,lastAcct:'cash',fx:{USD:32,d:'',auto:0},plan:{income:'',from:'',items:[],done:''},payees:[],trades:[],prices:{},fee:{disc:1,min:20},budget:{total:0,cats:{}},calc:{p:100000,c:5000,r:6,y:20,goal:3000000},skin:'',mode:'auto',guideOff:false});
 let S;try{const r=localStorage.getItem('money-v1');S=Object.assign(DEF(),r?JSON.parse(r):{})}catch(e){S=DEF()}
 if(!S.cats.out.includes('房貸'))S.cats.out.splice(Math.max(0,S.cats.out.indexOf('居家')+1),0,'房貸');
 const U={fs:'',cardId:'',cyc:'',tab:'home',h:30,mon:today().slice(0,7),fa:'',q:'',sheet:null,imp:null,cm:today().slice(0,7),cd:today(),bm:today().slice(0,7),cn:6,chm:''};
@@ -143,7 +148,7 @@ function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';cle
 
 const A=id=>S.accts.find(a=>a.id===id),isCard=a=>!!a&&a.type==='card';
 // 子帳戶：同一家銀行的帳戶填一樣的「所屬銀行」，選單顯示成「國泰世華・數存」
-const nm=a=>a?(a.group?a.group+'・':'')+a.name:'?';
+const nm=a=>a?(a.group?a.group+'・':'')+a.name+(a.cur==='USD'?'（美元）':''):'?';
 const acno=a=>{const v=[a.code,a.no].filter(Boolean).join('-');return HIDE&&v?'•••• '+String(a.no||'').slice(-3):v};
 const copyBtn=v=>v?`<button class="go q" style="padding:2px 8px;font-size:12px" data-a="copy" data-i="${E(v)}">複製</button>`:'';
 const TY={cash:'現金',bank:'銀行',card:'信用卡'},FQ=[[0,'只有一次'],[1,'每月'],[2,'每 2 個月'],[3,'每 3 個月'],[6,'每半年'],[12,'每年']];
@@ -152,10 +157,10 @@ const firstBank=()=>(S.accts.find(a=>a.type==='bank')||S.accts.find(a=>a.type===
 function guess(s,kind){s=String(s||'').toUpperCase();const ok=S.cats[kind==='in'?'in':'out'];for(const r of S.rules)if(r.k&&s.includes(r.k.toUpperCase())&&ok.includes(r.c))return r.c;return ''}
 
 // ── 餘額與信用卡帳單 ──
-function bal(a){let v=+a.init||0;for(const t of S.tx){if(t.acct===a.id)v+=t.type==='in'?t.amt:-t.amt;if(t.type==='xfer'&&t.to===a.id)v+=t.amt}for(const t of S.trades)if(t.acct===a.id)v+=tradeCash(t);return v}
+function bal(a){let v=+a.init||0;for(const t of S.tx){if(t.acct===a.id)v+=t.type==='in'?t.amt:-t.amt;if(t.type==='xfer'&&t.to===a.id)v+=t.amt}for(const t of S.trades)if(t.acct===a.id)v+=conv(tradeCash(t),t.cur,a.cur);return v}
 // 股票交易對連動帳戶的影響：買進付錢、賣出和股利收錢
 const tradeCash=t=>t.type==='buy'?-(t.sh*t.px+(+t.fee||0)):t.type==='sell'?t.sh*t.px-(+t.fee||0)-(+t.tax||0):+t.amt||0;
-const liquid=()=>S.accts.filter(a=>!isCard(a)).reduce((s,a)=>s+bal(a),0);
+const liquid=()=>S.accts.filter(a=>!isCard(a)).reduce((s,a)=>s+conv(bal(a),a.cur,'TWD'),0);
 // 某天刷卡會在哪天結帳、哪天要繳
 function closeOf(c,s){const d=pd(s),k=+c.close||1,cd=ymd(d.getFullYear(),d.getMonth(),k);return s<=cd?cd:ymd(d.getFullYear(),d.getMonth()+1,k)}
 function dueOf(c,cl){const d=pd(cl),k=+c.due||1;return ymd(d.getFullYear(),d.getMonth()+(k>(+c.close||1)?0:1),k)}
@@ -209,7 +214,7 @@ function forecast(H){
  S.bills.forEach(b=>occ(b,end).forEach(o=>{
   const a=A(b.acct),inc=b.kind==='in';
   if(isCard(a)&&!inc){const due=dueOf(a,closeOf(a,o));if(due<=end)ev.push({d:due<t0?t0:due,late:due<t0,amt:-b.amt,name:b.name,sub:md(o)+' 刷 '+a.name+'，跟著卡費繳',k:'bill'})}
-  else ev.push({d:o<t0?t0:o,late:o<t0,amt:inc?+b.amt:-b.amt,name:b.name,sub:(b.kind==='inv'?'定期投資・':'')+nm(a)+(b.auto?' 自動扣繳':''),k:inc?'inc':'bill'})}));
+  else ev.push({d:o<t0?t0:o,late:o<t0,amt:(inc?1:-1)*conv(+b.amt,bcur(b),'TWD'),name:b.name,sub:(b.kind==='inv'?'定期投資・':'')+nm(a)+(b.auto?' 自動扣繳':''),k:inc?'inc':'bill'})}));
  ev.sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:x.amt-y.amt);
  const liq=liquid(),daily=living()/30.4;let cum=0,min=liq,minD=t0;
  ev.forEach(e=>{cum+=e.amt;e.run=liq+cum-daily*dleft(e.d);if(e.run<min){min=e.run;minD=e.d}});
@@ -233,7 +238,7 @@ function vHome(){
   <div class="msg">${F.liq<-0.5&&short>0&&!F.ev.length?`⚠︎ 現在帳戶餘額是負的（${M(F.liq)}），所以顯示不夠。先按上面「更新銀行餘額」填實際餘額，這裡就會算對。`:short>0?`⚠︎ 錢不夠：<b>${md(F.minD)}</b> 會降到 <b class="neg">${M(F.min)}</b>，還差 <b class="neg">${M(short)}</b>`:`✓ 夠用。最緊的時候是 ${md(F.minD)}，還剩 <b>${M(F.min)}</b>`}</div>
   <div class="sub" style="margin-top:4px">日常花費以每月 ${M(living())} 估算${S.living==null||S.living===''?'（依最近 3 個月記錄自動算，可在設定改）':''}${keep?`；安全水位 ${M(keep)}`:''}。</div>
  </div>`;
- h+=`<h2>時間軸（剩餘金額已扣掉日常花費）</h2><div class="card">${F.ev.length?F.ev.map(e=>`<div class="li" data-a="tab" data-i="${e.k==='card'?'home':'bills'}"><div class="dt">${md(e.d)}<small>週${WD[pd(e.d).getDay()]}</small></div><div class="sp"><div>${E(e.name)}${e.late?' <span class="late">已過期</span>':''}</div><div class="sub">${E(e.sub)}</div></div><div style="text-align:right"><div class="num ${e.amt>0?'in':''}">${e.amt>0?'+':'−'}${M(Math.abs(e.amt))}</div><div class="sub num ${e.run<keep?'neg':''}">剩 ${M(e.run)}</div></div></div>`).join(''):'<div class="sub">這段期間沒有要繳的錢。到「帳單」新增固定費用，或在「設定」填好信用卡的結帳日與繳款日。</div>'}</div>`;
+ h+=`<h2>時間軸（剩餘金額已扣掉日常花費）</h2><div class="card">${F.ev.length?F.ev.map(e=>`<div class="li" data-a="tab" data-i="${e.k==='card'?'home':'bills'}"><div class="dt">${md(e.d)}<small>週${WD[pd(e.d).getDay()]}</small></div><div class="sp"><div>${E(e.name)}${e.late?' <span class="late">已過期</span>':''}</div><div class="sub">${E(e.sub)}</div></div><div style="text-align:right"><div class="num ${e.amt>0?'in':''}">${e.amt>0?'+':'−'}${M(Math.abs(e.amt))}</div><div class="sub num ${e.run<keep?'neg':''}">剩 ${M(e.run)}</div></div></div>`).join(''):'<div class="sub">這段期間沒有要繳的錢。到「固定收支」新增固定費用，或在「設定」填好信用卡的結帳日與繳款日。</div>'}</div>`;
  const cards=S.accts.filter(isCard);
  if(cards.length)h+=`<h2>信用卡</h2>`+cards.map(c=>{const I=cardInfo(c),pend=S.tx.filter(t=>t.acct===c.id&&(txStatus(t)||{}).k==='pending');return`<div class="card" data-a="card" data-i="${c.id}" style="cursor:pointer"><div class="row"><b class="sp">${E(c.name)}</b><span class="sub">每月 ${c.close} 號結帳、${c.due} 號繳款 ›</span></div>
   <div class="row" style="margin-top:6px"><div class="sp"><div class="sub">本期（${md(I.cur)} 結帳）</div><b class="num">${M(I.curAmt)}</b></div><div class="sp" style="text-align:right"><div class="sub">已出帳待繳</div><b class="num ${I.billed.length?'neg':''}">${M(I.billed.reduce((s,x)=>s+x.left,0))}</b></div></div>
@@ -264,16 +269,17 @@ function vTx(){
  return h+`<button class="fab" data-a="addtx" aria-label="記一筆">＋</button>`;
 }
 
-const billPM=k=>S.bills.filter(b=>(b.kind||'out')===k&&+b.freq&&(!b.end||b.end>=today())).reduce((s,b)=>s+b.amt/b.freq,0);
+const bcur=b=>b.kind==='inv'?b.cur||'TWD':(A(b.acct)||{}).cur||'TWD';
+const billPM=k=>S.bills.filter(b=>(b.kind||'out')===k&&+b.freq&&(!b.end||b.end>=today())).reduce((s,b)=>s+conv(b.amt,bcur(b),'TWD')/b.freq,0);
 const PRESETS=[{name:'停車費',cat:'停車費',auto:true,freq:1,note:'政府路邊停車費代扣，每月金額不固定，填大概的月平均即可'},{name:'電話費',cat:'電信網路',auto:true,freq:1},{name:'電費',cat:'水電瓦斯',freq:2},{name:'水費',cat:'水電瓦斯',freq:2},{name:'瓦斯費',cat:'水電瓦斯',freq:2},{name:'房租',cat:'居家',freq:1},{name:'房貸',cat:'房貸',freq:1,auto:true,bank:1,note:'銀行每月自動扣款'},{name:'保險費',cat:'保險',freq:12},{name:'牌照稅',cat:'稅費',freq:12},{name:'燃料費',cat:'稅費',freq:12},{name:'薪水',cat:'薪資',freq:1,kind:'in'},{name:'定期定額',freq:1,kind:'inv'}];
 function vBills(){
  const bs=S.bills.slice().sort((a,b)=>a.next<b.next?-1:1),t0=today();
  const pm=k=>billPM(k);
- let h=`<h1>帳單</h1><div class="card"><div class="row"><div class="sp"><div class="sub">每月固定支出</div><b class="num">${M(pm('out'))}</b></div><div class="sp"><div class="sub">每月定期投資</div><b class="num">${M(pm('inv'))}</b></div><div class="sp"><div class="sub">每月固定收入</div><b class="num in">${M(pm('in'))}</b></div></div><div class="sub" style="margin-top:4px">半年、一年繳一次的，會平均攤到每個月。</div></div>
+ let h=`<h1>固定收支</h1><div class="card"><div class="row"><div class="sp"><div class="sub">每月固定支出</div><b class="num">${M(pm('out'))}</b></div><div class="sp"><div class="sub">每月定期投資</div><b class="num">${M(pm('inv'))}</b></div><div class="sp"><div class="sub">每月固定收入</div><b class="num in">${M(pm('in'))}</b></div></div><div class="sub" style="margin-top:4px">半年、一年繳一次的，會平均攤到每個月。</div></div>
  <div class="note">這裡放「固定時間會發生」的錢，分三種：<b>要繳的錢</b>（房貸、房租、保險、水電、稅…）、<b>固定收入</b>（薪水）、<b>定期投資</b>（定期定額）。每月、每 2/3 個月、每半年、每年都可以設。信用卡帳單會自動從刷卡紀錄算，不用加。</div>`;
- h+=bs.length?'<div class="card">'+bs.map(b=>{const a=A(b.acct),n=dleft(b.next),late=b.next<t0;return`<div class="li" data-a="edbill" data-i="${b.id}" style="flex-wrap:wrap"><div class="dt">${md(b.next)}<small>${late?'<span class="late">逾期</span>':n===0?'今天':n+' 天後'}</small></div><div class="sp"><div>${E(b.name)} ${b.auto?'<span class="pill">自動扣繳</span>':''}</div><div class="sub">${b.kind==='inv'?'定期投資 '+E(b.sym||'')+' · ':''}${fqName(b.freq)} · ${E(a?nm(a):'未指定帳戶')}${b.end?' · 到 '+b.end.slice(0,4)+'/'+ +b.end.slice(5,7)+'，還有 '+occ(b,b.end).length+' 期':''}${b.note?' · '+E(b.note):''}</div>${(()=>{const p=S.payees.find(x=>x.id===b.payee);return p?`<div class="sub">匯到 ${E(p.name)} ${E(acno(p))} ${copyBtn(p.no)}</div>`:''})()}</div><div class="num ${b.kind==='in'?'in':''}">${b.kind==='in'?'+':''}${M(b.amt)}</div>
- ${n<=3?`<div class="row" style="width:100%;justify-content:flex-end;gap:6px"><button class="go q" data-a="skipbill" data-i="${b.id}">${b.kind==='in'?'沒入帳，略過':'略過這期'}</button><button class="go q" data-a="paybill" data-i="${b.id}">${b.kind==='in'?'已入帳':b.kind==='inv'?'已扣款（記到股票）':'已繳'}（記一筆）</button></div>`:''}</div>`}).join('')+'</div>':'<div class="card sub">還沒有帳單。點下面的常用項目快速新增。</div>';
- h+=`<h2>新增帳單</h2><div class="chips">${PRESETS.map((p,i)=>`<button class="chip" data-a="addbill" data-i="${i}">${E(p.name)}</button>`).join('')}<button class="chip" data-a="addbill" data-i="-1">＋ 其他</button></div>`;
+ h+=bs.length?'<div class="card">'+bs.map(b=>{const a=A(b.acct),n=dleft(b.next),late=b.next<t0;return`<div class="li" data-a="edbill" data-i="${b.id}" style="flex-wrap:wrap"><div class="dt">${md(b.next)}<small>${late?'<span class="late">逾期</span>':n===0?'今天':n+' 天後'}</small></div><div class="sp"><div>${E(b.name)} ${b.auto?'<span class="pill">自動扣繳</span>':''}</div><div class="sub">${b.kind==='inv'?'定期投資 '+E(b.sym||'')+' · ':''}${fqName(b.freq)} · ${E(a?nm(a):'未指定帳戶')}${b.end?' · 到 '+b.end.slice(0,4)+'/'+ +b.end.slice(5,7)+'，還有 '+occ(b,b.end).length+' 期':''}${b.note?' · '+E(b.note):''}</div>${(()=>{const p=S.payees.find(x=>x.id===b.payee);return p?`<div class="sub">匯到 ${E(p.name)} ${E(acno(p))} ${copyBtn(p.no)}</div>`:''})()}</div><div class="num ${b.kind==='in'?'in':''}">${b.kind==='in'?'+':''}${MC(b.amt,bcur(b))}</div>
+ ${n<=3?`<div class="row" style="width:100%;justify-content:flex-end;gap:6px"><button class="go q" data-a="skipbill" data-i="${b.id}">${b.kind==='in'?'沒入帳，略過':'略過這期'}</button><button class="go q" data-a="paybill" data-i="${b.id}">${b.kind==='in'?'已入帳':b.kind==='inv'?'已扣款（記到股票）':'已繳'}（記一筆）</button></div>`:''}</div>`}).join('')+'</div>':'<div class="card sub">還沒有固定項目。點下面的常用項目快速新增。</div>';
+ h+=`<h2>新增固定項目</h2><div class="chips">${PRESETS.map((p,i)=>`<button class="chip" data-a="addbill" data-i="${i}">${E(p.name)}</button>`).join('')}<button class="chip" data-a="addbill" data-i="-1">＋ 其他</button></div>`;
  return h;
 }
 
@@ -315,7 +321,7 @@ function vImp(){
  return h;
 }
 
-function acctLine(a,sub){return`<div class="li" data-a="edacct" data-i="${a.id}" ${sub?'style="padding-left:14px"':''}><div class="ic">${TY[a.type].slice(0,1)}</div><div class="sp"><div>${E(a.name)}</div><div class="sub">${TY[a.type]}${isCard(a)?` · ${a.close} 號結帳、${a.due} 號繳款${a.last4?' · 末四碼 '+E(a.last4):''}`:''}${acno(a)?' · '+E(acno(a)):''}</div></div>${a.no?copyBtn(a.no):''}<div class="num">${isCard(a)?'未繳 '+M(cardInfo(a).owe):M(bal(a))}</div></div>`}
+function acctLine(a,sub){return`<div class="li" data-a="edacct" data-i="${a.id}" ${sub?'style="padding-left:14px"':''}><div class="ic">${TY[a.type].slice(0,1)}</div><div class="sp"><div>${E(a.name)}</div><div class="sub">${TY[a.type]}${isCard(a)?` · ${a.close} 號結帳、${a.due} 號繳款${a.last4?' · 末四碼 '+E(a.last4):''}`:''}${acno(a)?' · '+E(acno(a)):''}</div></div>${a.no?copyBtn(a.no):''}<div class="num">${isCard(a)?'未繳 '+M(cardInfo(a).owe):MA(a)}</div></div>`}
 function acctList(){
  const gs=[],seen={};S.accts.forEach(a=>{const g=!isCard(a)&&a.group;if(!g)gs.push([null,[a]]);else if(seen[g])seen[g].push(a);else{seen[g]=[a];gs.push([g,seen[g]])}});
  return gs.map(([g,as])=>g?`<div class="dh" style="padding-top:10px"><b style="color:var(--ink)">${E(g)}</b><span>合計 ${M(as.reduce((s,a)=>s+bal(a),0))}</span></div>${as.map(a=>acctLine(a,1)).join('')}`:acctLine(as[0])).join('');
@@ -329,7 +335,7 @@ function vSet(){
  <h2>預留現金的估算</h2><div class="card"><div class="grid">
  <label class="fl"><span>每月日常花費（空白＝自動，目前 ${M(la)}）</span><input inputmode="numeric" data-m="living" data-s="1" data-n="1" value="${S.living==null?'':E(S.living)}" placeholder="${Math.round(la)}"></label>
  <label class="fl"><span>安全水位（最少想留的錢）</span><input inputmode="numeric" data-m="keep" data-s="1" data-n="1" value="${E(S.keep||'')}" placeholder="0"></label></div>
- <div class="sub" style="margin-top:6px">日常花費是吃飯、交通這類不固定的支出；自動估算會用最近 3 個月的紀錄，扣掉已經列在「帳單」裡的分類。</div></div>
+ <div class="sub" style="margin-top:6px">日常花費是吃飯、交通這類不固定的支出；自動估算會用最近 3 個月的紀錄，扣掉已經列在「固定收支」裡的分類。</div></div>
  <h2>自動分類規則（說明裡有關鍵字就歸到該分類）</h2><div class="card">
  <div class="row" style="gap:6px"><input id="rk" placeholder="關鍵字，例：停車"><select id="rc">${S.cats.out.concat(S.cats.in).map(c=>`<option>${E(c)}</option>`).join('')}</select><button class="go q" data-a="ruleadd">新增</button></div>
  <div class="chips" style="margin-top:8px">${S.rules.map((r,i)=>`<span class="pill">${E(r.k)} → ${E(r.c)} <button class="x" style="font-size:14px" data-a="ruledel" data-i="${i}">×</button></span>`).join('')}</div></div>
@@ -352,7 +358,7 @@ function guideSteps(){return[
  ['選風格','挑一個喜歡的顏色，晚上用可以選深色。',!!S.skin,'guide'],
  ['開始記帳','先到「設定」把信用卡加好（結帳日、繳款日），再填今天現金、銀行有多少錢、信用卡欠多少。過去的帳不用補。',!!S.started,'start'],
  ['記第一筆','按右下角的「＋」，打金額、選分類，按儲存。',S.tx.some(t=>!t.src||t.src==='m'),'addtx'],
- ['加帳單','把每個月固定要繳的錢加進「帳單」：房租、電話費、停車費、保險…',S.bills.length>0,'bills'],
+ ['加固定收支','把每個月固定要繳的錢（房貸、房租、電話費、保險…）和薪水加進「固定收支」',S.bills.length>0,'bills'],
  ['匯入明細','從銀行網站下載信用卡明細（CSV）匯進來，就不用一筆一筆打。',S.tx.some(t=>t.src&&t.src!=='m'),'imp'],
  ['設預算','幫「餐飲」這類分類設一個月最多花多少，快超過會提醒你。',+S.budget.total>0||Object.values(S.budget.cats).some(v=>+v>0),'budget'],
 ]}
@@ -365,7 +371,7 @@ function vGuide(){
  return`<h1>新手教學</h1>
  <div class="card"><b>這個網站幫你做什麼？</b><div class="sub" style="margin-top:4px;line-height:1.8">就像一本會自己算數的記帳本：<br>① 記下每一筆花了多少錢<br>② 記住哪天要繳什麼錢（信用卡、房租、停車費）<br>③ 幫你算「接下來要留多少現金才夠付」</div></div>
  <h2>跟著做，一次一步（做完會自動打勾）</h2><div class="card">${st.map((x,i)=>`<div class="step"><div class="ck ${x[2]?'y':''}">${x[2]?'✓':i+1}</div><div class="sp"><b>${x[0]}</b><div class="sub">${x[1]}</div>${i===0?`<div style="margin-top:8px">${skinPicker()}</div>`:x[2]?'':`<button class="go q" style="margin-top:6px" data-a="go" data-i="${x[3]}">現在去做 ›</button>`}</div></div>`).join('')}</div>
- <h2>之後每天怎麼用</h2><div class="card sub" style="line-height:1.9">・花了現金 → 按「＋」記一筆（10 秒）<br>・刷卡 → 不用記，每週或每月到「匯入」匯一次明細<br>・帳單到期那幾天 → 到「帳單」按「已繳」<br>・想知道錢夠不夠 → 看「總覽」最上面的「建議預留」</div>
+ <h2>之後每天怎麼用</h2><div class="card sub" style="line-height:1.9">・花了現金 → 按「＋」記一筆（10 秒）<br>・刷卡 → 不用記，每週或每月到「匯入」匯一次明細<br>・固定費用到期那幾天 → 到「固定收支」按「已繳」<br>・想知道錢夠不夠 → 看「總覽」最上面的「建議預留」</div>
  <h2>看不懂的字</h2><div class="card sub" style="line-height:1.9"><b>結帳日</b>：信用卡每個月算總帳的那天，這天之前刷的錢算在這一期。<br><b>繳款日</b>：最晚要把卡費繳掉的那天。<br><b>未入帳／未出帳／已出帳／已繳清</b>：一筆刷卡的 4 個階段，每筆刷卡紀錄旁邊都會標出來。點總覽的信用卡可以看每一期帳單。<br><b>建議預留</b>：接下來這段時間，帳戶裡最少要留著不要動的錢。<br><b>安全水位</b>：你希望戶頭永遠至少有多少錢（例如緊急預備金）。<br><b>複利</b>：賺到的錢也會繼續幫你賺錢，時間越久越明顯。</div>
  ${S.guideOff?'<button class="go q" data-a="guideon">在總覽重新顯示教學卡片</button>':''}`;
 }
@@ -435,7 +441,7 @@ function vPlan(){
  const P=S.plan,inc=planInc(),tot=P.items.reduce((a,x)=>a+pa(x),0),rest=inc-tot,m=today().slice(0,7),from=A(P.from)||A(firstBank());
  const d=pd(today()),dl=dim(d.getFullYear(),d.getMonth())-d.getDate()+1;
  let h=`<h1>分帳戶</h1><div class="note">每一項都可以點進去改：要用<b>固定金額</b>（例：生活費 12,000）、<b>收入的 %</b>（例：存 20%）、或<b>剩下的全部</b>（其他分完剩多少就放多少，只能選一項）。<br>做法：薪水一進來，先照下面的分法把錢「分好」，可以真的轉到不同的子帳戶。分給「生活費」的錢就是這個月能花的，花完就停，不會不小心花到房貸或存款。<br>常見比例：必要支出 50%、想要的 30%、存起來 20%，可以照自己的狀況調。</div>
- <div class="card"><div class="grid"><label class="fl"><span>每月收入（空白＝用帳單裡的固定收入 ${M(billPM('in'))}）</span><input inputmode="numeric" value="${E(P.income)}" placeholder="${Math.round(billPM('in'))}" data-m="plan.income" data-s="1" data-r="1"></label>
+ <div class="card"><div class="grid"><label class="fl"><span>每月收入（空白＝用「固定收支」裡的固定收入 ${M(billPM('in'))}）</span><input inputmode="numeric" value="${E(P.income)}" placeholder="${Math.round(billPM('in'))}" data-m="plan.income" data-s="1" data-r="1"></label>
  <label class="fl"><span>薪水進到哪個帳戶</span><select data-m="plan.from" data-s="1" data-r="1">${S.accts.filter(a=>!isCard(a)).map(a=>`<option value="${a.id}" ${from&&from.id===a.id?'selected':''}>${E(nm(a))}</option>`).join('')}</select></label></div></div>`;
  if(!P.items.length)return h+`<div class="card"><div class="sub" style="margin-bottom:8px">還沒有分配。按下面會幫你建好常用的 5 個用途，固定帳單和定期投資的金額會自動帶入，其他再自己填。</div><button class="go" data-a="plandef">用建議的分法開始</button></div>`;
  h+=`<div class="card"><div class="row"><b class="sp">每月 ${M(inc)} 這樣分</b><span class="num ${rest<-0.5?'neg':''}">${rest<-0.5?'超出 '+M(-rest):rest>0.5?'還沒分 '+M(rest):'✓ 剛好分完'}</span></div>
@@ -523,49 +529,52 @@ let SEV=[];
 function holdings(){
  const by={};SEV=[];
  S.trades.slice().sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:(a.ts||0)-(b.ts||0)).forEach(t=>{
-  const h=by[t.sym]=by[t.sym]||{sym:t.sym,name:'',sh:0,cost:0,real:0,div:0};if(t.name)h.name=t.name;
+  const h=by[t.sym]=by[t.sym]||{sym:t.sym,name:'',sh:0,cost:0,real:0,div:0,cur:t.cur||'TWD'};if(t.name)h.name=t.name;
   if(t.type==='buy'){h.sh+=t.sh;h.cost+=t.sh*t.px+(+t.fee||0)}
-  else if(t.type==='sell'){const sh=Math.min(t.sh,h.sh),co=h.sh?h.cost/h.sh*sh:0,r=t.sh*t.px-(+t.fee||0)-(+t.tax||0)-co;h.real+=r;h.cost-=co;h.sh-=sh;SEV.push({d:t.d,sym:t.sym,real:r,div:0})}
-  else{h.div+=+t.amt||0;SEV.push({d:t.d,sym:t.sym,real:0,div:+t.amt||0})}});
+  else if(t.type==='sell'){const sh=Math.min(t.sh,h.sh),co=h.sh?h.cost/h.sh*sh:0,r=t.sh*t.px-(+t.fee||0)-(+t.tax||0)-co;h.real+=r;h.cost-=co;h.sh-=sh;SEV.push({d:t.d,sym:t.sym,real:r,div:0,cur:h.cur})}
+  else{h.div+=+t.amt||0;SEV.push({d:t.d,sym:t.sym,real:0,div:+t.amt||0,cur:h.cur})}});
  return Object.values(by).map(h=>{const p=S.prices[h.sym];h.px=p?+p.p:null;h.pd=p?p.d:'';h.val=h.px!=null?h.sh*h.px:h.cost;h.unreal=h.px!=null?h.val-h.cost:0;return h});
 }
-function stockMonth(m){holdings();const xs=SEV.filter(e=>e.d.startsWith(m));return{div:xs.reduce((s,e)=>s+e.div,0),real:xs.reduce((s,e)=>s+e.real,0),n:xs.length}}
-const gain=(v,pct)=>HIDE?'<span class="num">$ ••••</span>':`<span class="num ${v>0.5?'up':v<-0.5?'down':''}">${v>0.5?'▲ +':v<-0.5?'▼ ':''}${M(v)}${pct!=null&&isFinite(pct)?` (${v>0?'+':''}${(pct*100).toFixed(1)}%)`:''}</span>`;
-function calcFee(o){const a=(+o.sh||0)*(+o.px||0);if(!a||o.type==='div')return{fee:0,tax:0};return{fee:Math.max(+S.fee.min||0,Math.floor(a*0.001425*(+S.fee.disc||1))),tax:o.type==='sell'?Math.floor(a*(/^00/.test(String(o.sym||'').trim())?0.001:0.003)):0}}
+function stockMonth(m){holdings();const xs=SEV.filter(e=>e.d.startsWith(m));return{div:xs.reduce((s,e)=>s+conv(e.div,e.cur,'TWD'),0),real:xs.reduce((s,e)=>s+conv(e.real,e.cur,'TWD'),0),n:xs.length}}
+const gain=(v,pct,c)=>HIDE?'<span class="num">$ ••••</span>':`<span class="num ${v>0.005?'up':v<-0.005?'down':''}">${v>0.005?'▲ +':v<-0.005?'▼ ':''}${MC(v,c)}${pct!=null&&isFinite(pct)?` (${v>0?'+':''}${(pct*100).toFixed(1)}%)`:''}</span>`;
+function calcFee(o){const a=(+o.sh||0)*(+o.px||0);if(!a||o.type==='div'||o.cur==='USD')return{fee:0,tax:0};return{fee:Math.max(+S.fee.min||0,Math.floor(a*0.001425*(+S.fee.disc||1))),tax:o.type==='sell'?Math.floor(a*(/^00/.test(String(o.sym||'').trim())?0.001:0.003)):0}}
 function vStock(){
  const hs=holdings(),on=hs.filter(h=>h.sh>0),off=hs.filter(h=>h.sh<=0);
- const val=on.reduce((s,h)=>s+h.val,0),cost=on.reduce((s,h)=>s+h.cost,0),un=on.reduce((s,h)=>s+h.unreal,0),re=hs.reduce((s,h)=>s+h.real,0),dv=hs.reduce((s,h)=>s+h.div,0);
+ const T=(h,k)=>conv(h[k],h.cur,'TWD'),sum=(xs,k)=>xs.reduce((s,h)=>s+T(h,k),0);
+ const val=sum(on,'val'),cost=sum(on,'cost'),un=sum(on,'unreal'),re=sum(hs,'real'),dv=sum(hs,'div'),hasUS=hs.some(h=>h.cur==='USD')||S.accts.some(a=>a.cur==='USD');
  let h=`<h1>股票</h1><div class="card"><div class="sub">目前市值</div><div class="big">${M(val)}</div><div class="sub">投入成本 ${M(cost)}</div>
  <div class="tiles"><div><span class="sub">還沒賣的賺賠</span><b>${gain(un)}</b></div><div><span class="sub">已經賣掉賺賠</span><b>${gain(re)}</b></div><div><span class="sub">領到的股利</span><b class="num">${M(dv)}</b></div></div>
- <div class="msg">全部加起來：${gain(un+re+dv)}</div><div class="sub" style="margin-top:4px">紅色＝賺、綠色＝賠（台股習慣）。股價要自己更新：每天第一次打開會自動抓上市櫃收盤價，抓不到的點「現價」手動改。</div></div>
+ <div class="msg">全部加起來：${gain(un+re+dv)}</div><div class="sub" style="margin-top:4px">紅色＝賺、綠色＝賠（台股習慣）。每天第一次打開會自動更新股價（台股抓收盤價、美股抓最新價）和美元匯率，抓不到的點「現價」手動改。${hasUS?'美股都用目前匯率換成台幣加總。':''}</div></div>
+ <div class="card"><div class="row"><span class="sp">美元匯率 1 USD ＝</span><input inputmode="decimal" style="width:92px;text-align:right" value="${E((S.fx||{}).USD||32)}" data-m="fx.USD" data-fxm="1"><span>TWD</span></div><div class="sub" style="margin-top:4px">${S.fx&&S.fx.d?md(S.fx.d)+(S.fx.auto?' 自動更新':' 手動填的'):'還沒更新過，先用 32'}・可以自己改</div></div>
  <button class="go" style="width:100%;margin-bottom:8px" data-a="addtrade">＋ 記一筆交易（買、賣、股利）</button>
  <div class="row" style="gap:8px;margin-bottom:10px"><button class="go g sp" data-a="snaphold">截圖匯入持股</button>${on.length?'<button class="go g sp" data-a="pxnow">更新股價</button>':''}</div>`;
  if(on.length){
-  h+=`<h2>持股</h2><div class="card">${on.sort((a,b)=>b.val-a.val).map(x=>`<div class="li" style="cursor:default;flex-wrap:wrap"><div class="sp"><b>${E(x.sym)}</b> ${E(x.name)}<div class="sub">${x.sh.toLocaleString('zh-TW')} 股${x.sh>=1000?'（'+ +(x.sh/1000).toFixed(3)+' 張）':''}・均價 ${(x.cost/x.sh).toFixed(2)}</div></div>
-  <div style="text-align:right"><button class="go q" data-a="px" data-i="${E(x.sym)}">現價 ${x.px!=null?x.px:'未填'}</button><div style="margin-top:2px">${x.px!=null?gain(x.unreal,x.unreal/x.cost):'<span class="sub">填現價才能算</span>'}</div>${x.pd?`<div class="sub">${md(x.pd)} ${S.prices[x.sym]&&S.prices[x.sym].auto?'收盤':'更新'}</div>`:''}</div></div>`).join('')}</div>`;
-  if(on.length>1&&val)h+=`<h2>資金分配</h2><div class="card">${hbars(on.map(x=>[x.sym+' '+x.name,x.val]),val)}</div>`;
+  h+=`<h2>持股</h2><div class="card">${on.sort((a,b)=>b.val-a.val).map(x=>`<div class="li" style="cursor:default;flex-wrap:wrap"><div class="sp"><b>${E(x.sym)}</b> ${E(x.name)}<div class="sub">${x.cur==='USD'?'<span class="pill">美股</span> ':''}${+x.sh.toFixed(4)} 股${x.cur!=='USD'&&x.sh>=1000?'（'+ +(x.sh/1000).toFixed(3)+' 張）':''}・均價 ${x.cur==='USD'?'US$':''}${(x.cost/x.sh).toFixed(2)}${x.cur==='USD'?'<br>市值 '+MC(x.val,'USD')+' ≈ '+M(conv(x.val,'USD','TWD')):''}</div></div>
+  <div style="text-align:right"><button class="go q" data-a="px" data-i="${E(x.sym)}">現價 ${x.px!=null?(x.cur==='USD'?'US$':'')+ +(+x.px).toFixed(2):'未填'}</button><div style="margin-top:2px">${x.px!=null?gain(x.unreal,x.unreal/x.cost,x.cur):'<span class="sub">填現價才能算</span>'}</div>${x.pd?`<div class="sub">${md(x.pd)} ${S.prices[x.sym]&&S.prices[x.sym].auto?(x.cur==='USD'?'自動':'收盤'):'更新'}</div>`:''}</div></div>`).join('')}</div>`;
+  if(on.length>1&&val)h+=`<h2>資金分配（換成台幣）</h2><div class="card">${hbars(on.map(x=>[x.sym+' '+x.name,T(x,'val')]),val)}</div>`;
  }else h+=`<div class="card sub">還沒有持股。按上面的按鈕記第一筆「買進」。</div>`;
- if(off.length)h+=`<h2>已經全部賣掉</h2><div class="card">${off.map(x=>`<div class="row" style="padding:4px 0"><span class="sp">${E(x.sym)} ${E(x.name)}</span>${gain(x.real+x.div)}</div>`).join('')}</div>`;
+ if(off.length)h+=`<h2>已經全部賣掉</h2><div class="card">${off.map(x=>`<div class="row" style="padding:4px 0"><span class="sp">${E(x.sym)} ${E(x.name)}</span>${gain(x.real+x.div,null,x.cur)}</div>`).join('')}</div>`;
  const tr=S.trades.slice().sort((a,b)=>a.d<b.d?1:a.d>b.d?-1:(b.ts||0)-(a.ts||0)).slice(0,30);
- if(tr.length)h+=`<h2>交易紀錄</h2><div class="card">${tr.map(t=>`<div class="li" data-a="edtrade" data-i="${t.id}"><div class="dt">${md(t.d)}<small>${t.d.slice(0,4)}</small></div><div class="sp"><div>${{buy:'買進',sell:'賣出',div:'股利'}[t.type]} ${E(t.sym)} ${E(t.name||'')}</div><div class="sub">${t.type==='div'?'現金股利':t.sh.toLocaleString('zh-TW')+' 股 × '+(+t.px).toFixed(2).replace(/\.?0+$/,'')}</div></div><div class="num">${t.type==='buy'?'−':'+'}${M(Math.abs(tradeCash(t)))}</div></div>`).join('')}</div>`;
- const ms={};SEV.forEach(e=>{const m=e.d.slice(0,7),x=ms[m]=ms[m]||{div:0,real:0};x.div+=e.div;x.real+=e.real});
+ if(tr.length)h+=`<h2>交易紀錄</h2><div class="card">${tr.map(t=>`<div class="li" data-a="edtrade" data-i="${t.id}"><div class="dt">${md(t.d)}<small>${t.d.slice(0,4)}</small></div><div class="sp"><div>${{buy:'買進',sell:'賣出',div:'股利'}[t.type]} ${E(t.sym)} ${E(t.name||'')}</div><div class="sub">${t.type==='div'?'現金股利':t.sh.toLocaleString('zh-TW')+' 股 × '+(+t.px).toFixed(2).replace(/\.?0+$/,'')}</div></div><div class="num">${t.type==='buy'?'−':'+'}${MC(Math.abs(tradeCash(t)),t.cur)}</div></div>`).join('')}</div>`;
+ const ms={};SEV.forEach(e=>{const m=e.d.slice(0,7),x=ms[m]=ms[m]||{div:0,real:0};x.div+=conv(e.div,e.cur,'TWD');x.real+=conv(e.real,e.cur,'TWD')});
  const mk=Object.keys(ms).sort().reverse().slice(0,24),yr=today().slice(0,4),Y=Object.keys(ms).filter(m=>m.startsWith(yr)).reduce((a,m)=>a+ms[m].div+ms[m].real,0);
  if(mk.length)h+=`<h2>每月股票收益（今年合計 ${M(Y)}）</h2><div class="card"><table class="pv"><tr><th>月份</th><th style="text-align:right">股利</th><th style="text-align:right">賣出賺賠</th><th style="text-align:right">合計</th></tr>${mk.map(m=>`<tr><td>${m.slice(0,4)}/${+m.slice(5)}</td><td class="num" style="text-align:right">${M(ms[m].div)}</td><td style="text-align:right">${gain(ms[m].real)}</td><td style="text-align:right">${gain(ms[m].div+ms[m].real)}</td></tr>`).join('')}</table><div class="sub" style="margin-top:6px">只算已經落袋的錢（領到的股利、賣掉時的賺賠）；還沒賣的漲跌看上面的「還沒賣的賺賠」。</div></div>`;
- h+=`<h2>手續費設定</h2><div class="card"><div class="grid"><label class="fl"><span>手續費折扣（6 折填 0.6）</span><input inputmode="decimal" data-m="fee.disc" data-s="1" value="${E(S.fee.disc)}"></label><label class="fl"><span>最低手續費</span><input inputmode="numeric" data-m="fee.min" data-s="1" value="${E(S.fee.min)}"></label></div><div class="sub" style="margin-top:6px">手續費＝成交金額 × 0.1425% × 折扣；賣出時另扣證交稅 0.3%（00 開頭的 ETF 是 0.1%）。記交易時會自動算，也可以手動改。</div></div>`;
+ h+=`<h2>手續費設定（台股）</h2><div class="card"><div class="grid"><label class="fl"><span>手續費折扣（6 折填 0.6）</span><input inputmode="decimal" data-m="fee.disc" data-s="1" value="${E(S.fee.disc)}"></label><label class="fl"><span>最低手續費</span><input inputmode="numeric" data-m="fee.min" data-s="1" value="${E(S.fee.min)}"></label></div><div class="sub" style="margin-top:6px">手續費＝成交金額 × 0.1425% × 折扣；賣出時另扣證交稅 0.3%（00 開頭的 ETF 是 0.1%）。記交易時會自動算，也可以手動改。</div></div>`;
  return h;
 }
 function sheetTrade(o){
- const dv=o.type==='div';
+ const dv=o.type==='div',us=o.cur==='USD';
  return`<div class="row"><b class="sp" style="font-size:17px">${o.id?'編輯交易':'記一筆交易'}</b><button class="x" data-a="close">×</button></div>
  <div class="chips" style="margin:8px 0">${[['buy','買進'],['sell','賣出'],['div','領股利']].map(([k,n])=>`<button class="chip ${o.type===k?'on':''}" data-a="tt" data-i="${k}">${n}</button>`).join('')}</div>
- <div class="grid"><label class="fl"><span>股票代號</span><input value="${E(o.sym)}" data-m="sheet.o.sym" data-fee="1" placeholder="例：0050" list="symlist"></label>
- <label class="fl"><span>名稱</span><input value="${E(o.name)}" data-m="sheet.o.name" placeholder="例：元大台灣50"></label>
+ <div class="chips" style="margin-bottom:8px">${[['TWD','台股（台幣）'],['USD','美股（美元）']].map(([k,n])=>`<button class="chip ${(o.cur||'TWD')===k?'on':''}" data-a="tmk" data-i="${k}">${n}</button>`).join('')}</div>
+ <div class="grid"><label class="fl"><span>股票代號</span><input value="${E(o.sym)}" data-m="sheet.o.sym" data-fee="1" placeholder="${us?'例：VOO、AAPL':'例：0050'}" list="symlist"></label>
+ <label class="fl"><span>名稱</span><input value="${E(o.name)}" data-m="sheet.o.name" placeholder="${us?'例：Vanguard S&P 500':'例：元大台灣50'}"></label>
  <label class="fl"><span>日期</span><input type="date" value="${o.d}" data-m="sheet.o.d"></label>
- ${dv?`<label class="fl"><span>領到多少錢</span><input inputmode="decimal" value="${E(o.amt)}" data-m="sheet.o.amt"></label>`:`
- <label class="fl"><span>股數（1 張＝1000 股）</span><input inputmode="numeric" value="${E(o.sh)}" data-m="sheet.o.sh" data-fee="1"></label>
- <label class="fl"><span>成交價（每股）</span><input inputmode="decimal" value="${E(o.px)}" data-m="sheet.o.px" data-fee="1"></label>
- <label class="fl"><span>手續費</span><input id="tfee" inputmode="numeric" value="${E(o.fee)}" data-m="sheet.o.fee" data-fs="1"></label>
- ${o.type==='sell'?`<label class="fl"><span>證交稅</span><input id="ttax" inputmode="numeric" value="${E(o.tax)}" data-m="sheet.o.tax" data-fs="1"></label>`:''}`}
+ ${dv?`<label class="fl"><span>領到多少錢${us?'（美元，扣稅後）':''}</span><input inputmode="decimal" value="${E(o.amt)}" data-m="sheet.o.amt"></label>`:`
+  <label class="fl"><span>${us?'股數（可以有小數）':'股數（1 張＝1000 股）'}</span><input inputmode="decimal" value="${E(o.sh)}" data-m="sheet.o.sh" data-fee="1"></label>
+ <label class="fl"><span>成交價（每股${us?'，美元':''}）</span><input inputmode="decimal" value="${E(o.px)}" data-m="sheet.o.px" data-fee="1"></label>
+ <label class="fl"><span>手續費${us?'（美元）':''}</span><input id="tfee" inputmode="decimal" value="${E(o.fee)}" data-m="sheet.o.fee" data-fs="1"></label>
+ ${o.type==='sell'&&!us?`<label class="fl"><span>證交稅</span><input id="ttax" inputmode="numeric" value="${E(o.tax)}" data-m="sheet.o.tax" data-fs="1"></label>`:''}`}
  <label class="fl w"><span>錢從哪個帳戶進出（選了會一起更新帳戶餘額）</span><select data-m="sheet.o.acct"><option value="">不連動</option>${S.accts.filter(a=>!isCard(a)).map(a=>`<option value="${a.id}" ${o.acct===a.id?'selected':''}>${E(nm(a))}</option>`).join('')}</select></label></div>
  <datalist id="symlist">${holdings().map(x=>`<option value="${E(x.sym)}">${E(x.name)}</option>`).join('')}</datalist>
  <div class="row" style="margin-top:14px;gap:8px">${o.id?'<button class="go r" data-a="deltrade">刪除</button>':''}<span class="sp"></span><button class="go" data-a="savetrade">儲存</button></div>`;
@@ -610,12 +619,12 @@ function sheetTx(o){
 function sheetBill(o){
  const K=o.kind||'out',inv=K==='inv',inc=K==='in',cs=S.cats[inc?'in':'out'];
  const tip={out:'例：房貸、房租、保險、水電、電話、稅',in:'例：薪水、租金收入',inv:'例：每月 5 號定期定額買 0050'}[K];
- return`<div class="row"><b class="sp" style="font-size:17px">${o.id?'編輯帳單':'新增帳單'}</b><button class="x" data-a="close">×</button></div>
+ return`<div class="row"><b class="sp" style="font-size:17px">${o.id?'編輯固定項目':'新增固定項目'}</b><button class="x" data-a="close">×</button></div>
  <div class="chips" style="margin:8px 0">${[['out','要繳的錢'],['in','固定收入'],['inv','定期投資']].map(([k,n])=>`<button class="chip ${K===k?'on':''}" data-a="bk" data-i="${k}">${n}</button>`).join('')}</div>
  <div class="sub" style="margin-bottom:4px">${tip}</div>
  <div class="grid"><label class="fl w"><span>名稱</span><input value="${E(o.name)}" data-m="sheet.o.name" placeholder="${inv?'例：0050 定期定額':inc?'例：薪水':'例：房貸'}"></label>
- ${inv?`<label class="fl"><span>股票代號</span><input value="${E(o.sym||'')}" data-m="sheet.o.sym" placeholder="例：0050"></label><label class="fl"><span>股票名稱（選填）</span><input value="${E(o.sname||'')}" data-m="sheet.o.sname" placeholder="例：元大台灣50"></label>`:''}
- <label class="fl"><span>${inv?'每期扣款金額':inc?'每次金額':'每次金額（不固定就填大概）'}</span><input inputmode="decimal" value="${E(o.amt)}" data-m="sheet.o.amt"></label>
+ ${inv?`<div class="fl w"><span>市場</span><div class="chips">${[['TWD','台股（台幣）'],['USD','美股（美元）']].map(([k,n])=>`<button class="chip ${(o.cur||'TWD')===k?'on':''}" data-a="bmk" data-i="${k}">${n}</button>`).join('')}</div></div><label class="fl"><span>股票代號</span><input value="${E(o.sym||'')}" data-m="sheet.o.sym" placeholder="例：0050"></label><label class="fl"><span>股票名稱（選填）</span><input value="${E(o.sname||'')}" data-m="sheet.o.sname" placeholder="例：元大台灣50"></label>`:''}
+ <label class="fl"><span>${inv?'每期扣款金額'+(o.cur==='USD'?'（美元）':''):inc?'每次金額':'每次金額（不固定就填大概）'}</span><input inputmode="decimal" value="${E(o.amt)}" data-m="sheet.o.amt"></label>
  <label class="fl"><span>多久一次</span><select data-m="sheet.o.freq" data-n="1" data-r="1">${FQ.map(([v,n])=>`<option value="${v}" ${+o.freq===v?'selected':''}>${n}</option>`).join('')}</select></label>
  <label class="fl"><span>下次${inc?'入帳':'繳費／扣款'}日</span><input type="date" value="${o.next}" data-m="sheet.o.next"></label>
  <label class="fl"><span>${inc?'入帳帳戶':'從哪個帳戶扣'}</span><select data-m="sheet.o.acct">${S.accts.filter(a=>K==='out'||!isCard(a)).map(a=>`<option value="${a.id}" ${o.acct===a.id?'selected':''}>${E(nm(a))}</option>`).join('')}</select></label>
@@ -640,18 +649,18 @@ function sheetAcct(o){
  return`<div class="row"><b class="sp" style="font-size:17px">${o.id?'編輯帳戶':'新增帳戶'}</b><button class="x" data-a="close">×</button></div>
  <div class="chips" style="margin:8px 0">${Object.keys(TY).map(k=>`<button class="chip ${o.type===k?'on':''}" data-a="at" data-i="${k}">${TY[k]}</button>`).join('')}</div>
  <div class="grid"><label class="fl w"><span>名稱</span><input value="${E(o.name)}" data-m="sheet.o.name" placeholder="${c?'例：國泰 CUBE 卡':o.type==='bank'?'例：活存、數存、薪轉':'例：錢包'}"></label>
- ${o.type==='bank'?`<label class="fl w"><span>所屬銀行（有子帳戶的話，同一家銀行填一樣的名字）</span><input value="${E(o.group||'')}" data-m="sheet.o.group" list="grplist" placeholder="例：國泰世華"></label><datalist id="grplist">${[...new Set(S.accts.map(a=>a.group).filter(Boolean))].map(g=>`<option value="${E(g)}">`).join('')}</datalist>
+ ${o.type==='bank'?`<div class="fl w"><span>幣別</span><div class="chips">${[['TWD','台幣'],['USD','美元（外幣帳戶）']].map(([k,n])=>`<button class="chip ${(o.cur||'TWD')===k?'on':''}" data-a="acur" data-i="${k}">${n}</button>`).join('')}</div></div><label class="fl w"><span>所屬銀行（有子帳戶的話，同一家銀行填一樣的名字）</span><input value="${E(o.group||'')}" data-m="sheet.o.group" list="grplist" placeholder="例：國泰世華"></label><datalist id="grplist">${[...new Set(S.accts.map(a=>a.group).filter(Boolean))].map(g=>`<option value="${E(g)}">`).join('')}</datalist>
  <label class="fl"><span>銀行代碼</span><input inputmode="numeric" value="${E(o.code||'')}" data-m="sheet.o.code" placeholder="例：013"></label><label class="fl"><span>帳號</span><input inputmode="numeric" value="${E(o.no||'')}" data-m="sheet.o.no" placeholder="匯款用的帳號"></label>`:''}
  ${c?`<label class="fl w"><span>卡號末四碼（選填，方便辨認，不要填完整卡號）</span><input inputmode="numeric" maxlength="4" value="${E(o.last4||'')}" data-m="sheet.o.last4"></label>`:''}
  ${c?`<label class="fl"><span>每月幾號結帳</span><input inputmode="numeric" value="${E(o.close)}" data-m="sheet.o.close"></label>
  <label class="fl"><span>每月幾號前要繳</span><input inputmode="numeric" value="${E(o.due)}" data-m="sheet.o.due"></label>
  <label class="fl w"><span>已出帳還沒繳的金額（之後會匯入這期明細的話填 0，避免重複）</span><input inputmode="decimal" value="${E(o.init)}" data-m="sheet.o.init"></label>`
- :`<label class="fl w"><span>現在實際有多少錢${o.id?'（改這裡就是對帳）':''}</span><div class="row" style="gap:6px"><input inputmode="decimal" value="${E(o.now)}" data-m="sheet.o.now"><button class="go q" data-a="snapacct">截圖辨識</button></div></label>`}</div>
+ :`<label class="fl w"><span>現在實際有多少錢${o.cur==='USD'?'（美元）':''}${o.id?'（改這裡就是對帳）':''}</span><div class="row" style="gap:6px"><input inputmode="decimal" value="${E(o.now)}" data-m="sheet.o.now"><button class="go q" data-a="snapacct">截圖辨識</button></div></label>`}</div>
  ${c?'<div class="sub" style="margin-top:6px">結帳日、繳款日印在信用卡帳單上。之後的刷卡會自動算進對應的那一期帳單。</div>':''}
  <div class="row" style="margin-top:14px;gap:8px">${o.id?'<button class="go r" data-a="delacct">刪除</button>':''}<span class="sp"></span><button class="go" data-a="saveacct">儲存</button></div>`;
 }
 
-const TABS=[['home','◎','總覽'],['tx','✎','記帳'],['cal','▦','月曆'],['bills','◷','帳單'],['more','⋯','更多']];
+const TABS=[['home','◎','總覽'],['tx','✎','記帳'],['cal','▦','月曆'],['bills','◷','固定收支'],['more','⋯','更多']];
 const MORE=[['plan','◫','分帳戶','薪水進來先分好：固定支出、生活費、存錢、投資'],['budget','◔','預算','每個分類一個月能花多少，快超過會提醒'],['chart','▥','圖表','每個月花多少、錢都花在哪'],['stock','↗','股票','持股、賺賠、股利一次看'],['calc','％','複利計算','每月存一點，以後會變多少'],['imp','⇣','匯入明細','信用卡、銀行、電子發票、截圖'],['set','⚙︎','設定與風格','帳戶、顏色、深色模式、備份'],['guide','?','新手教學','從頭一步一步開始']];
 let RD=0,RD2=0,KF=0;
 function render(){
@@ -791,12 +800,12 @@ async function askAI(prompt,file){const sm=window.claude&&await claude.use('samp
 
 // ── 總資產、對帳、截圖辨識、股價 ──
 function assetCard(liq){
- const hs=holdings().filter(h=>h.sh>0),stk=hs.reduce((s,h)=>s+h.val,0),owe=S.accts.filter(isCard).reduce((s,c)=>s+cardInfo(c).owe,0),nop=hs.filter(h=>h.px==null).length;
+ const hs=holdings().filter(h=>h.sh>0),stk=hs.reduce((s,h)=>s+conv(h.val,h.cur,'TWD'),0),owe=S.accts.filter(isCard).reduce((s,c)=>s+cardInfo(c).owe,0),nop=hs.filter(h=>h.px==null).length;
  return`<div class="card"><div class="sub">我的總資產（已扣掉還沒繳的卡費）</div><div class="big">${M(liq+stk-owe)}</div>
  <div class="tiles"><div><span class="sub">現金＋銀行</span><b>${M(liq)}</b></div><div><span class="sub">股票市值</span><b>${M(stk)}</b></div><div><span class="sub">卡費未繳</span><b>${owe?'−'+M(owe):M(0)}</b></div></div>
- <div class="chips">${S.accts.map(a=>`<span class="pill">${E(nm(a))} ${isCard(a)?'未繳 '+M(cardInfo(a).owe):M(bal(a))}</span>`).join('')}</div>
+ <div class="chips">${S.accts.map(a=>`<span class="pill">${E(nm(a))} ${isCard(a)?'未繳 '+M(cardInfo(a).owe):MA(a)}</span>`).join('')}</div>
  ${nop?`<div class="sub" style="margin-top:6px">有 ${nop} 檔股票還沒有股價，市值先用成本算。</div>`:''}
- ${S.accts.filter(a=>!isCard(a)&&bal(a)<-0.5).map(a=>`<div class="note" style="border-color:var(--bad)">⚠︎ <b>${E(a.name)}</b> 顯示 ${M(bal(a))}，這通常不是真的欠錢，而是還沒填這個帳戶「現在實際有多少錢」，網站從 0 開始算，扣掉繳出去的錢就變負的。按下面「更新銀行餘額」填網銀 App 上看到的數字就會正確。</div>`).join('')}
+ ${S.accts.filter(a=>!isCard(a)&&bal(a)<-0.5).map(a=>`<div class="note" style="border-color:var(--bad)">⚠︎ <b>${E(a.name)}</b> 顯示 ${MA(a)}，這通常不是真的欠錢，而是還沒填這個帳戶「現在實際有多少錢」，網站從 0 開始算，扣掉繳出去的錢就變負的。按下面「更新銀行餘額」填網銀 App 上看到的數字就會正確。</div>`).join('')}
  <div class="row" style="gap:6px;margin-top:8px"><button class="go q" data-a="recon">更新銀行餘額</button>${hs.length?`<button class="go q" data-a="pxnow">更新股價</button>`:''}</div></div>`;
 }
 function sheetStart(o){
@@ -814,14 +823,14 @@ function sheetStart(o){
 function sheetRecon(o){
  return`<div class="row"><b class="sp" style="font-size:17px">更新餘額（對帳）</b><button class="x" data-a="close">×</button></div>
  <div class="sub" style="margin:6px 0">打開網銀 App，把看到的餘額填進來；也可以按「截圖」讓 AI 讀。沒變的空著就好。</div>
- ${S.accts.filter(a=>!isCard(a)).map(a=>`<label class="fl"><span>${E(nm(a))}（網站算的：${M(bal(a))}）</span><div class="row" style="gap:6px"><input inputmode="decimal" placeholder="實際餘額" value="${E(o.v[a.id]==null?'':o.v[a.id])}" data-m="sheet.o.v.${a.id}"><button class="go q" data-a="snapbal" data-i="${a.id}">截圖</button></div></label>`).join('')}
+ ${S.accts.filter(a=>!isCard(a)).map(a=>`<label class="fl"><span>${E(nm(a))}（網站算的：${MA(a)}）</span><div class="row" style="gap:6px"><input inputmode="decimal" placeholder="實際餘額" value="${E(o.v[a.id]==null?'':o.v[a.id])}" data-m="sheet.o.v.${a.id}"><button class="go q" data-a="snapbal" data-i="${a.id}">截圖</button></div></label>`).join('')}
  <div class="row" style="margin-top:14px"><span class="sp"></span><button class="go" data-a="saverecon">儲存</button></div>`;
 }
 function sheetHold(o){
  const on=o.items.filter(x=>x.on);
  return`<div class="row"><b class="sp" style="font-size:17px">截圖讀到的持股</b><button class="x" data-a="close">×</button></div>
  <div class="sub" style="margin:6px 0">確認一下數字對不對。勾選的會記成一筆「買進」（日期是今天、手續費 0）；有讀到現價的會順便更新股價。</div>
- ${o.items.map((x,i)=>`<div class="it ${x.on?'':'off'}"><input type="checkbox" data-a="holdon" data-i="${i}" ${x.on?'checked':''}><div class="sp"><div class="row"><b class="sp">${E(x.sym)} ${E(x.name)}</b>${x.px?`<span class="sub">現價 ${x.px}</span>`:''}</div>
+ ${o.items.map((x,i)=>`<div class="it ${x.on?'':'off'}"><input type="checkbox" data-a="holdon" data-i="${i}" ${x.on?'checked':''}><div class="sp"><div class="row"><b class="sp">${E(x.sym)} ${E(x.name)}${x.cur==='USD'?' <span class="pill">美股</span>':''}</b>${x.px?`<span class="sub">現價 ${x.px}</span>`:''}</div>
  <div class="grid" style="margin-top:4px"><label class="fl"><span>股數</span><input inputmode="numeric" value="${E(x.sh)}" data-m="sheet.o.items.${i}.sh"></label><label class="fl"><span>平均成本（每股）</span><input inputmode="decimal" value="${E(x.cost)}" data-m="sheet.o.items.${i}.cost"></label></div>
  ${x.why?`<div class="late" style="font-weight:400">${E(x.why)}</div>`:''}</div></div>`).join('')}
  <div class="row" style="margin-top:14px"><span class="sp"></span><button class="go" data-a="doHold">匯入 ${on.length} 檔</button></div>`;
@@ -834,7 +843,7 @@ async function runSnap(f){
    const r=await askAI('這是證券 App、券商網站或「集保 e手掌握」的台股持股截圖。找出每一檔持股，只回傳 JSON：{"items":[{"code":"股票代號","name":"股票名稱","shares":股數,"cost":每股平均成本或null,"price":現價或null}]}。規則：shares 一律用「股」，畫面寫「張」要乘 1000；cost 是每股成本，如果畫面只有總成本就除以股數；數字不要逗號；看不到的填 null；找不到持股就回傳 {"items":[]}。',f);
    const have=holdings();
    const items=((r&&r.items)||[]).map(x=>{const sym=String(x.code||'').trim().toUpperCase(),sh=pAmt(x.shares),px=pAmt(x.price),c=pAmt(x.cost),h=have.find(y=>y.sym===sym&&y.sh>0);
-    const it={sym,name:String(x.name||'').trim(),sh:sh>0?sh:'',px:px>0?px:null,cost:c>0?c:px>0?px:'',on:true};
+    const it={sym,name:String(x.name||'').trim(),sh:sh>0?sh:'',px:px>0?px:null,cost:c>0?c:px>0?px:'',on:true,cur:/^[A-Z]/.test(sym)?'USD':'TWD'};
     if(!(c>0))it.why='截圖沒有成本，先用現價當成本，可以自己改';
     if(h){it.on=false;it.why='已經有 '+h.sh+' 股了，勾選會再加一筆買進'}
     return it}).filter(x=>x.sym);
@@ -851,11 +860,23 @@ async function runSnap(f){
 }
 // 每天收盤價：證交所（上市）與櫃買中心（上櫃）的公開資料
 const PXSRC=[['https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL','Code','ClosingPrice'],['https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes','SecuritiesCompanyCode','Close']];
+async function fetchFX(force){
+ if(!force){try{if(localStorage.getItem('money-fxday')===today())return}catch(e){}}
+ const src=[['https://open.er-api.com/v6/latest/USD',j=>j.rates&&j.rates.TWD],['https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json',j=>j.usd&&j.usd.twd]];
+ for(const[u,f]of src){try{const r=await fetch(u);if(!r.ok)continue;const v=+f(await r.json());if(v>10&&v<100){S.fx={USD:Math.round(v*1000)/1000,d:today(),auto:1};try{localStorage.setItem('money-fxday',today())}catch(e){}save();return true}}catch(e){}}
+ return false;
+}
+async function usPrice(sym){
+ for(const h of['query1','query2']){try{const r=await fetch(`https://${h}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?range=1d&interval=1d`);if(!r.ok)continue;const m=(await r.json()).chart.result[0].meta,p=+m.regularMarketPrice;if(p>0)return{p,d:iso(new Date(m.regularMarketTime*1000))}}catch(e){}}
+ try{const r=await fetch(`https://stooq.com/q/l/?s=${encodeURIComponent(sym.toLowerCase())}.us&f=sd2c&h&e=csv`);if(r.ok){const l=(await r.text()).trim().split(/\r?\n/)[1].split(','),p=+l[2];if(p>0)return{p,d:pDate(l[1])||today()}}}catch(e){}
+ return null;
+}
 async function fetchPrices(force){
- const syms=holdings().filter(h=>h.sh>0).map(h=>h.sym);if(!syms.length)return 0;
+ const all=holdings().filter(h=>h.sh>0),syms=all.filter(h=>h.cur!=='USD').map(h=>h.sym),us=all.filter(h=>h.cur==='USD').map(h=>h.sym);if(!all.length)return 0;
  if(!force){try{if(localStorage.getItem('money-pxday')===today())return 0}catch(e){}}
  const got={};let ok=0,n=0;
- for(const[u,kc,kp]of PXSRC){
+ for(const sy of us){const r=await usPrice(sy);if(r){ok++;got[sy]=1;const old=S.prices[sy];if(!old||!old.d||old.d<=r.d){S.prices[sy]={p:r.p,d:r.d,auto:1};n++}}}
+ for(const[u,kc,kp]of PXSRC){if(!syms.length)break;
   if(syms.every(x=>got[x]))break;
   try{const r=await fetch(u);if(!r.ok)continue;const js=await r.json();if(!Array.isArray(js))continue;ok++;
    js.forEach(x=>{const c=String(x[kc]||'').trim().toUpperCase();if(!syms.includes(c)||got[c])return;const p=pAmt(x[kp]);if(!(p>0))return;got[c]=1;
@@ -866,7 +887,7 @@ async function fetchPrices(force){
  // -1：連不到；-2：找到了但手上的股價比較新
  return !ok?-1:n?n:Object.keys(got).length?-2:0;
 }
-const autoPx=()=>fetchPrices(false).then(n=>{if(n>0&&(U.tab==='home'||U.tab==='stock'))render()});
+const autoPx=()=>Promise.all([fetchFX(false),fetchPrices(false)]).then(([f,n])=>{if((f||n>0)&&(U.tab==='home'||U.tab==='stock'))render()});
 
 // ── 動作 ──
 const setP=(o,p,v)=>{const k=p.split('.');let a=o;while(k.length>1)a=a[k.shift()];a[k[0]]=v};
@@ -875,9 +896,9 @@ function openTx(o){U.sheet={k:'tx',o};render();if(!o.id)setTimeout(()=>{const f=
 function openBill(o){U.sheet={k:'bill',o};render()}
 function payBill(b,skip){
  if(!skip&&b.kind==='inv'){
-  const v=prompt(`${b.name}（${b.sym}）這期扣了多少錢？`,b.amt);if(v===null)return;const n=pAmt(v);if(!(n>0))return toast('金額不正確');
+  const v=prompt(`${b.name}（${b.sym}）這期扣了多少${b.cur==='USD'?'美元':'錢'}？`,b.amt);if(v===null)return;const n=pAmt(v);if(!(n>0))return toast('金額不正確');
   const q=prompt('這期買到幾股？（看券商的成交通知）');if(q===null)return;const sh=pAmt(q);if(!(sh>0))return toast('股數不正確');
-  S.trades.push({id:nid(),d:b.next<=today()?b.next:today(),type:'buy',sym:b.sym,name:b.sname||'',sh,px:n/sh,fee:0,acct:b.acct,src:'plan',ts:Date.now()});
+  S.trades.push(Object.assign({id:nid(),d:b.next<=today()?b.next:today(),type:'buy',sym:b.sym,name:b.sname||'',sh,px:n/sh,fee:0,acct:b.acct,src:'plan',ts:Date.now()},b.cur==='USD'?{cur:'USD'}:{}));
  }else if(!skip){
   const v=prompt(`${b.name} 這期實際金額`,b.amt);if(v===null)return;const n=pAmt(v);if(!(n>0))return toast('金額不正確');
   const d=b.next<=today()?b.next:today();
@@ -911,23 +932,27 @@ const ACT={
  deltx:()=>{if(!confirm('刪除這筆紀錄？'))return;S.tx=S.tx.filter(x=>x.id!==U.sheet.o.id);U.sheet=null;save();render()},
  addbill:i=>{const p=PRESETS[+i]||{name:'',cat:'其他',freq:1};openBill({name:p.name,kind:p.kind||'out',amt:'',freq:p.freq,next:today(),end:'',sym:'',acct:p.kind||p.bank?firstBank():(p.auto&&S.accts.find(isCard)||A(firstBank())||S.accts[0]).id,cat:p.cat||'其他',auto:!!p.auto||p.kind==='inv',note:p.note||''})},
  edbill:i=>{const b=S.bills.find(x=>x.id===i);if(b)openBill(Object.assign({},b))},
+ bmk:i=>{U.sheet.o.cur=i;render()},
  bk:i=>{const o=U.sheet.o;o.kind=i;const cs=S.cats[i==='in'?'in':'out'];if(!cs.includes(o.cat))o.cat=cs[0];if(i!=='out'&&isCard(A(o.acct)))o.acct=firstBank();render()},
  savebill:()=>{const o=U.sheet.o,amt=pAmt(o.amt);
   if(!o.name.trim())return toast('請輸入名稱');if(!(amt>=0))return toast('請輸入金額');if(!o.next)return toast('請選日期');
   if(o.end&&o.end<o.next)return toast('最後一期不能早於下次扣款日');if(o.kind==='inv'&&!String(o.sym||'').trim())return toast('請輸入要買的股票代號');
   const b={id:o.id||nid(),name:o.name.trim(),kind:o.kind,amt,freq:+o.freq,next:o.next,day:+o.next.slice(8,10),end:+o.freq?o.end||'':'',acct:o.acct,cat:o.kind==='inv'?'':o.cat,auto:!!o.auto,note:(o.note||'').trim(),payee:o.kind==='out'&&o.payee||''};
-  if(o.kind==='inv'){b.sym=String(o.sym).trim().toUpperCase();b.sname=String(o.sname||'').trim()}
+  if(o.kind==='inv'){b.sym=String(o.sym).trim().toUpperCase();b.sname=String(o.sname||'').trim();if(o.cur==='USD')b.cur='USD'}
   const k=S.bills.findIndex(x=>x.id===b.id);if(k>=0)S.bills[k]=b;else S.bills.push(b);U.sheet=null;save();render()},
- delbill:()=>{if(!confirm('刪除這個帳單？（已記錄的支出不會被刪）'))return;S.bills=S.bills.filter(x=>x.id!==U.sheet.o.id);U.sheet=null;save();render()},
+ delbill:()=>{if(!confirm('刪除這個固定項目？（已記錄的支出不會被刪）'))return;S.bills=S.bills.filter(x=>x.id!==U.sheet.o.id);U.sheet=null;save();render()},
  paybill:i=>{const b=S.bills.find(x=>x.id===i);if(b)payBill(b,false)},
  skipbill:i=>{const b=S.bills.find(x=>x.id===i);if(b)payBill(b,true)},
  addacct:()=>{U.sheet={k:'acct',o:{type:'bank',name:'',now:'',close:5,due:20,init:0}};render()},
  edacct:i=>{const a=A(i);U.sheet={k:'acct',o:Object.assign({},a,{now:isCard(a)?'':Math.round(bal(a)*100)/100})};render()},
  at:i=>{U.sheet.o.type=i;render()},
+ acur:i=>{U.sheet.o.cur=i;render()},
  saveacct:()=>{const o=U.sheet.o;if(!o.name.trim())return toast('請輸入名稱');
   const old=o.id&&A(o.id),a=old||{id:nid()};
   if(old&&old.type!==o.type&&(isCard(old)||o.type==='card')&&S.tx.some(t=>t.acct===old.id||t.to===old.id))return toast('已經有紀錄的帳戶不能在信用卡和現金／銀行之間切換');
   a.name=o.name.trim();a.type=o.type;
+  if(old&&(old.cur||'TWD')!==(o.type==='bank'&&o.cur==='USD'?'USD':'TWD')&&S.tx.some(t=>t.acct===old.id||t.to===old.id))return toast('已經有紀錄的帳戶不能改幣別，請另外新增一個美元帳戶');
+  if(o.type==='bank'&&o.cur==='USD')a.cur='USD';else delete a.cur;
   if(o.type==='bank'){a.group=String(o.group||'').trim();a.code=String(o.code||'').replace(/\D/g,'').slice(0,3);a.no=String(o.no||'').replace(/[^\d-]/g,'')}else{delete a.group;delete a.code;delete a.no}
   if(o.type==='card')a.last4=String(o.last4||'').replace(/\D/g,'').slice(-4);else delete a.last4;
   if(o.type==='card'){const c=+o.close,d=+o.due;if(!(c>=1&&c<=31&&d>=1&&d<=31))return toast('結帳日、繳款日請填 1～31');
@@ -999,9 +1024,9 @@ Object.assign(ACT,{
  holdon:i=>{const x=U.sheet.o.items[+i];x.on=!x.on;render()},
  doHold:()=>{const its=U.sheet.o.items.filter(x=>x.on);let n=0;const ts=Date.now();
   for(const x of its){const sh=pAmt(x.sh),c=pAmt(x.cost);if(!(sh>0)||!(c>0))return toast(x.sym+' 的股數或成本不對');}
-  its.forEach((x,k)=>{S.trades.push({id:nid()+k,d:today(),type:'buy',sym:x.sym,name:x.name,sh:pAmt(x.sh),px:pAmt(x.cost),fee:0,acct:'',src:'snap',ts:ts+k});n++});
+  its.forEach((x,k)=>{S.trades.push(Object.assign({id:nid()+k,d:today(),type:'buy',sym:x.sym,name:x.name,sh:pAmt(x.sh),px:pAmt(x.cost),fee:0,acct:'',src:'snap',ts:ts+k},x.cur==='USD'?{cur:'USD'}:{}));n++});
   U.sheet=null;save();render();toast(n?'已匯入 '+n+' 檔持股':'已更新股價')},
- pxnow:async()=>{toast('抓收盤價中…');const n=await fetchPrices(true);render();toast(n>0?'已更新 '+n+' 檔收盤價':n===-2?'股價已經是最新的':n===0?'沒有找到你的股票（興櫃或代號不對的要手動填）':'連不到證交所，請點持股的「現價」手動更新')},
+ pxnow:async()=>{toast('更新股價和匯率中…');const[f,n]=await Promise.all([fetchFX(true),fetchPrices(true)]);render();toast(n>0?'已更新 '+n+' 檔股價'+(f?'和美元匯率':''):n===-2?'股價已經是最新的':n===0?'沒有找到你的股票（興櫃或代號不對的要手動填）':'連不到證交所，請點持股的「現價」手動更新')},
  go:i=>i==='addtx'?ACT.addtx():i==='start'?ACT.start():ACT.tab(i),
  guideoff:()=>{S.guideOff=true;save();render();toast('之後可以在「更多 → 新手教學」再打開')},
  guideon:()=>{S.guideOff=false;save();render()},
@@ -1012,12 +1037,14 @@ Object.assign(ACT,{
  bmon:i=>{U.bm=addM(U.bm+'-01',+i).slice(0,7);render()},
  cn:i=>{U.cn=+i;render()},
  chm:i=>{U.chm=i;render()},
- px:i=>{const p=S.prices[i],v=prompt(i+' 現在的股價',p?p.p:'');if(v===null)return;const n=pAmt(v);if(!(n>0))return toast('股價不正確');S.prices[i]={p:n,d:today()};save();render()},
- addtrade:()=>{U.sheet={k:'trade',o:{type:'buy',sym:'',name:'',d:today(),sh:'',px:'',fee:'',tax:'',amt:'',acct:''}};render()},
+ px:i=>{const p=S.prices[i],h=holdings().find(x=>x.sym===i),v=prompt(i+' 現在的股價'+(h&&h.cur==='USD'?'（美元）':''),p?p.p:'');if(v===null)return;const n=pAmt(v);if(!(n>0))return toast('股價不正確');S.prices[i]={p:n,d:today()};save();render()},
+ addtrade:()=>{U.sheet={k:'trade',o:{type:'buy',cur:'TWD',sym:'',name:'',d:today(),sh:'',px:'',fee:'',tax:'',amt:'',acct:''}};render()},
  edtrade:i=>{const t=S.trades.find(x=>x.id===i);if(t){U.sheet={k:'trade',o:Object.assign({amt:'',fee:'',tax:''},t,{feeSet:1})};render()}},
+ tmk:i=>{const o=U.sheet.o;o.cur=i;if(!o.feeSet)Object.assign(o,calcFee(o));render()},
  tt:i=>{const o=U.sheet.o;o.type=i;if(!o.feeSet)Object.assign(o,calcFee(o));render()},
  savetrade:()=>{const o=U.sheet.o,sym=String(o.sym||'').trim().toUpperCase();if(!sym)return toast('請輸入股票代號');
-  const t={id:o.id||nid(),d:o.d||today(),type:o.type,sym,name:String(o.name||'').trim(),acct:o.acct||'',ts:o.ts||Date.now()};
+  const t={id:o.id||nid(),d:o.d||today(),type:o.type,sym,name:String(o.name||'').trim(),acct:o.acct||'',ts:o.ts||Date.now()};if(o.cur==='USD')t.cur='USD';
+  const prev=holdings().find(x=>x.sym===sym&&x.cur!==(o.cur||'TWD'));if(prev&&!S.trades.some(x=>x.id===o.id&&x.sym===sym))return toast(sym+' 之前記成'+(prev.cur==='USD'?'美股':'台股')+'，請選一樣的市場');
   if(o.type==='div'){t.amt=pAmt(o.amt);if(!(t.amt>0))return toast('請輸入股利金額')}
   else{t.sh=pAmt(o.sh);t.px=pAmt(o.px);if(!(t.sh>0)||!(t.px>0))return toast('請輸入股數和成交價');t.fee=pAmt(o.fee)||0;if(o.type==='sell'){t.tax=pAmt(o.tax)||0;const h=holdings().find(x=>x.sym===sym),own=(h?h.sh:0)+(o.id&&o.type==='sell'?(S.trades.find(x=>x.id===o.id)||{}).sh||0:0);if(t.sh>own+1e-9&&!confirm('賣出的股數比手上的多（手上 '+own+' 股），還是要儲存？'))return}}
   if(!t.name){const h=holdings().find(x=>x.sym===sym);if(h)t.name=h.name}
@@ -1039,6 +1066,7 @@ function field(e){
  setP(p.startsWith('imp.')||p.startsWith('sheet.')||p==='q'?U:S,p,v);
  if(el.dataset.s)save();
  if(el.dataset.fs)U.sheet.o.feeSet=1;
+ if(el.dataset.fxm&&e.type==='change'){const v=pAmt(el.value);if(v>0){S.fx={USD:v,d:today(),auto:0};save();render()}return}
  if(el.dataset.pv){const n=$('pctpv');if(n)n.textContent=el.value?'＝ 每月 '+M(planInc()*(+el.value||0)/100):''}
  if(el.dataset.cn){const n=$('cardnote');if(n)n.innerHTML=cardNote(U.sheet.o)}
  if(el.dataset.fee&&!U.sheet.o.feeSet){const o=U.sheet.o,f=calcFee(o);o.fee=f.fee;o.tax=f.tax;const a=$('tfee'),b=$('ttax');if(a)a.value=f.fee;if(b)b.value=f.tax}
