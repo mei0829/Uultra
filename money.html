@@ -87,6 +87,9 @@ table.pv{width:100%;border-collapse:collapse;font-size:12px}table.pv td,table.pv
 .it select{height:32px!important;padding:4px 6px;font-size:13px}
 .st{display:inline-block;font-size:11px;line-height:1.6;padding:0 7px;border-radius:9px;border:1px solid var(--line);color:var(--sub);white-space:nowrap;margin-top:2px}
 .st.pending{border-style:dashed}.st.pre{opacity:.7}.st.open{color:var(--acc);border-color:var(--acc)}.st.billed{color:var(--amber);border-color:var(--amber)}.st.paid{color:var(--ok);border-color:var(--ok)}
+#eye{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:max(12px,calc(50% - 248px));z-index:8;border:1.5px solid var(--line);background:var(--card);color:var(--sub);border-radius:18px;padding:5px 11px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.1)}
+#eye.on{background:var(--acc);color:var(--on);border-color:transparent}
+#app{padding-top:calc(52px + env(safe-area-inset-top,0px))}
 .up{color:var(--up)}.down{color:var(--down)}
 .back{border:0;background:none;color:var(--acc);font:inherit;font-weight:700;cursor:pointer;padding:4px 0;margin-bottom:2px}
 .tilegrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
@@ -110,7 +113,7 @@ svg.ch{width:100%;height:auto;display:block;overflow:visible}svg.ch text{font-si
 </head>
 <body>
 <div id="auth" data-title="我的記帳"></div>
-<div id="app"></div><nav id="nav"></nav><div id="sheet"></div><div id="toast"></div><div id="tip"></div><input type="file" id="snapf" accept="image/*" style="display:none">
+<div id="app"></div><nav id="nav"></nav><div id="sheet"></div><div id="toast"></div><div id="tip"></div><button id="eye" data-a="eye" aria-label="隱藏金額"></button><input type="file" id="snapf" accept="image/*" style="display:none">
 <script type="module" src="auth.js"></script>
 <script type="text/plain" id="app-src">
 const iso=d=>{const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())},today=()=>iso(new Date());
@@ -118,7 +121,8 @@ const pd=s=>new Date(s+'T00:00:00'),shiftD=(s,n)=>{const d=pd(s);d.setDate(d.get
 const dleft=s=>Math.round((pd(s)-pd(today()))/864e5);
 const E=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const $=id=>document.getElementById(id);
-const M=v=>(v<-0.5?'-':'')+'$'+Math.round(Math.abs(v)).toLocaleString('zh-TW');
+let HIDE=false;try{HIDE=localStorage.getItem('money-hide')==='1'}catch(e){}
+const M=v=>HIDE?'$ ••••':(v<-0.5?'-':'')+'$'+Math.round(Math.abs(v)).toLocaleString('zh-TW');
 const md=s=>s==='init'?'期初':+s.slice(5,7)+'/'+ +s.slice(8,10);
 const WD='日一二三四五六',nid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const dim=(y,m)=>new Date(y,m+1,0).getDate();
@@ -140,7 +144,7 @@ function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';cle
 const A=id=>S.accts.find(a=>a.id===id),isCard=a=>!!a&&a.type==='card';
 // 子帳戶：同一家銀行的帳戶填一樣的「所屬銀行」，選單顯示成「國泰世華・數存」
 const nm=a=>a?(a.group?a.group+'・':'')+a.name:'?';
-const acno=a=>[a.code,a.no].filter(Boolean).join('-');
+const acno=a=>{const v=[a.code,a.no].filter(Boolean).join('-');return HIDE&&v?'•••• '+String(a.no||'').slice(-3):v};
 const copyBtn=v=>v?`<button class="go q" style="padding:2px 8px;font-size:12px" data-a="copy" data-i="${E(v)}">複製</button>`:'';
 const TY={cash:'現金',bank:'銀行',card:'信用卡'},FQ=[[0,'只有一次'],[1,'每月'],[2,'每 2 個月'],[3,'每 3 個月'],[6,'每半年'],[12,'每年']];
 const fqName=f=>(FQ.find(x=>x[0]===+f)||FQ[0])[1];
@@ -369,7 +373,7 @@ function vMore(){return`<h1>更多</h1><div class="tilegrid">${MORE.map(([k,i,n,
 
 // ── 圖表小工具 ──
 const niceMax=v=>{if(!(v>0))return 1;const p=10**Math.floor(Math.log10(v));for(const m of[1,1.5,2,2.5,3,4,5,6,8,10])if(m*p>=v)return m*p};
-const cpt=v=>{const a=Math.abs(v);return(v<0?'-':'')+(a>=1e8?+(a/1e8).toFixed(1)+'億':a>=1e4?+(a/1e4).toFixed(a>=1e5?0:1)+'萬':a>=1000?+(a/1000).toFixed(1)+'千':Math.round(a))};
+const cpt=v=>{if(HIDE)return'•';const a=Math.abs(v);return(v<0?'-':'')+(a>=1e8?+(a/1e8).toFixed(1)+'億':a>=1e4?+(a/1e4).toFixed(a>=1e5?0:1)+'萬':a>=1000?+(a/1000).toFixed(1)+'千':Math.round(a))};
 const SER=()=>DARK?['#3987e5','#d95926']:['#2a78d6','#eb6834'];
 const colPath=(x,y,w,h,base)=>{const r=Math.min(4,h,w/2);return`M${x},${base}V${y+r}Q${x},${y} ${x+r},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${base}Z`};
 // 直條圖（單一系列）：d=[{k,label,v,tip,on}]
@@ -526,7 +530,7 @@ function holdings(){
  return Object.values(by).map(h=>{const p=S.prices[h.sym];h.px=p?+p.p:null;h.pd=p?p.d:'';h.val=h.px!=null?h.sh*h.px:h.cost;h.unreal=h.px!=null?h.val-h.cost:0;return h});
 }
 function stockMonth(m){holdings();const xs=SEV.filter(e=>e.d.startsWith(m));return{div:xs.reduce((s,e)=>s+e.div,0),real:xs.reduce((s,e)=>s+e.real,0),n:xs.length}}
-const gain=(v,pct)=>`<span class="num ${v>0.5?'up':v<-0.5?'down':''}">${v>0.5?'▲ +':v<-0.5?'▼ ':''}${M(v)}${pct!=null&&isFinite(pct)?` (${v>0?'+':''}${(pct*100).toFixed(1)}%)`:''}</span>`;
+const gain=(v,pct)=>HIDE?'<span class="num">$ ••••</span>':`<span class="num ${v>0.5?'up':v<-0.5?'down':''}">${v>0.5?'▲ +':v<-0.5?'▼ ':''}${M(v)}${pct!=null&&isFinite(pct)?` (${v>0?'+':''}${(pct*100).toFixed(1)}%)`:''}</span>`;
 function calcFee(o){const a=(+o.sh||0)*(+o.px||0);if(!a||o.type==='div')return{fee:0,tax:0};return{fee:Math.max(+S.fee.min||0,Math.floor(a*0.001425*(+S.fee.disc||1))),tax:o.type==='sell'?Math.floor(a*(/^00/.test(String(o.sym||'').trim())?0.001:0.003)):0}}
 function vStock(){
  const hs=holdings(),on=hs.filter(h=>h.sh>0),off=hs.filter(h=>h.sh<=0);
@@ -658,7 +662,7 @@ function render(){
 }
 function renderNow(){
  const y=window.scrollY,V={plan:vPlan,card:vCard,home:vHome,tx:vTx,cal:vCal,bills:vBills,more:vMore,budget:vBudget,chart:vChart,stock:vStock,calc:vCalc,imp:vImp,set:vSet,guide:vGuide},sub=MORE.some(m=>m[0]===U.tab),ae=KF&&document.activeElement,am=ae&&ae.dataset&&ae.dataset.m,cp=am&&ae.selectionStart;KF=0;
- CI={};$('tip').style.display='none';
+ CI={};$('tip').style.display='none';$('eye').textContent=HIDE?'顯示金額':'隱藏金額';$('eye').classList.toggle('on',HIDE);$('eye').setAttribute('aria-label',HIDE?'顯示金額':'隱藏金額');
  $('app').innerHTML=(sub?'<button class="back" data-a="tab" data-i="more">‹ 更多</button>':'')+V[U.tab]();
  $('nav').innerHTML=TABS.map(([k,i,n])=>`<button class="${U.tab===k||(k==='more'&&sub)?'on':''}" data-a="tab" data-i="${k}"><b>${i}</b>${n}</button>`).join('');
  const sh=U.sheet,SH={pitem:sheetPItem,payee:sheetPayee,start:sheetStart,tx:sheetTx,bill:sheetBill,acct:sheetAcct,trade:sheetTrade,recon:sheetRecon,hold:sheetHold};$('sheet').innerHTML=sh?`<div class="sheet" data-a="bg"><div>${SH[sh.k](sh.o)}</div></div>`:'';
@@ -951,6 +955,7 @@ const ACT={
   U.imp=null;U.sheet=null;U.fa='';U.tab='guide';save();render();window.scrollTo(0,0);toast('已清空，照著教學一步一步來')},
 };
 Object.assign(ACT,{
+ eye:()=>{HIDE=!HIDE;try{localStorage.setItem('money-hide',HIDE?'1':'0')}catch(e){}render();toast(HIDE?'金額已隱藏，再按一下就會顯示':'金額已顯示')},
  plandef:()=>{const fx=Math.round(billPM('out')),iv=Math.round(billPM('inv')),bc=[...new Set(S.bills.filter(b=>(b.kind||'out')==='out').map(b=>b.cat))];
   S.plan.items=[{id:nid(),name:'固定支出（房貸、帳單）',amt:fx,acct:'',cats:bc,fixed:true},{id:nid()+'a',name:'生活費',amt:'',acct:'',cats:['餐飲','交通','停車費','日用品'].filter(c=>S.cats.out.includes(c))},{id:nid()+'b',name:'想要的（購物、娛樂）',amt:'',acct:'',cats:['購物','娛樂'].filter(c=>S.cats.out.includes(c))},{id:nid()+'c',name:'存起來（緊急預備金）',amt:'',acct:'',cats:[]},{id:nid()+'d',name:'定期投資',amt:iv,acct:'',cats:[]}];
   save();render();toast('建好了，點每一項填金額、選要放的帳戶')},
