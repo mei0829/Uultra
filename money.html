@@ -246,7 +246,7 @@ function vTx(){
   .sort((a,b)=>a.d<b.d?1:a.d>b.d?-1:(b.ts||0)-(a.ts||0));
  const out=xs.filter(t=>t.type==='out').reduce((s,t)=>s+t.amt,0),inc=xs.filter(t=>t.type==='in').reduce((s,t)=>s+t.amt,0);
  let h=`<div class="mh"><button class="go q" data-a="mon" data-i="-1">‹</button><b>${U.mon.slice(0,4)} 年 ${+U.mon.slice(5)} 月</b><button class="go q" data-a="mon" data-i="1">›</button></div>
- <div class="card"><div class="row"><div class="sp"><div class="sub">支出</div><b class="num">${M(out)}</b></div><div class="sp"><div class="sub">收入</div><b class="num in">${M(inc)}</b></div><div class="sp"><div class="sub">結餘</div><b class="num ${inc-out<0?'neg':''}">${M(inc-out)}</b></div></div></div>
+ <div class="card"><div class="row"><div class="sp"><div class="sub">支出</div><b class="num">${M(out)}</b></div><div class="sp"><div class="sub">收入</div><b class="num in">${M(inc)}</b></div><div class="sp"><div class="sub">結餘</div><b class="num ${inc-out<0?'neg':''}">${M(inc-out)}</b></div></div>${(()=>{const k=stockMonth(U.mon);return k.n?`<div class="row" data-a="tab" data-i="stock" style="cursor:pointer;border-top:1px solid var(--line);margin-top:8px;padding-top:8px"><span class="sp sub">股票收益（另外算）：股利 ${M(k.div)}・賣出賺賠 ${gain(k.real)}</span><b>${gain(k.div+k.real)}</b></div>`:''})()}</div>
  <div class="fs"><button class="chip ${U.fa?'':'on'}" data-a="fa" data-i="">全部</button>${S.accts.map(a=>`<button class="chip ${U.fa===a.id?'on':''}" data-a="fa" data-i="${a.id}">${E(a.name)}</button>`).join('')}</div>
  ${isCard(A(U.fa))?`<div class="fs">${[['','全部'],['pending','未入帳'],['open','未出帳'],['billed','已出帳待繳'],['paid','已繳清']].map(([k,n])=>`<button class="chip ${(U.fs||'')===k?'on':''}" data-a="fst" data-i="${k}">${n}</button>`).join('')}</div><div class="sub" style="margin:-2px 2px 8px"><a href="#" data-a="card" data-i="${U.fa}">看這張卡每一期的帳單 ›</a></div>`:''}
  <input placeholder="搜尋說明或分類" value="${E(U.q)}" data-m="q" data-r="1" style="margin-bottom:8px">`;
@@ -462,15 +462,18 @@ function vChart(){
 }
 
 // ── 股票 ──
+// 股票收益事件：每次賣出的實現損益、每次領的股利（依日期）
+let SEV=[];
 function holdings(){
- const by={};
+ const by={};SEV=[];
  S.trades.slice().sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:(a.ts||0)-(b.ts||0)).forEach(t=>{
   const h=by[t.sym]=by[t.sym]||{sym:t.sym,name:'',sh:0,cost:0,real:0,div:0};if(t.name)h.name=t.name;
   if(t.type==='buy'){h.sh+=t.sh;h.cost+=t.sh*t.px+(+t.fee||0)}
-  else if(t.type==='sell'){const sh=Math.min(t.sh,h.sh),co=h.sh?h.cost/h.sh*sh:0;h.real+=t.sh*t.px-(+t.fee||0)-(+t.tax||0)-co;h.cost-=co;h.sh-=sh}
-  else h.div+=+t.amt||0});
+  else if(t.type==='sell'){const sh=Math.min(t.sh,h.sh),co=h.sh?h.cost/h.sh*sh:0,r=t.sh*t.px-(+t.fee||0)-(+t.tax||0)-co;h.real+=r;h.cost-=co;h.sh-=sh;SEV.push({d:t.d,sym:t.sym,real:r,div:0})}
+  else{h.div+=+t.amt||0;SEV.push({d:t.d,sym:t.sym,real:0,div:+t.amt||0})}});
  return Object.values(by).map(h=>{const p=S.prices[h.sym];h.px=p?+p.p:null;h.pd=p?p.d:'';h.val=h.px!=null?h.sh*h.px:h.cost;h.unreal=h.px!=null?h.val-h.cost:0;return h});
 }
+function stockMonth(m){holdings();const xs=SEV.filter(e=>e.d.startsWith(m));return{div:xs.reduce((s,e)=>s+e.div,0),real:xs.reduce((s,e)=>s+e.real,0),n:xs.length}}
 const gain=(v,pct)=>`<span class="num ${v>0.5?'up':v<-0.5?'down':''}">${v>0.5?'▲ +':v<-0.5?'▼ ':''}${M(v)}${pct!=null&&isFinite(pct)?` (${v>0?'+':''}${(pct*100).toFixed(1)}%)`:''}</span>`;
 function calcFee(o){const a=(+o.sh||0)*(+o.px||0);if(!a||o.type==='div')return{fee:0,tax:0};return{fee:Math.max(+S.fee.min||0,Math.floor(a*0.001425*(+S.fee.disc||1))),tax:o.type==='sell'?Math.floor(a*(/^00/.test(String(o.sym||'').trim())?0.001:0.003)):0}}
 function vStock(){
@@ -489,6 +492,9 @@ function vStock(){
  if(off.length)h+=`<h2>已經全部賣掉</h2><div class="card">${off.map(x=>`<div class="row" style="padding:4px 0"><span class="sp">${E(x.sym)} ${E(x.name)}</span>${gain(x.real+x.div)}</div>`).join('')}</div>`;
  const tr=S.trades.slice().sort((a,b)=>a.d<b.d?1:a.d>b.d?-1:(b.ts||0)-(a.ts||0)).slice(0,30);
  if(tr.length)h+=`<h2>交易紀錄</h2><div class="card">${tr.map(t=>`<div class="li" data-a="edtrade" data-i="${t.id}"><div class="dt">${md(t.d)}<small>${t.d.slice(0,4)}</small></div><div class="sp"><div>${{buy:'買進',sell:'賣出',div:'股利'}[t.type]} ${E(t.sym)} ${E(t.name||'')}</div><div class="sub">${t.type==='div'?'現金股利':t.sh.toLocaleString('zh-TW')+' 股 × '+t.px}</div></div><div class="num">${t.type==='buy'?'−':'+'}${M(Math.abs(tradeCash(t)))}</div></div>`).join('')}</div>`;
+ const ms={};SEV.forEach(e=>{const m=e.d.slice(0,7),x=ms[m]=ms[m]||{div:0,real:0};x.div+=e.div;x.real+=e.real});
+ const mk=Object.keys(ms).sort().reverse().slice(0,24),yr=today().slice(0,4),Y=Object.keys(ms).filter(m=>m.startsWith(yr)).reduce((a,m)=>a+ms[m].div+ms[m].real,0);
+ if(mk.length)h+=`<h2>每月股票收益（今年合計 ${M(Y)}）</h2><div class="card"><table class="pv"><tr><th>月份</th><th style="text-align:right">股利</th><th style="text-align:right">賣出賺賠</th><th style="text-align:right">合計</th></tr>${mk.map(m=>`<tr><td>${m.slice(0,4)}/${+m.slice(5)}</td><td class="num" style="text-align:right">${M(ms[m].div)}</td><td style="text-align:right">${gain(ms[m].real)}</td><td style="text-align:right">${gain(ms[m].div+ms[m].real)}</td></tr>`).join('')}</table><div class="sub" style="margin-top:6px">只算已經落袋的錢（領到的股利、賣掉時的賺賠）；還沒賣的漲跌看上面的「還沒賣的賺賠」。</div></div>`;
  h+=`<h2>手續費設定</h2><div class="card"><div class="grid"><label class="fl"><span>手續費折扣（6 折填 0.6）</span><input inputmode="decimal" data-m="fee.disc" data-s="1" value="${E(S.fee.disc)}"></label><label class="fl"><span>最低手續費</span><input inputmode="numeric" data-m="fee.min" data-s="1" value="${E(S.fee.min)}"></label></div><div class="sub" style="margin-top:6px">手續費＝成交金額 × 0.1425% × 折扣；賣出時另扣證交稅 0.3%（00 開頭的 ETF 是 0.1%）。記交易時會自動算，也可以手動改。</div></div>`;
  return h;
 }
