@@ -317,7 +317,8 @@ function vSet(){
  ${window.FBU?`<div class="row" style="margin-bottom:8px"><span class="sp sub">帳號：${E(FBU.email)}</span><button class="go q" data-a="logout">登出</button></div>`:''}
  <div class="sub" style="margin-bottom:8px">${E(CL.st)}</div>
  <div class="row" style="gap:6px;flex-wrap:wrap"><button class="go q" data-a="export">下載備份檔</button><button class="go q" data-a="importjson">從備份還原</button><a href="./" class="sp" style="text-align:right">新人名單 →</a></div>
- <input type="file" id="bkf" accept=".json,application/json" style="display:none"></div>`;
+ <input type="file" id="bkf" accept=".json,application/json" style="display:none"></div>
+ <h2>從零開始</h2><div class="card"><div class="sub" style="margin-bottom:8px">把所有帳戶、紀錄、帳單、股票、預算全部清掉，回到剛開始的樣子（顏色風格會保留）。手機和雲端都會清掉，建議先按上面「下載備份檔」。</div><button class="go r" data-a="reset">清空全部資料，重新開始</button></div>`;
  return h;
 }
 
@@ -839,6 +840,9 @@ const ACT={
  export:()=>{const b=new Blob([JSON.stringify({v:1,money:S})],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='記帳備份-'+today()+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)},
  importjson:()=>$('bkf').click(),
  logout:()=>window.fbLogout&&fbLogout(),
+ reset:()=>{if(!confirm('確定要清空全部記帳資料嗎？這個動作不能復原。'))return;if(prompt('請輸入「清空」兩個字確認')!=='清空')return toast('沒有清空');
+  const k={skin:S.skin,mode:S.mode};S=Object.assign(DEF(),k);S.accts=[{id:'cash',name:'現金',type:'cash',init:0},{id:'bank',name:'銀行帳戶',type:'bank',init:0}];
+  U.imp=null;U.sheet=null;U.fa='';U.tab='guide';save();render();window.scrollTo(0,0);toast('已清空，照著教學一步一步來')},
 };
 Object.assign(ACT,{
  card:i=>{U.cardId=i;U.cyc='';U.sheet=null;U.tab='card';render();window.scrollTo(0,0)},
