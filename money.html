@@ -250,7 +250,7 @@ function vTx(){
   .sort((a,b)=>a.d<b.d?1:a.d>b.d?-1:(b.ts||0)-(a.ts||0));
  const out=xs.filter(t=>t.type==='out').reduce((s,t)=>s+t.amt,0),inc=xs.filter(t=>t.type==='in').reduce((s,t)=>s+t.amt,0);
  let h=`<div class="mh"><button class="go q" data-a="mon" data-i="-1">‹</button><b>${U.mon.slice(0,4)} 年 ${+U.mon.slice(5)} 月</b><button class="go q" data-a="mon" data-i="1">›</button></div>
- <div class="card"><div class="row"><div class="sp"><div class="sub">支出</div><b class="num">${M(out)}</b></div><div class="sp"><div class="sub">收入</div><b class="num in">${M(inc)}</b></div><div class="sp"><div class="sub">結餘</div><b class="num ${inc-out<0?'neg':''}">${M(inc-out)}</b></div></div>${(()=>{const k=stockMonth(U.mon);return k.n?`<div class="row" data-a="tab" data-i="stock" style="cursor:pointer;border-top:1px solid var(--line);margin-top:8px;padding-top:8px"><span class="sp sub">股票收益（另外算）：股利 ${M(k.div)}・賣出賺賠 ${gain(k.real)}</span><b>${gain(k.div+k.real)}</b></div>`:''})()}</div>
+ <div class="card"><div class="row"><div class="sp"><div class="sub">支出</div><b class="num">${M(out)}</b></div><div class="sp"><div class="sub">收入</div><b class="num in">${M(inc)}</b></div><div class="sp"><div class="sub">結餘<span style="font-size:11px">（不含轉帳）</span></div><b class="num ${inc-out<0?'neg':''}">${M(inc-out)}</b></div></div>${(()=>{const k=stockMonth(U.mon);return k.n?`<div class="row" data-a="tab" data-i="stock" style="cursor:pointer;border-top:1px solid var(--line);margin-top:8px;padding-top:8px"><span class="sp sub">股票收益（另外算）：股利 ${M(k.div)}・賣出賺賠 ${gain(k.real)}</span><b>${gain(k.div+k.real)}</b></div>`:''})()}</div>
  <div class="fs"><button class="chip ${U.fa?'':'on'}" data-a="fa" data-i="">全部</button>${S.accts.map(a=>`<button class="chip ${U.fa===a.id?'on':''}" data-a="fa" data-i="${a.id}">${E(nm(a))}</button>`).join('')}</div>
  ${isCard(A(U.fa))?`<div class="fs">${[['','全部'],['pending','未入帳'],['open','未出帳'],['billed','已出帳待繳'],['paid','已繳清']].map(([k,n])=>`<button class="chip ${(U.fs||'')===k?'on':''}" data-a="fst" data-i="${k}">${n}</button>`).join('')}</div><div class="sub" style="margin:-2px 2px 8px"><a href="#" data-a="card" data-i="${U.fa}">看這張卡每一期的帳單 ›</a></div>`:''}
  <input placeholder="搜尋說明或分類" value="${E(U.q)}" data-m="q" data-r="1" style="margin-bottom:8px">`;
@@ -301,7 +301,8 @@ function vImp(){
   const on=I.items.filter(x=>x.on),tot=on.reduce((s,x)=>s+(x.type==='out'?x.amt:0),0);
   h+=`<div class="card"><div class="row"><div class="sp">共 ${I.items.length} 筆，勾選 ${on.length} 筆<div class="sub">支出合計 ${M(tot)}</div></div><button class="go q" data-a="impall">${on.length===I.items.length?'全不選':'全選'}</button></div>
   ${I.items.map((x,i)=>{const cs=S.cats[x.type==='in'?'in':'out'],a=A(x.acct),to=A(x.to);return`<div class="it ${x.on?'':'off'}"><input type="checkbox" data-a="impon" data-i="${i}" ${x.on?'checked':''}><div class="sp"><div class="row"><span class="sp">${md(x.d)} ${E(x.desc)}</span><b class="num ${x.type==='in'?'in':''}">${x.type==='in'?'+':''}${M(x.amt)}</b></div>
-  ${x.type==='xfer'?`<div class="sub">繳卡費：${E(a?a.name:'?')} → ${E(to?to.name:'?')}</div>`:`<select data-m="imp.items.${i}.cat">${cs.map(c=>`<option ${c===x.cat?'selected':''}>${E(c)}</option>`).join('')}</select>`}
+  <select data-xi="${i}" style="margin-bottom:4px">${impKinds(x)}</select>
+  ${x.type==='xfer'?`<div class="sub">轉帳：${E(nm(a))} → ${E(nm(to))}（不算收入支出）</div>`:`<select data-m="imp.items.${i}.cat">${cs.map(c=>`<option ${c===x.cat?'selected':''}>${E(c)}</option>`).join('')}</select>`}
   ${x.why?`<div class="${x.ok?'in':'late'}" style="font-weight:400;font-size:12px">${E(x.why)}</div>`:''}</div></div>`}).join('')}
   <div class="row" style="margin-top:10px;justify-content:space-between"><button class="go g" data-a="impreset">重來</button><button class="go" data-a="impdo" ${on.length?'':'disabled'}>匯入 ${on.length} 筆</button></div></div>`;
  }
@@ -683,6 +684,10 @@ function buildRows(){
  return out;
 }
 // v：正數＝從這個帳戶花出去，負數＝退款／存入／繳卡費
+function impKinds(x){
+ const me=U.imp.acct,cur=x.type!=='xfer'?x.type:x.acct===me?'to:'+x.to:'from:'+x.acct,o=S.accts.filter(a=>a.id!==me);
+ return[['out','支出'],['in','收入'],...o.map(a=>['to:'+a.id,'轉到 '+nm(a)]),...o.map(a=>['from:'+a.id,'從 '+nm(a)+' 轉入'])].map(([v,n])=>`<option value="${v}" ${v===cur?'selected':''}>${E(n)}</option>`).join('');
+}
 function mkItem(d,desc,v,src,pd){
  const I=U.imp,a=A(I.acct),it={d,desc:String(desc||'').replace(/\s+/g,' ').trim(),on:true,src,amt:Math.round(Math.abs(v)*100)/100};
  const card=S.accts.find(isCard);
@@ -697,6 +702,8 @@ function mkItem(d,desc,v,src,pd){
   const m=S.tx.find(t=>!P.has(t.id)&&t.acct===a.id&&t.type===it.type&&!t.pd&&Math.abs(t.amt-it.amt)<0.01&&Math.abs(dleft(t.d)-dleft(it.d))<=3);
   if(m){P.add(m.id);it.pair=m.id;it.ok=1;it.why='✓ 跟你 '+md(m.d)+' 記的「'+(m.note||m.cat)+'」是同一筆，會標成已入帳（入帳日 '+md(it.pd)+'），不會重複';return it}
  }
+ const xf=it.type!=='xfer'&&S.tx.find(t=>t.type==='xfer'&&(t.acct===it.acct||t.to===it.acct)&&Math.abs(t.amt-it.amt)<0.01&&Math.abs(dleft(t.d)-dleft(it.d))<=3);
+ if(xf){it.on=false;it.why='已經記成轉帳：'+md(xf.d)+' '+nm(A(xf.acct))+' → '+nm(A(xf.to))+' '+M(xf.amt);return it}
  const dup=S.tx.find(t=>t.type===it.type&&Math.abs(t.amt-it.amt)<0.01&&Math.abs(dleft(t.d)-dleft(it.d))<=3&&(src==='einv'||t.acct===it.acct||(it.to&&t.to===it.to)));
  if(dup){it.on=false;it.why='可能重複：已有 '+md(dup.d)+' '+(dup.note||dup.cat||'')+' '+M(dup.amt)}
  return it;
@@ -968,6 +975,10 @@ document.addEventListener('input',e=>{if(e.target.type!=='checkbox'&&e.target.ta
 document.addEventListener('change',async e=>{
  const el=e.target;
  if(el.id==='impf'&&el.files[0]){const f=el.files[0];if(/^image\//.test(f.type)){U.imp.file=f;U.imp.text=''}else if(/\.xlsx?$/i.test(f.name)){toast('請先用 Excel 另存成 CSV 再匯入')}else{U.imp.file=null;U.imp.text=await readFile(f);impParse()}render();return}
+ if(el.dataset&&el.dataset.xi!=null){const x=U.imp.items[+el.dataset.xi],me=U.imp.acct,v=el.value;
+  if(v==='out'||v==='in'){x.type=v;x.acct=me;delete x.to;if(!S.cats[v].includes(x.cat))x.cat=guess(x.desc,v)||(v==='in'?'其他收入':'其他')}
+  else{const[k,id]=v.split(':');x.type='xfer';x.cat='';if(k==='to'){x.acct=me;x.to=id}else{x.acct=id;x.to=me}}
+  render();return}
  if(el.id==='snapf'&&el.files[0]){const f=el.files[0];el.value='';runSnap(f);return}
  if(el.id==='bkf'&&el.files[0]){try{const o=JSON.parse(await readFile(el.files[0])),m=o.money||o;if(!Array.isArray(m.tx)||!Array.isArray(m.accts))throw 0;if(!confirm('用備份檔取代目前全部資料？'))return;S=Object.assign(DEF(),m);save();render();toast('已還原')}catch(x){toast('不是記帳備份檔')}return}
  field(e);
