@@ -639,20 +639,26 @@ function sheetBill(o){
 function sheetPayee(o){
  return`<div class="row"><b class="sp" style="font-size:17px">${o.id?'編輯匯款帳號':'新增匯款帳號'}</b><button class="x" data-a="close">×</button></div>
  <div class="grid"><label class="fl w"><span>對象</span><input value="${E(o.name)}" data-m="sheet.o.name" placeholder="例：房東王先生"></label>
- <label class="fl"><span>銀行代碼</span><input inputmode="numeric" value="${E(o.code)}" data-m="sheet.o.code" placeholder="例：700"></label><label class="fl"><span>銀行名稱（選填）</span><input value="${E(o.bank)}" data-m="sheet.o.bank" placeholder="例：中華郵政"></label>
+ ${bankPick(o,'bank','銀行','選擇銀行')}<label class="fl"><span>銀行代碼</span><input inputmode="numeric" value="${E(o.code)}" data-m="sheet.o.code" placeholder="例：700"></label>
  <label class="fl w"><span>帳號</span><input inputmode="numeric" value="${E(o.no)}" data-m="sheet.o.no"></label>
  <label class="fl w"><span>備註</span><input value="${E(o.note)}" data-m="sheet.o.note" placeholder="例：每月 5 號前匯房租"></label></div>
  <div class="row" style="margin-top:14px;gap:8px">${o.id?'<button class="go r" data-a="delpayee">刪除</button>':''}<span class="sp"></span><button class="go" data-a="savepayee">儲存</button></div>`;
 }
-const grpList=()=>`<datalist id="grplist">${[...new Set(S.accts.map(a=>a.group).filter(Boolean))].map(g=>`<option value="${E(g)}">`).join('')}</datalist>`;
+const BANKS=[['004','臺灣銀行'],['005','土地銀行'],['006','合作金庫'],['007','第一銀行'],['008','華南銀行'],['009','彰化銀行'],['011','上海銀行'],['012','台北富邦'],['013','國泰世華'],['016','高雄銀行'],['017','兆豐銀行'],['048','王道銀行'],['050','臺灣企銀'],['052','渣打銀行'],['053','台中銀行'],['054','京城銀行'],['081','滙豐銀行'],['102','華泰銀行'],['103','新光銀行'],['108','陽信銀行'],['118','板信銀行'],['147','三信銀行'],['700','中華郵政'],['803','聯邦銀行'],['805','遠東銀行'],['806','元大銀行'],['807','永豐銀行'],['808','玉山銀行'],['809','凱基銀行'],['810','星展銀行'],['812','台新銀行'],['816','安泰銀行'],['822','中國信託'],['823','將來銀行'],['824','LINE Bank'],['826','樂天銀行']];
+// 銀行下拉選單：選了會帶入代碼；清單沒有的選「其他」自己打
+function bankPick(o,key,label,none){
+ const v=o[key]||'',known=BANKS.some(b=>b[1]===v),mine=[...new Set(S.accts.map(a=>a.group).concat(S.payees.map(p=>p.bank)).filter(g=>g&&!BANKS.some(b=>b[1]===g)))],other=o._other||(v&&!known&&!mine.includes(v));
+ return`<label class="fl w"><span>${label}</span><select data-bk="${key}"><option value="">${none}</option>${BANKS.map(([c,n])=>`<option value="${E(n)}" ${!other&&v===n?'selected':''}>${E(n)}（${c}）</option>`).join('')}${mine.map(g=>`<option value="${E(g)}" ${!other&&v===g?'selected':''}>${E(g)}</option>`).join('')}<option value="__other" ${other?'selected':''}>其他（自己輸入）</option></select></label>
+ ${other?`<label class="fl w"><span>銀行名稱</span><input value="${E(v)}" data-m="sheet.o.${key}" placeholder="例：某某信用合作社"></label>`:''}`;
+}
 function sheetAcct(o){
  const c=o.type==='card';
  return`<div class="row"><b class="sp" style="font-size:17px">${o.id?'編輯帳戶':'新增帳戶'}</b><button class="x" data-a="close">×</button></div>
  <div class="chips" style="margin:8px 0">${Object.keys(TY).map(k=>`<button class="chip ${o.type===k?'on':''}" data-a="at" data-i="${k}">${TY[k]}</button>`).join('')}</div>
  <div class="grid"><label class="fl w"><span>名稱</span><input value="${E(o.name)}" data-m="sheet.o.name" placeholder="${c?'例：國泰 CUBE 卡':o.type==='bank'?'例：活存、數存、薪轉':'例：錢包'}"></label>
- ${o.type==='bank'?`<div class="fl w"><span>幣別</span><div class="chips">${[['TWD','台幣'],['USD','美元（外幣帳戶）']].map(([k,n])=>`<button class="chip ${(o.cur||'TWD')===k?'on':''}" data-a="acur" data-i="${k}">${n}</button>`).join('')}</div></div><label class="fl w"><span>所屬銀行（有子帳戶的話，同一家銀行填一樣的名字）</span><input value="${E(o.group||'')}" data-m="sheet.o.group" list="grplist" placeholder="例：國泰世華"></label>${grpList()}
+ ${o.type==='bank'?`<div class="fl w"><span>幣別</span><div class="chips">${[['TWD','台幣'],['USD','美元（外幣帳戶）']].map(([k,n])=>`<button class="chip ${(o.cur||'TWD')===k?'on':''}" data-a="acur" data-i="${k}">${n}</button>`).join('')}</div></div>${bankPick(o,'group','哪一家銀行（同一家的子帳戶會排在一起）','不指定')}
  <label class="fl"><span>銀行代碼</span><input inputmode="numeric" value="${E(o.code||'')}" data-m="sheet.o.code" placeholder="例：013"></label><label class="fl"><span>帳號</span><input inputmode="numeric" value="${E(o.no||'')}" data-m="sheet.o.no" placeholder="匯款用的帳號"></label>`:''}
- ${c?`<label class="fl w"><span>發卡銀行（選填；填一樣的名字會跟那家銀行的帳戶排在一起）</span><input value="${E(o.group||'')}" data-m="sheet.o.group" list="grplist" placeholder="例：國泰世華"></label>${grpList()}`:''}
+ ${c?bankPick(o,'group','發卡銀行（選填；會跟那家銀行的帳戶排在一起）','不指定'):''}
  ${c?`<label class="fl w"><span>卡號末四碼（選填，方便辨認，不要填完整卡號）</span><input inputmode="numeric" maxlength="4" value="${E(o.last4||'')}" data-m="sheet.o.last4"></label>`:''}
  ${c?`<label class="fl"><span>每月幾號結帳</span><input inputmode="numeric" value="${E(o.close)}" data-m="sheet.o.close"></label>
  <label class="fl"><span>每月幾號前要繳</span><input inputmode="numeric" value="${E(o.due)}" data-m="sheet.o.due"></label>
@@ -1080,6 +1086,9 @@ document.addEventListener('input',e=>{if(e.target.type!=='checkbox'&&e.target.ta
 document.addEventListener('change',async e=>{
  const el=e.target;
  if(el.id==='impf'&&el.files[0]){const f=el.files[0];if(/^image\//.test(f.type)){U.imp.file=f;U.imp.text=''}else if(/\.xlsx?$/i.test(f.name)){toast('請先用 Excel 另存成 CSV 再匯入')}else{U.imp.file=null;U.imp.text=await readFile(f);impParse()}render();return}
+ if(el.dataset&&el.dataset.bk){const o=U.sheet.o,k=el.dataset.bk,v=el.value;
+  if(v==='__other'){o._other=1;o[k]=BANKS.some(b=>b[1]===o[k])?'':o[k]}else{o._other=0;o[k]=v;const b=BANKS.find(x=>x[1]===v);if(b&&(o.type==='bank'||k==='bank'))o.code=b[0]}
+  render();return}
  if(el.dataset&&el.dataset.xi!=null){const x=U.imp.items[+el.dataset.xi],me=U.imp.acct,v=el.value;
   if(v==='out'||v==='in'){x.type=v;x.acct=me;delete x.to;if(!S.cats[v].includes(x.cat))x.cat=guess(x.desc,v)||(v==='in'?'其他收入':'其他')}
   else{const[k,id]=v.split(':');x.type='xfer';x.cat='';if(k==='to'){x.acct=me;x.to=id}else{x.acct=id;x.to=me}}
