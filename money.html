@@ -87,9 +87,9 @@ table.pv{width:100%;border-collapse:collapse;font-size:12px}table.pv td,table.pv
 .it select{height:32px!important;padding:4px 6px;font-size:13px}
 .st{display:inline-block;font-size:11px;line-height:1.6;padding:0 7px;border-radius:9px;border:1px solid var(--line);color:var(--sub);white-space:nowrap;margin-top:2px}
 .st.pending{border-style:dashed}.st.pre{opacity:.7}.st.open{color:var(--acc);border-color:var(--acc)}.st.billed{color:var(--amber);border-color:var(--amber)}.st.paid{color:var(--ok);border-color:var(--ok)}
-#eye{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:max(12px,calc(50% - 248px));z-index:8;border:1.5px solid var(--line);background:var(--card);color:var(--sub);border-radius:18px;padding:5px 11px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.1)}
+#eye{position:fixed;bottom:calc(84px + env(safe-area-inset-bottom,0px));left:max(16px,calc(50% - 244px));z-index:8;border:1.5px solid var(--line);background:var(--card);color:var(--sub);border-radius:18px;padding:5px 11px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.1)}
 #eye.on{background:var(--acc);color:var(--on);border-color:transparent}
-#app{padding-top:calc(52px + env(safe-area-inset-top,0px))}
+
 .up{color:var(--up)}.down{color:var(--down)}
 .back{border:0;background:none;color:var(--acc);font:inherit;font-weight:700;cursor:pointer;padding:4px 0;margin-bottom:2px}
 .tilegrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
@@ -323,8 +323,8 @@ function vImp(){
 
 function acctLine(a,sub){return`<div class="li" data-a="edacct" data-i="${a.id}" ${sub?'style="padding-left:14px"':''}><div class="ic">${TY[a.type].slice(0,1)}</div><div class="sp"><div>${E(a.name)}</div><div class="sub">${TY[a.type]}${isCard(a)?` · ${a.close} 號結帳、${a.due} 號繳款${a.last4?' · 末四碼 '+E(a.last4):''}`:''}${acno(a)?' · '+E(acno(a)):''}</div></div>${a.no?copyBtn(a.no):''}<div class="num">${isCard(a)?'未繳 '+M(cardInfo(a).owe):MA(a)}</div></div>`}
 function acctList(){
- const gs=[],seen={};S.accts.forEach(a=>{const g=!isCard(a)&&a.group;if(!g)gs.push([null,[a]]);else if(seen[g])seen[g].push(a);else{seen[g]=[a];gs.push([g,seen[g]])}});
- return gs.map(([g,as])=>g?`<div class="dh" style="padding-top:10px"><b style="color:var(--ink)">${E(g)}</b><span>合計 ${M(as.reduce((s,a)=>s+bal(a),0))}</span></div>${as.map(a=>acctLine(a,1)).join('')}`:acctLine(as[0])).join('');
+ const gs=[],seen={};S.accts.forEach(a=>{const g=a.type!=='cash'&&a.group;if(!g)gs.push([null,[a]]);else if(seen[g])seen[g].push(a);else{seen[g]=[a];gs.push([g,seen[g]])}});
+ return gs.map(([g,as])=>g?`<div class="dh" style="padding-top:10px"><b style="color:var(--ink)">${E(g)}</b><span>存款合計 ${M(as.filter(a=>!isCard(a)).reduce((s,a)=>s+conv(bal(a),a.cur,'TWD'),0))}${as.some(isCard)?'・卡費未繳 '+M(as.filter(isCard).reduce((s,a)=>s+cardInfo(a).owe,0)):''}</span></div>${as.map(a=>acctLine(a,1)).join('')}`:acctLine(as[0])).join('');
 }
 function vSet(){
  const la=livingAuto();
@@ -644,13 +644,15 @@ function sheetPayee(o){
  <label class="fl w"><span>備註</span><input value="${E(o.note)}" data-m="sheet.o.note" placeholder="例：每月 5 號前匯房租"></label></div>
  <div class="row" style="margin-top:14px;gap:8px">${o.id?'<button class="go r" data-a="delpayee">刪除</button>':''}<span class="sp"></span><button class="go" data-a="savepayee">儲存</button></div>`;
 }
+const grpList=()=>`<datalist id="grplist">${[...new Set(S.accts.map(a=>a.group).filter(Boolean))].map(g=>`<option value="${E(g)}">`).join('')}</datalist>`;
 function sheetAcct(o){
  const c=o.type==='card';
  return`<div class="row"><b class="sp" style="font-size:17px">${o.id?'編輯帳戶':'新增帳戶'}</b><button class="x" data-a="close">×</button></div>
  <div class="chips" style="margin:8px 0">${Object.keys(TY).map(k=>`<button class="chip ${o.type===k?'on':''}" data-a="at" data-i="${k}">${TY[k]}</button>`).join('')}</div>
  <div class="grid"><label class="fl w"><span>名稱</span><input value="${E(o.name)}" data-m="sheet.o.name" placeholder="${c?'例：國泰 CUBE 卡':o.type==='bank'?'例：活存、數存、薪轉':'例：錢包'}"></label>
- ${o.type==='bank'?`<div class="fl w"><span>幣別</span><div class="chips">${[['TWD','台幣'],['USD','美元（外幣帳戶）']].map(([k,n])=>`<button class="chip ${(o.cur||'TWD')===k?'on':''}" data-a="acur" data-i="${k}">${n}</button>`).join('')}</div></div><label class="fl w"><span>所屬銀行（有子帳戶的話，同一家銀行填一樣的名字）</span><input value="${E(o.group||'')}" data-m="sheet.o.group" list="grplist" placeholder="例：國泰世華"></label><datalist id="grplist">${[...new Set(S.accts.map(a=>a.group).filter(Boolean))].map(g=>`<option value="${E(g)}">`).join('')}</datalist>
+ ${o.type==='bank'?`<div class="fl w"><span>幣別</span><div class="chips">${[['TWD','台幣'],['USD','美元（外幣帳戶）']].map(([k,n])=>`<button class="chip ${(o.cur||'TWD')===k?'on':''}" data-a="acur" data-i="${k}">${n}</button>`).join('')}</div></div><label class="fl w"><span>所屬銀行（有子帳戶的話，同一家銀行填一樣的名字）</span><input value="${E(o.group||'')}" data-m="sheet.o.group" list="grplist" placeholder="例：國泰世華"></label>${grpList()}
  <label class="fl"><span>銀行代碼</span><input inputmode="numeric" value="${E(o.code||'')}" data-m="sheet.o.code" placeholder="例：013"></label><label class="fl"><span>帳號</span><input inputmode="numeric" value="${E(o.no||'')}" data-m="sheet.o.no" placeholder="匯款用的帳號"></label>`:''}
+ ${c?`<label class="fl w"><span>發卡銀行（選填；填一樣的名字會跟那家銀行的帳戶排在一起）</span><input value="${E(o.group||'')}" data-m="sheet.o.group" list="grplist" placeholder="例：國泰世華"></label>${grpList()}`:''}
  ${c?`<label class="fl w"><span>卡號末四碼（選填，方便辨認，不要填完整卡號）</span><input inputmode="numeric" maxlength="4" value="${E(o.last4||'')}" data-m="sheet.o.last4"></label>`:''}
  ${c?`<label class="fl"><span>每月幾號結帳</span><input inputmode="numeric" value="${E(o.close)}" data-m="sheet.o.close"></label>
  <label class="fl"><span>每月幾號前要繳</span><input inputmode="numeric" value="${E(o.due)}" data-m="sheet.o.due"></label>
@@ -953,7 +955,8 @@ const ACT={
   a.name=o.name.trim();a.type=o.type;
   if(old&&(old.cur||'TWD')!==(o.type==='bank'&&o.cur==='USD'?'USD':'TWD')&&S.tx.some(t=>t.acct===old.id||t.to===old.id))return toast('已經有紀錄的帳戶不能改幣別，請另外新增一個美元帳戶');
   if(o.type==='bank'&&o.cur==='USD')a.cur='USD';else delete a.cur;
-  if(o.type==='bank'){a.group=String(o.group||'').trim();a.code=String(o.code||'').replace(/\D/g,'').slice(0,3);a.no=String(o.no||'').replace(/[^\d-]/g,'')}else{delete a.group;delete a.code;delete a.no}
+  if(o.type==='card'){const g=String(o.group||'').trim();if(g)a.group=g;else delete a.group}
+  if(o.type==='bank'){a.group=String(o.group||'').trim();a.code=String(o.code||'').replace(/\D/g,'').slice(0,3);a.no=String(o.no||'').replace(/[^\d-]/g,'')}else{if(o.type!=='card')delete a.group;delete a.code;delete a.no}
   if(o.type==='card')a.last4=String(o.last4||'').replace(/\D/g,'').slice(-4);else delete a.last4;
   if(o.type==='card'){const c=+o.close,d=+o.due;if(!(c>=1&&c<=31&&d>=1&&d<=31))return toast('結帳日、繳款日請填 1～31');
    if(!old||+old.init!==(pAmt(o.init)||0)||!old.since)a.since=today();a.close=c;a.due=d;a.init=pAmt(o.init)||0}
