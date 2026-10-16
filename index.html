@@ -814,7 +814,7 @@ function areaView(){S.trips=S.trips||[];
  <div class="card"><b>👥 在${E(c)}可以約的人（${a.length}）</b>${cur?`<div class="sub" style="margin-top:2px">記錄的是 ${cur.date.replace(/-/g,'/')} 這次${tSum(cur)?'：'+tSum(cur):''}（點上面其他日期可以切換）</div>`:'<div class="sub" style="margin-top:2px">先在上面新增一次去的日期，就能記錄約了沒</div>'}${ppl||'<div class="sub" style="margin-top:6px">這裡還沒有新人或旁線。新人到資料填「居住縣市」或「常去的其他地方」，旁線在卡片裡填縣市。</div>'}</div>${pick}`}
 function list_v(){if(S.fc==='O')S.fc='N';
  const q=S.q.trim().toLowerCase(),mode=S.lv;
- const seg=`<div class="chips" style="margin-bottom:8px">${[['list','新人'],['area','地區'],['cat','分類'],['side','旁線・深線'],['grp','社團'],['zod','星座'],['life','靈數']].map(([k,n])=>`<button class="chip ${mode===k?'on':''}" data-lv="${k}">${n}</button>`).join('')}</div>`;
+ const seg=`<div class="chips one" style="margin-bottom:8px;overflow-x:auto;scrollbar-width:none">${[['list','新人'],['area','地區'],['cat','分類'],['side','旁・深'],['grp','社團'],['zod','星座'],['life','靈數']].map(([k,n])=>`<button class="chip ${mode===k?'on':''}" data-lv="${k}">${n}</button>`).join('')}</div>`;
  if(mode==='cat')return `<h1>新人分類</h1>${seg}`+catBoard();
  if(mode==='side')return `<h1>旁線・深線名單</h1>${seg}`+sideView();
  if(mode==='area')return `<h1>地區聚會</h1>${seg}`+areaView();
