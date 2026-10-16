@@ -221,7 +221,7 @@ function renderMarkets(){
  if(!ms.length){$('mk').innerHTML='<div><span class="sub">大盤資料還沒準備好</span></div>';return}
  $('mk').innerHTML=ms.map(m=>{const ch=m.prev?m.p/m.prev-1:null,d=m.p-(m.prev||m.p);
   return`<div><span class="sub">${E(m.name)}</span><b>${m.p.toLocaleString('en-US',{maximumFractionDigits:m.sym==='TWD=X'?3:2,minimumFractionDigits:m.sym==='TWD=X'?3:2})}</b><span class="num ${cls(d)}" style="font-size:13px">${sg(d)}${Math.abs(d).toLocaleString('en-US',{maximumFractionDigits:m.sym==='TWD=X'?3:2})}　${pct(ch)}</span>${spark(m.spark,(m.spark&&m.spark.length>1?m.spark[m.spark.length-1]>=m.spark[0]:d>=0))}</div>`}).join('');
- const t=ms.find(m=>m.t);$('mkd').textContent=t?'近一個月走勢・'+md(iso(new Date(t.t*1000)))+' 報價':'';
+ const t=ms.find(m=>m.t);$('mkd').textContent=(ms.some(m=>m.spark&&m.spark.length>1)?'近一個月走勢・':'')+(t?md(iso(new Date(t.t*1000)))+' 報價':'');
 }
 
 function renderStocks(){
