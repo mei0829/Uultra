@@ -5,6 +5,7 @@
 只用 Python 內建模組；任何一個來源抓不到都會略過，不會讓整個網站部署失敗。
 """
 import html
+import http.cookiejar
 import json
 import os
 import re
@@ -66,7 +67,7 @@ FEEDS = [
     ('hot', 'intl', 'Reddit', reddit('worldnews')),
     # 創業
     ('startup', 'tw', None, gn('新創 OR 創業 OR 募資')),
-    ('startup', 'tw', '數位時代', 'https://www.bnext.com.tw/rss'),
+    ('startup', 'tw', None, gn('site:bnext.com.tw OR site:meet.bnext.com.tw')),
     ('startup', 'tw', None, gn('創業家 OR 小資創業 OR 加盟')),
     ('startup', 'intl', 'TechCrunch', 'https://techcrunch.com/category/startups/feed/'),
     ('startup', 'intl', None, gn('startup funding OR founders OR small business', 'en')),
@@ -90,8 +91,7 @@ FEEDS = [
     ('beauty', 'intl', 'Reddit', reddit('MakeupAddiction')),
     # 穿搭
     ('fashion', 'tw', None, gn('穿搭 OR 時尚 OR 服飾品牌')),
-    ('fashion', 'tw', 'PTT 女性穿搭板', ptt('WomenShopping')),
-    ('fashion', 'tw', 'PTT 男性穿搭板', ptt('MenClothes')),
+    ('fashion', 'tw', 'PTT 穿搭板', ptt('Mix_Match')),
     ('fashion', 'intl', 'Vogue', 'https://www.vogue.com/feed/rss'),
     ('fashion', 'intl', 'GQ', 'https://www.gq.com/feed/rss'),
     ('fashion', 'intl', None, gn('fashion trends OR outfit OR street style', 'en')),
@@ -260,13 +260,45 @@ def fetch_trends(geo):
     return []
 
 
+# Yahoo 擋沒有 cookie 的伺服器請求，先拿 cookie 和 crumb
+_JAR = http.cookiejar.CookieJar()
+_YOP = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(_JAR))
+_CRUMB = [None]
+
+
+def yget(url, timeout=15):
+    req = urllib.request.Request(url, headers={'User-Agent': UA, 'Accept': '*/*'})
+    with _YOP.open(req, timeout=timeout) as r:
+        return r.read()
+
+
+def crumb():
+    if _CRUMB[0] is None:
+        _CRUMB[0] = ''
+        for u in ('https://fc.yahoo.com', 'https://finance.yahoo.com/'):
+            try:
+                yget(u)
+            except Exception:
+                pass  # fc.yahoo.com 會回 404，但 cookie 已經拿到
+        try:
+            _CRUMB[0] = yget('https://query2.finance.yahoo.com/v1/test/getcrumb').decode().strip()
+        except Exception as e:
+            print('  Yahoo crumb 失敗', e)
+    return _CRUMB[0]
+
+
 def yahoo(sym, rng='1mo'):
-    url = f'https://query1.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(sym)}?range={rng}&interval=1d'
-    try:
-        j = json.loads(get(url, 15))
-    except Exception:
-        url = url.replace('query1', 'query2')
-        j = json.loads(get(url, 15))
+    c = crumb()
+    last = None
+    for host in ('query2', 'query1'):
+        url = f'https://{host}.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(sym)}?range={rng}&interval=1d' + (f'&crumb={urllib.parse.quote(c)}' if c else '')
+        try:
+            j = json.loads(yget(url))
+            break
+        except Exception as e:
+            last = e
+    else:
+        raise last
     r = j['chart']['result'][0]
     m = r['meta']
     closes = [c for c in (r.get('indicators', {}).get('quote', [{}])[0].get('close') or []) if c is not None]
@@ -280,15 +312,51 @@ def yahoo(sym, rng='1mo'):
             'spark': [round(c, 2) for c in closes[-22:]]}
 
 
+def stooq(sym):
+    """備用：stooq 的日線 CSV（Date,Open,High,Low,Close,Volume）。"""
+    rows = get(f'https://stooq.com/q/d/l/?s={urllib.parse.quote(sym)}&i=d').decode().strip().splitlines()[1:]
+    closes = [float(r.split(',')[4]) for r in rows[-23:] if r.count(',') >= 4]
+    if len(closes) < 2:
+        raise ValueError('stooq 沒資料')
+    d = rows[-1].split(',')[0]
+    t = int(datetime.fromisoformat(d).replace(tzinfo=timezone.utc).timestamp()) + 21 * 3600
+    return {'p': closes[-1], 'prev': closes[-2], 't': t, 'spark': closes[-22:]}
+
+
+STOOQ = {'^TWII': None, '^TWOII': None, '^GSPC': '^spx', '^IXIC': '^ndq', '^DJI': '^dji', '^SOX': '^sox', 'TWD=X': 'usdtwd'}
+
+
+def twse_index():
+    """備用：證交所的加權指數收盤。"""
+    js = json.loads(get('https://openapi.twse.com.tw/v1/exchangeReport/MI_INDEX'))
+    for x in js:
+        if str(x.get('指數', '')).strip() == '發行量加權股價指數':
+            p = float(str(x['收盤指數']).replace(',', ''))
+            ch = float(str(x['漲跌點數']).replace(',', ''))
+            if str(x.get('漲跌', '')).strip() == '-':
+                ch = -abs(ch)
+            return {'p': p, 'prev': p - ch, 't': None, 'spark': []}
+    raise ValueError('找不到加權指數')
+
+
 def fetch_markets():
     out = []
     for sym, name in MARKETS:
+        q = None
         try:
             q = yahoo(sym)
+        except Exception as e:
+            print(f'  Yahoo {sym} 失敗：{e}')
+            try:
+                if STOOQ.get(sym):
+                    q = stooq(STOOQ[sym])
+                elif sym == '^TWII':
+                    q = twse_index()
+            except Exception as e2:
+                print(f'  備用 {sym} 失敗：{e2}')
+        if q:
             q.update(sym=sym, name=name)
             out.append(q)
-        except Exception:
-            pass
     return out
 
 
@@ -300,10 +368,13 @@ def fetch_us():
     def one(s):
         try:
             q = yahoo(s, '5d')
-            q.pop('spark', None)
-            return s, q
         except Exception:
-            return s, None
+            try:
+                q = stooq(s.lower().replace('-', '.') + '.us')
+            except Exception:
+                return s, None
+        q.pop('spark', None)
+        return s, q
     with ThreadPoolExecutor(6) as ex:
         for s, q in ex.map(one, syms):
             if q:
@@ -311,13 +382,27 @@ def fetch_us():
     return out
 
 
+def fetch_reddit_slowly(feeds):
+    # Reddit 同時抓太多會回 429，一個一個慢慢抓
+    out = []
+    for f in feeds:
+        out.append(fetch_feed(f))
+        time.sleep(3)
+    return out
+
+
 def main(path):
     now = int(time.time())
+    rd = [f for f in FEEDS if f[2] == 'Reddit']
+    other = [f for f in FEEDS if f[2] != 'Reddit']
+    crumb()  # 先拿好，免得下面同時搶
     with ThreadPoolExecutor(10) as ex:
-        results = list(ex.map(fetch_feed, FEEDS))
+        rd_f = ex.submit(fetch_reddit_slowly, rd)
+        results = list(ex.map(fetch_feed, other))
         trends_f = {g: ex.submit(fetch_trends, g) for g in TRENDS}
         mk_f = ex.submit(fetch_markets)
         us_f = ex.submit(fetch_us)
+        results += rd_f.result()
     errors = [e for _, e in results if e]
     items, seen = [], set()
     for its, _ in results:
