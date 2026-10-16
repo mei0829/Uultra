@@ -65,7 +65,7 @@ python3 -m http.server 8000
 - 上面是大盤（台灣加權、櫃買、S&P 500、Nasdaq、道瓊、費城半導體、美元/台幣）和近一個月走勢。
 - 「我的股票」直接讀記帳裡記的持股：台股用證交所／櫃買中心的收盤價和漲跌，美股用網站每小時抓好的報價，算出今天持股賺賠多少。也可以加沒有買的自選股。
 - 熱門話題是 Google 熱搜（台灣、美國）。
-- 新聞分成：焦點、創業、經濟財經、美容美妝、穿搭、健康就醫、教師教育，可以切台灣／國際、搜尋。來源有 Google 新聞（聚合中央社、聯合、自由、經濟日報等各家媒體）、BBC 中文、數位時代、TechCrunch、CNBC、MarketWatch、Vogue、GQ、Allure、WHO、NYT、PTT 和 Reddit 的相關看板。英文標題旁邊有「翻譯標題」。
+- 新聞分成：焦點、創業、經濟財經、美容美妝、穿搭、健康就醫、教師教育，可以切台灣／國際、搜尋。來源有 Google 新聞（聚合中央社、聯合、自由、經濟日報等各家媒體）、BBC 中文、數位時代、TechCrunch、CNBC、MarketWatch、Vogue、GQ、Allure、WHO、NYT和 PTT 的相關看板。英文標題旁邊有「翻譯標題」。
 - 新聞和美股報價是 GitHub Actions 每小時抓一次（`.github/workflows/pages.yml` 的 `schedule`）。GitHub 只在**預設分支**跑排程，可能晚幾分鐘。
 - 美股報價預設抓常見的 ETF 和大型股。自己的美股沒出現的話，到倉庫 **Settings → Secrets and variables → Actions → Variables** 新增 `US_SYMBOLS`，例如 `PLTR,SOFI,O`。
 - 想加減新聞來源，改 `scripts/fetch_news.py` 裡的 `FEEDS`。

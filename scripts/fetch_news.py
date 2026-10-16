@@ -51,10 +51,6 @@ def ptt(board):
     return f'https://www.ptt.cc/atom/{board}.xml'
 
 
-def reddit(sub):
-    return f'https://www.reddit.com/r/{sub}/top/.rss?t=day'
-
-
 # (分類, 地區 tw/intl, 平台名稱, 網址)。平台名稱是 None 時，用新聞裡寫的媒體名稱。
 FEEDS = [
     # 焦點
@@ -64,15 +60,13 @@ FEEDS = [
     ('hot', 'intl', None, gn_topic('WORLD', 'tw')),
     ('hot', 'intl', None, gn_topic(None, 'en')),
     ('hot', 'intl', 'Hacker News', 'https://hnrss.org/frontpage?points=200'),
-    ('hot', 'intl', 'Reddit', reddit('worldnews')),
     # 創業
     ('startup', 'tw', None, gn('新創 OR 創業 OR 募資')),
     ('startup', 'tw', None, gn('site:bnext.com.tw OR site:meet.bnext.com.tw')),
     ('startup', 'tw', None, gn('創業家 OR 小資創業 OR 加盟')),
+    ('startup', 'intl', None, gn('site:entrepreneur.com OR site:inc.com', 'en')),
     ('startup', 'intl', 'TechCrunch', 'https://techcrunch.com/category/startups/feed/'),
     ('startup', 'intl', None, gn('startup funding OR founders OR small business', 'en')),
-    ('startup', 'intl', 'Reddit', reddit('startups')),
-    ('startup', 'intl', 'Reddit', reddit('Entrepreneur')),
     # 經濟財經
     ('econ', 'tw', None, gn_topic('BUSINESS', 'tw')),
     ('econ', 'tw', None, gn('台股 OR 央行 OR 通膨 OR 匯率')),
@@ -80,38 +74,35 @@ FEEDS = [
     ('econ', 'intl', None, gn_topic('BUSINESS', 'en')),
     ('econ', 'intl', 'CNBC', 'https://www.cnbc.com/id/100003114/device/rss/rss.html'),
     ('econ', 'intl', 'MarketWatch', 'https://feeds.content.dowjones.io/public/rss/mw_topstories'),
-    ('econ', 'intl', 'Reddit', reddit('Economics')),
     # 美容美妝
     ('beauty', 'tw', None, gn('美妝 OR 保養 OR 彩妝 OR 醫美')),
     ('beauty', 'tw', None, gn('防曬 OR 精華液 OR 敏感肌 OR 新品 美妝')),
     ('beauty', 'tw', 'PTT 美妝板', ptt('MakeUp')),
+    ('beauty', 'intl', None, gn('site:byrdie.com OR site:harpersbazaar.com beauty', 'en')),
     ('beauty', 'intl', 'Allure', 'https://www.allure.com/feed/rss'),
     ('beauty', 'intl', None, gn('skincare OR makeup OR beauty trends', 'en')),
-    ('beauty', 'intl', 'Reddit', reddit('SkincareAddiction')),
-    ('beauty', 'intl', 'Reddit', reddit('MakeupAddiction')),
     # 穿搭
     ('fashion', 'tw', None, gn('穿搭 OR 時尚 OR 服飾品牌')),
     ('fashion', 'tw', 'PTT 穿搭板', ptt('Mix_Match')),
     ('fashion', 'intl', 'Vogue', 'https://www.vogue.com/feed/rss'),
     ('fashion', 'intl', 'GQ', 'https://www.gq.com/feed/rss'),
     ('fashion', 'intl', None, gn('fashion trends OR outfit OR street style', 'en')),
-    ('fashion', 'intl', 'Reddit', reddit('femalefashionadvice')),
     # 健康就醫
     ('health', 'tw', None, gn_topic('HEALTH', 'tw')),
     ('health', 'tw', None, gn('疾管署 OR 健保 OR 就醫 OR 門診 OR 流感')),
     ('health', 'tw', None, gn('癌症 OR 糖尿病 OR 失智 OR 疾病 研究')),
     ('health', 'intl', None, gn_topic('HEALTH', 'en')),
+    ('health', 'intl', None, gn('site:medicalnewstoday.com OR site:health.harvard.edu', 'en')),
     ('health', 'intl', 'WHO', 'https://www.who.int/rss-feeds/news-english.xml'),
     ('health', 'intl', 'BBC Health', 'https://feeds.bbci.co.uk/news/health/rss.xml'),
     ('health', 'intl', 'NYT Health', 'https://rss.nytimes.com/services/xml/rss/nyt/Health.xml'),
-    ('health', 'intl', 'Reddit', reddit('health')),
     # 教師教育
     ('teacher', 'tw', None, gn('教師 OR 老師 OR 教甄 OR 代理教師')),
     ('teacher', 'tw', None, gn('教育部 OR 課綱 OR 學校 OR 校園')),
     ('teacher', 'tw', 'PTT 教甄板', ptt('studyteacher')),
     ('teacher', 'tw', 'PTT 教育板', ptt('Education')),
+    ('teacher', 'intl', None, gn('site:edweek.org OR site:the74million.org', 'en')),
     ('teacher', 'intl', None, gn('teachers OR teacher shortage OR classroom', 'en')),
-    ('teacher', 'intl', 'Reddit', reddit('Teachers')),
 ]
 
 TRENDS = {
@@ -222,8 +213,6 @@ def fetch_feed(f):
             i['r'] = region
             if i['s'].startswith('PTT') or name and name.startswith('PTT'):
                 i['p'] = 'PTT'
-            elif name == 'Reddit':
-                i['p'] = 'Reddit'
             elif name == 'Hacker News':
                 i['p'] = 'HN'
         return items, None
@@ -339,13 +328,51 @@ def twse_index():
     raise ValueError('找不到加權指數')
 
 
+CNBC = {'^TWII': '.TWII', '^TWOII': None, '^GSPC': '.SPX', '^IXIC': '.IXIC', '^DJI': '.DJI', '^SOX': '.SOX', 'TWD=X': 'TWD='}
+
+
+def cnbc(symbols):
+    """CNBC 公開報價（一次可以查很多檔），回傳 {代號: {p, prev, t}}。"""
+    out = {}
+    for i in range(0, len(symbols), 40):
+        part = symbols[i:i + 40]
+        url = ('https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols='
+               + urllib.parse.quote('|'.join(part), safe='|') + '&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=0&output=json')
+        try:
+            j = json.loads(get(url, 20))
+        except Exception as e:
+            print('  CNBC 失敗', e)
+            continue
+        qs = j.get('FormattedQuoteResult', {}).get('FormattedQuote', [])
+        for q in qs if isinstance(qs, list) else [qs]:
+            try:
+                p = float(str(q.get('last', '')).replace(',', ''))
+                prev = q.get('previous_day_closing')
+                prev = float(str(prev).replace(',', '')) if prev not in (None, '') else p - float(str(q.get('change', '0')).replace(',', '').replace('UNCH', '0'))
+                t = q.get('last_time')
+                try:
+                    t = int(datetime.fromisoformat(t).timestamp()) if t else None
+                except Exception:
+                    t = None
+                out[q['symbol']] = {'p': p, 'prev': prev, 't': t}
+            except Exception:
+                pass
+    return out
+
+
 def fetch_markets():
     out = []
+    cq = cnbc([c for c in CNBC.values() if c])
     for sym, name in MARKETS:
         q = None
         try:
             q = yahoo(sym)
         except Exception as e:
+            if cq.get(CNBC.get(sym)):
+                q = dict(cq[CNBC[sym]], spark=[])
+                q.update(sym=sym, name=name)
+                out.append(q)
+                continue
             print(f'  Yahoo {sym} 失敗：{e}')
             try:
                 if STOOQ.get(sym):
@@ -364,6 +391,12 @@ def fetch_us():
     extra = [s.strip().upper() for s in re.split(r'[,\s]+', os.environ.get('US_SYMBOLS', '')) if s.strip()]
     syms = list(dict.fromkeys(US_DEFAULT + extra))
     out = {}
+    cq = cnbc([x.replace('-', '.') for x in syms])
+    for x in syms:
+        q = cq.get(x.replace('-', '.'))
+        if q:
+            out[x] = q
+    syms = [x for x in syms if x not in out]
 
     def one(s):
         try:
@@ -382,27 +415,14 @@ def fetch_us():
     return out
 
 
-def fetch_reddit_slowly(feeds):
-    # Reddit 同時抓太多會回 429，一個一個慢慢抓
-    out = []
-    for f in feeds:
-        out.append(fetch_feed(f))
-        time.sleep(3)
-    return out
-
-
 def main(path):
     now = int(time.time())
-    rd = [f for f in FEEDS if f[2] == 'Reddit']
-    other = [f for f in FEEDS if f[2] != 'Reddit']
     crumb()  # 先拿好，免得下面同時搶
     with ThreadPoolExecutor(10) as ex:
-        rd_f = ex.submit(fetch_reddit_slowly, rd)
-        results = list(ex.map(fetch_feed, other))
+        results = list(ex.map(fetch_feed, FEEDS))
         trends_f = {g: ex.submit(fetch_trends, g) for g in TRENDS}
         mk_f = ex.submit(fetch_markets)
         us_f = ex.submit(fetch_us)
-        results += rd_f.result()
     errors = [e for _, e in results if e]
     items, seen = [], set()
     for its, _ in results:

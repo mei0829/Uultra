@@ -289,7 +289,7 @@ function renderHead(){
  if(!N){$('upd').textContent='新聞還沒更新';return}
  const d=new Date(N.updated*1000),old=Date.now()/1000-N.updated>3*3600;
  $('upd').textContent=(old?'⚠︎ ':'')+'新聞更新於 '+(iso(d)===iso(new Date())?'今天 ':md(iso(d))+' ')+hm(d);
- $('srcs').textContent=N.sources?`${N.sources.ok} 個來源・國內外媒體、PTT、Reddit`:'';
+ $('srcs').textContent=N.sources?`${N.sources.ok} 個來源・國內外媒體、PTT`:'';
 }
 
 async function loadNews(){
