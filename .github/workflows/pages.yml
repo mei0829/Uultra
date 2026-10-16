@@ -3,6 +3,9 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main, claude/website-development-ai67th]
+  # 每小時更新一次新聞和股價（GitHub 只會在預設分支上跑排程，時間可能晚幾分鐘）
+  schedule:
+    - cron: '7 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -23,7 +26,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Prepare site
-        run: mkdir _site && cp index.html money.html auth.js firebase-config.js manifest.webmanifest money.webmanifest icon.svg money.svg _site/
+        run: mkdir _site && cp index.html money.html news.html auth.js firebase-config.js manifest.webmanifest money.webmanifest news.webmanifest icon.svg money.svg news.svg _site/
+      - name: Fetch news and quotes
+        # 抓不到也照樣部署，網頁會顯示「新聞還沒更新」
+        continue-on-error: true
+        timeout-minutes: 6
+        env:
+          US_SYMBOLS: ${{ vars.US_SYMBOLS }}
+        run: python3 scripts/fetch_news.py _site/news.json
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

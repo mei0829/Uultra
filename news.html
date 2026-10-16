@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4F6F8C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="時事股市">
+<link rel="manifest" href="news.webmanifest">
+<link rel="icon" href="news.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="news.svg">
+<title>時事與股市</title>
+<script>
+// 顏色風格跟「我的記帳」共用（在記帳的「設定 → 風格」換）
+const SKINS={blue:['藍灰','#E9EEF3','#fff','#1E2935','#697686','#D3DCE5','#4F6F8C','#8DB0D0'],rose:['粉嫩','#F6EEEA','#FFFCFA','#3A2826','#8C746F','#E9D8D1','#A8625F','#E0A09C'],forest:['森林','#EEF1EC','#fff','#1D2A23','#6F7B73','#DCE2DA','#4E7A62','#9DBFAB'],tea:['奶茶','#F5F0E8','#FFFDF8','#3B3026','#85776A','#E6DCCD','#8A6A4A','#D2B48C'],purple:['薰衣草','#EFECF6','#fff','#2A2438','#776F88','#DDD7EA','#6B5B9A','#B4A6E6']};
+function applyTheme(skin,mode){
+ const k=SKINS[skin]?skin:'blue',s=SKINS[k],mq=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)');
+ const dark=mode==='dark'||(mode!=='light'&&!!(mq&&mq.matches));
+ const v=dark?{bg:'#11161C',card:'#1A222B',ink:'#E8EEF4',sub:'#93A1B0',line:'#2A3642',acc:s[7],on:'#11161C'}:{bg:s[1],card:s[2],ink:s[3],sub:s[4],line:s[5],acc:s[6],on:'#fff'};
+ const r=document.documentElement;Object.keys(v).forEach(n=>r.style.setProperty('--'+n,v[n]));r.dataset.theme=dark?'dark':'light';
+ const m=document.querySelector('meta[name=theme-color]');if(m)m.content=v.bg;
+}
+try{const t=JSON.parse(localStorage.getItem('money-theme')||'null');if(t)applyTheme(t[0],t[1])}catch(e){}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#E9EEF3;--card:#fff;--ink:#1E2935;--sub:#697686;--line:#D3DCE5;--acc:#4F6F8C;--on:#fff;--up:#D64545;--down:#2E8B57;--upbg:#FBEAEA;--downbg:#E6F3EC}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#11161C;--card:#1A222B;--ink:#E8EEF4;--sub:#93A1B0;--line:#2A3642;--acc:#8DB0D0;--on:#11161C;--up:#F07070;--down:#5CC08A;--upbg:#3A2224;--downbg:#1D3328;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#11161C;--card:#1A222B;--ink:#E8EEF4;--sub:#93A1B0;--line:#2A3642;--acc:#8DB0D0;--on:#11161C;--up:#F07070;--down:#5CC08A;--upbg:#3A2224;--downbg:#1D3328;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Noto Sans TC","PingFang TC",-apple-system,"Microsoft JhengHei",sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+a{color:var(--acc)}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));padding-bottom:calc(40px + env(safe-area-inset-bottom,0px))}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px 8px;display:flex;align-items:center;gap:10px}
+header h1{font-size:22px;margin:0;font-weight:700;flex:1;min-width:0}
+header h1 small{display:block;font-size:12px;font-weight:400;color:var(--sub)}
+.ib{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.ib:focus-visible,.chip:focus-visible,button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+h2{font-size:15px;margin:18px 2px 8px;font-weight:700;display:flex;align-items:baseline;gap:8px}
+h2 span{font-size:12px;font-weight:400;color:var(--sub)}
+.card{background:var(--card);border-radius:16px;padding:12px 14px;border:1px solid var(--line);overflow-wrap:anywhere}
+.sub{color:var(--sub);font-size:13px}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.up{color:var(--up)}.down{color:var(--down)}
+/* 大盤 */
+.mk{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(132px,1fr);gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.mk>div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:9px 11px;min-width:0}
+.mk b{display:block;font-size:16px;font-variant-numeric:tabular-nums}
+.mk .sub{font-size:12px}
+.mk svg{display:block;width:100%;height:26px;margin-top:4px}
+/* 持股 */
+.sum{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-end}
+.sum .big{font-size:26px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums}
+.st{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:2px 12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.st:first-child{border-top:0}
+.st .nm b{font-size:15px}.st .nm .sub{font-size:12px}
+.st .px{text-align:right;font-variant-numeric:tabular-nums}
+.badge{display:inline-block;min-width:76px;text-align:center;border-radius:8px;padding:3px 8px;font-weight:700;font-variant-numeric:tabular-nums;font-size:14px;background:var(--bg)}
+.badge.up{background:var(--upbg)}.badge.down{background:var(--downbg)}
+.links{grid-column:1/-1;display:flex;gap:12px;font-size:12px;color:var(--sub);flex-wrap:wrap}
+.links a{text-decoration:none}
+.links button{border:0;background:none;color:var(--sub);font:inherit;padding:0;cursor:pointer;text-decoration:underline}
+.pill{display:inline-block;font-size:11px;border-radius:6px;padding:0 5px;border:1px solid var(--line);color:var(--sub);vertical-align:1px}
+.add{display:flex;gap:8px;margin-top:10px}
+.add input{flex:1;min-width:0;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:7px 10px;height:38px}
+.go{background:var(--acc);color:var(--on);border:0;border-radius:10px;font:inherit;font-weight:700;padding:0 14px;cursor:pointer;flex:none}
+/* 熱門話題 */
+.tr{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:10px}
+.tr h3{margin:0 0 6px;font-size:13px;color:var(--sub);font-weight:500}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:20px;padding:3px 10px;font-size:13px;text-decoration:none}
+.tag i{font-style:normal;color:var(--sub);font-size:11px;margin-left:4px}
+/* 新聞 */
+.bar{position:sticky;top:calc(env(safe-area-inset-top,0px) + 58px);z-index:4;background:var(--bg);padding-block:6px;display:flex;flex-direction:column;gap:6px}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:20px;padding:4px 12px;font:inherit;font-size:14px;cursor:pointer}
+.chip.on{background:var(--acc);border-color:var(--acc);color:var(--on);font-weight:700}
+.chip small{opacity:.7;margin-left:3px;font-size:11px}
+.filt{display:flex;gap:6px;align-items:center}
+.filt input{flex:1;min-width:0;font:inherit;font-size:14px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:5px 10px;height:34px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex:none}
+.seg button{border:0;background:var(--card);color:var(--sub);font:inherit;font-size:13px;padding:0 10px;height:32px;cursor:pointer}
+.seg button.on{background:var(--acc);color:var(--on);font-weight:700}
+.nl{display:flex;flex-direction:column}
+.ni{padding:11px 2px;border-top:1px solid var(--line)}
+.ni:first-child{border-top:0}
+.ni a.t{color:var(--ink);text-decoration:none;font-size:15.5px;line-height:1.45;font-weight:500;display:block}
+.ni a.t:visited{color:var(--sub)}
+.ni p{margin:3px 0 0;color:var(--sub);font-size:13px}
+.ni .m{margin-top:4px;display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:var(--sub);align-items:center}
+.ni .m a{color:var(--sub)}
+.tw{color:var(--acc);border-color:var(--acc)}
+.more{display:block;width:100%;margin-top:10px;border:1px solid var(--line);background:var(--card);color:var(--acc);border-radius:12px;padding:10px;font:inherit;font-weight:700;cursor:pointer}
+.empty{padding:18px 4px;text-align:center}
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:10px;font-size:14px;z-index:20;max-width:90vw}
+@media (max-width:420px){.badge{min-width:68px;font-size:13px}.st{gap:2px 8px}}
+@media (prefers-reduced-motion:no-preference){.ni,.st{animation:fi .25s ease-out}@keyframes fi{from{opacity:.4}to{opacity:1}}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+ <h1>時事與股市<small id="upd">載入中…</small></h1>
+ <button class="ib" id="eye" data-a="eye" aria-label="隱藏或顯示金額">隱藏金額</button>
+ <a class="ib" href="money.html">記帳</a>
+</header>
+
+<section aria-labelledby="h-mk">
+ <h2 id="h-mk">大盤 <span id="mkd"></span></h2>
+ <div class="mk" id="mk"><div><span class="sub">大盤資料載入中…</span></div></div>
+</section>
+
+<section aria-labelledby="h-st">
+ <h2 id="h-st">我的股票 <span>紅漲綠跌</span></h2>
+ <div class="card" id="st"><div class="sub">讀取持股中…</div></div>
+</section>
+
+<section aria-labelledby="h-tr">
+ <h2 id="h-tr">熱門話題 <span>Google 熱搜，點了直接搜尋</span></h2>
+ <div class="tr" id="tr"></div>
+</section>
+
+<section aria-labelledby="h-nw">
+ <h2 id="h-nw">新聞 <span id="srcs"></span></h2>
+ <div class="bar">
+  <div class="chips" id="cats" role="tablist" aria-label="新聞分類"></div>
+  <div class="filt">
+   <input id="q" type="search" placeholder="搜尋標題、媒體" aria-label="搜尋新聞">
+   <div class="seg" role="group" aria-label="地區"><button data-a="reg" data-i="all">全部</button><button data-a="reg" data-i="tw">台灣</button><button data-a="reg" data-i="intl">國際</button></div>
+  </div>
+ </div>
+ <div class="card"><div class="nl" id="nl"><div class="sub empty">新聞載入中…</div></div></div>
+</section>
+</div>
+<div id="toast" hidden></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const E=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LG=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}};
+const LS=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+function toast(m){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,2600)}
+
+let HIDE=false;try{HIDE=localStorage.getItem('money-hide')==='1'}catch(e){}
+// 持股來自「我的記帳」存在這支手機的資料
+let S={trades:[],prices:{},fx:{USD:32}};try{const r=localStorage.getItem('money-v1');if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+let WATCH=LG('news-watch',[]);
+const U=Object.assign({cat:'all',reg:'all',q:'',n:40},LG('news-ui',{}));U.q='';U.n=40;
+let N=null,Q={},TW=null,QT=0;
+
+// ── 小工具 ──
+const num=s=>{const v=parseFloat(String(s==null?'':s).replace(/[,+\s]/g,''));return isFinite(v)?v:NaN};
+const fx=()=>{const m=N&&N.markets&&N.markets.find(x=>x.sym==='TWD=X');return m&&m.p>10?m.p:(S.fx&&+S.fx.USD)||32};
+const toTWD=(v,c)=>c==='USD'?v*fx():v;
+const M=v=>HIDE?'$ ••••':(v<-0.5?'-':'')+'$'+Math.round(Math.abs(v)).toLocaleString('zh-TW');
+const pxf=(v,c)=>v==null||!isFinite(v)?'—':(c==='USD'?'$':'')+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:v>=1000?2:v>=10?2:3});
+const cls=v=>v>1e-9?'up':v<-1e-9?'down':'';
+const sg=v=>v>1e-9?'+':v<-1e-9?'−':'';
+const pct=v=>v==null||!isFinite(v)?'—':sg(v)+Math.abs(v*100).toFixed(2)+'%';
+const pad=n=>String(n).padStart(2,'0');
+const hm=d=>pad(d.getHours())+':'+pad(d.getMinutes());
+const md=s=>s?(+s.slice(5,7))+'/'+(+s.slice(8,10)):'';
+const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const roc=s=>{s=String(s||'').trim();const m=s.match(/^(\d{2,3})(\d{2})(\d{2})$/);return m?(+m[1]+1911)+'-'+m[2]+'-'+m[3]:''};
+function ago(t){if(!t)return'';const s=Date.now()/1000-t;if(s<3600)return Math.max(1,Math.round(s/60))+' 分鐘前';if(s<86400)return Math.round(s/3600)+' 小時前';const d=new Date(t*1000);return(d.getMonth()+1)+'/'+d.getDate()}
+const isUS=sym=>/^[A-Z][A-Z.\-]*$/.test(sym);
+
+function holdings(){
+ const by={};
+ (S.trades||[]).forEach(t=>{const h=by[t.sym]=by[t.sym]||{sym:t.sym,name:'',sh:0,cost:0,cur:t.cur||'TWD'};if(t.name)h.name=t.name;
+  if(t.type==='buy'){h.sh+=+t.sh||0;h.cost+=(+t.sh||0)*(+t.px||0)+(+t.fee||0)}
+  else if(t.type==='sell'){const sh=Math.min(+t.sh||0,h.sh);h.cost-=h.sh?h.cost/h.sh*sh:0;h.sh-=sh}});
+ return Object.values(by).filter(h=>h.sh>1e-9);
+}
+function rows(){const hs=holdings(),own=new Set(hs.map(h=>h.sym));return hs.concat(WATCH.filter(w=>!own.has(w.sym)).map(w=>({sym:w.sym,name:w.name||'',sh:0,cost:0,cur:w.cur,watch:1})))}
+
+// ── 股價 ──
+// 台股：證交所（上市）＋櫃買中心（上櫃）的每日收盤資料，含漲跌
+async function loadTW(){
+ const m={};
+ await Promise.all([['https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL','Code','Name','ClosingPrice'],['https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes','SecuritiesCompanyCode','CompanyName','Close']].map(async([u,kc,kn,kp])=>{
+  try{const r=await fetch(u);if(!r.ok)return;const js=await r.json();if(!Array.isArray(js))return;
+   for(const x of js){const c=String(x[kc]||'').trim().toUpperCase(),p=num(x[kp]),ch=num(x.Change);if(!c||!(p>0))continue;
+    m[c]={name:String(x[kn]||'').trim(),p,prev:isFinite(ch)?p-ch:null,d:roc(x.Date),src:'收盤'}}}catch(e){}}));
+ if(Object.keys(m).length)TW=m;
+}
+// 美股：網站每小時先抓好的報價；沒有的話試著直接抓
+async function usQuote(sym){
+ const h=N&&N.us&&N.us[sym];
+ if(h)return{p:h.p,prev:h.prev,d:h.t?iso(new Date(h.t*1000)):'',src:'報價'};
+ for(const host of['query1','query2']){try{const r=await fetch(`https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?range=1d&interval=1d`);if(!r.ok)continue;const mt=(await r.json()).chart.result[0].meta,p=+mt.regularMarketPrice;if(p>0)return{p,prev:+(mt.previousClose||mt.chartPreviousClose)||null,d:iso(new Date(mt.regularMarketTime*1000)),src:'即時'}}catch(e){}}
+ return null;
+}
+async function loadQuotes(force){
+ const rs=rows();if(!rs.length){renderStocks();return}
+ if(force)TW=null;
+ if(rs.some(r=>r.cur!=='USD')&&!TW)await loadTW();
+ const us=rs.filter(r=>r.cur==='USD');
+ const got=await Promise.all(us.map(r=>usQuote(r.sym)));
+ Q={};
+ rs.forEach(r=>{if(r.cur!=='USD'&&TW&&TW[r.sym])Q[r.sym]=TW[r.sym]});
+ us.forEach((r,i)=>{if(got[i])Q[r.sym]=got[i]});
+ // 抓不到的用記帳裡存的最後股價（沒有漲跌）
+ rs.forEach(r=>{if(!Q[r.sym]&&S.prices&&S.prices[r.sym])Q[r.sym]={p:+S.prices[r.sym].p,prev:null,d:S.prices[r.sym].d||'',src:'記帳裡的'}});
+ QT=Date.now();renderStocks();
+}
+
+function spark(arr,up){
+ if(!arr||arr.length<2)return'';
+ const lo=Math.min(...arr),hi=Math.max(...arr),w=120,h=26,rg=hi-lo||1;
+ const pts=arr.map((v,i)=>[(i/(arr.length-1))*w,h-2-((v-lo)/rg)*(h-4)]);
+ const d=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join('');
+ const c=up?'var(--up)':'var(--down)';
+ return`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><path d="${d}L${w},${h}L0,${h}Z" fill="${c}" opacity=".12"/><path d="${d}" fill="none" stroke="${c}" stroke-width="1.6" vector-effect="non-scaling-stroke"/><circle cx="${pts[pts.length-1][0]}" cy="${pts[pts.length-1][1]}" r="2.2" fill="${c}"/></svg>`;
+}
+function renderMarkets(){
+ const ms=N&&N.markets||[];
+ if(!ms.length){$('mk').innerHTML='<div><span class="sub">大盤資料還沒準備好</span></div>';return}
+ $('mk').innerHTML=ms.map(m=>{const ch=m.prev?m.p/m.prev-1:null,d=m.p-(m.prev||m.p);
+  return`<div><span class="sub">${E(m.name)}</span><b>${m.p.toLocaleString('en-US',{maximumFractionDigits:m.sym==='TWD=X'?3:2,minimumFractionDigits:m.sym==='TWD=X'?3:2})}</b><span class="num ${cls(d)}" style="font-size:13px">${sg(d)}${Math.abs(d).toLocaleString('en-US',{maximumFractionDigits:m.sym==='TWD=X'?3:2})}　${pct(ch)}</span>${spark(m.spark,(m.spark&&m.spark.length>1?m.spark[m.spark.length-1]>=m.spark[0]:d>=0))}</div>`}).join('');
+ const t=ms.find(m=>m.t);$('mkd').textContent=(ms.some(m=>m.spark&&m.spark.length>1)?'近一個月走勢・':'')+(t?md(iso(new Date(t.t*1000)))+' 報價':'');
+}
+
+function renderStocks(){
+ const rs=rows();
+ let h='';
+ if(!rs.length){
+  h=`<div class="sub">這支手機還沒有持股資料。到 <a href="money.html">記帳 → 更多 → 股票</a> 記錄買進，這裡就會出現；換手機的話先打開記帳登入一次。也可以先在下面加自選股。</div>`;
+ }else{
+  const own=rs.filter(r=>!r.watch);
+  let val=0,day=0,cost=0,okd=0,up=0,dn=0;
+  own.forEach(r=>{const q=Q[r.sym];if(!q)return;val+=toTWD(r.sh*q.p,r.cur);cost+=toTWD(r.cost,r.cur);if(q.prev){const d=r.sh*(q.p-q.prev);day+=toTWD(d,r.cur);okd++;if(q.p>q.prev)up++;else if(q.p<q.prev)dn++}});
+  if(own.length)h+=`<div class="sum"><div><div class="sub">今天持股漲跌</div><div class="big ${cls(day)}">${okd?(HIDE?'$ ••••':sg(day)+M(Math.abs(day))):'—'}</div></div>
+   <div><div class="sub">漲跌幅</div><div class="num ${cls(day)}" style="font-size:17px;font-weight:700">${okd&&val-day>0?pct(day/(val-day)):'—'}</div></div>
+   <div><div class="sub">市值</div><div class="num" style="font-size:17px;font-weight:700">${val?M(val):'—'}</div></div>
+   <div><div class="sub">還沒賣的賺賠</div><div class="num ${cls(val-cost)}" style="font-size:17px;font-weight:700">${val&&cost?(HIDE?'$ ••••':sg(val-cost)+M(Math.abs(val-cost))):'—'}</div></div></div>
+   <div class="sub" style="margin:6px 0 4px">${up} 檔漲、${dn} 檔跌${own.some(r=>r.cur==='USD')?'・美股以 1 美元 = '+fx().toFixed(2)+' 台幣換算':''}</div>`;
+  const order=rs.slice().sort((a,b)=>(a.watch?1:0)-(b.watch?1:0)||Math.abs(chg(b))-Math.abs(chg(a)));
+  h+='<div>'+order.map(r=>{const q=Q[r.sym],d=q&&q.prev?q.p-q.prev:null,p=q&&q.prev?q.p/q.prev-1:null,name=r.name||(q&&q.name)||'';
+   const yurl=r.cur==='USD'?`https://finance.yahoo.com/quote/${encodeURIComponent(r.sym)}/news`:`https://tw.stock.yahoo.com/quote/${encodeURIComponent(r.sym)}/news`;
+   const gurl=`https://news.google.com/search?q=${encodeURIComponent((name||r.sym)+(r.cur==='USD'?' stock':' 股'))}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
+   return`<div class="st"><div class="nm"><b>${E(r.sym)}</b> ${E(name)} ${r.cur==='USD'?'<span class="pill">美股</span>':''}${r.watch?' <span class="pill">自選</span>':''}
+    <div class="sub">${r.watch?'沒有持股':`${+r.sh.toFixed(4)} 股`+(d!=null?`・今天 <span class="${cls(d)}">${HIDE?'••••':sg(d)+(r.cur==='USD'?'US$'+Math.abs(r.sh*d).toFixed(2):'$'+Math.round(Math.abs(r.sh*d)).toLocaleString('zh-TW'))}</span>`:'')}${q&&q.d?'・'+md(q.d)+' '+q.src:''}</div></div>
+    <div class="px num">${q?pxf(q.p,r.cur):'—'}<div class="sub num ${cls(d)}">${d!=null?sg(d)+Math.abs(d).toFixed(2):q?'沒有漲跌':'抓不到'}</div></div>
+    <span class="badge ${cls(d)}">${pct(p)}</span>
+    <div class="links"><a href="${yurl}" target="_blank" rel="noopener">Yahoo 股市新聞 ↗</a><a href="${gurl}" target="_blank" rel="noopener">Google 新聞 ↗</a>${r.watch?`<button data-a="unwatch" data-i="${E(r.sym)}">移除自選</button>`:''}</div></div>`}).join('')+'</div>';
+ }
+ h+=`<form class="add" id="addf"><input id="addsym" placeholder="加自選股，例：2330、AAPL" autocomplete="off" aria-label="自選股代號"><button class="go" type="submit">加入</button></form>
+  <div class="sub" style="margin-top:6px">${QT?'股價更新於 '+hm(new Date(QT))+'・':''}台股是證交所／櫃買中心的收盤價（盤中請點 Yahoo 看即時）；美股每小時更新。<button class="ib" style="padding:2px 8px;font-size:12px" data-a="reload">重新整理</button></div>`;
+ $('st').innerHTML=h;
+}
+const chg=r=>{const q=Q[r.sym];return q&&q.prev?q.p/q.prev-1:0};
+
+// ── 熱門話題 ──
+function renderTrends(){
+ const t=N&&N.trends||{};
+ const box=(k,label,hl)=>{const xs=(t[k]||[]).slice(0,16);if(!xs.length)return'';
+  return`<div class="card"><h3>${label}</h3><div class="tags">${xs.map(x=>`<a class="tag" href="https://www.google.com/search?q=${encodeURIComponent(x.q)}&hl=${hl}" target="_blank" rel="noopener">${E(x.q)}${x.n?`<i>${E(x.n)}</i>`:''}</a>`).join('')}</div></div>`};
+ const h=box('TW','台灣正在搜尋','zh-TW')+box('US','美國正在搜尋','zh-TW');
+ $('tr').innerHTML=h||'<div class="card sub">熱搜還沒抓到，下次更新再看看。</div>';
+}
+
+// ── 新聞 ──
+const REG={tw:'台灣',intl:'國際'};
+function filtered(cat){
+ const q=U.q.trim().toLowerCase();
+ return(N&&N.items||[]).filter(i=>(cat==='all'||i.c===cat)&&(U.reg==='all'||i.r===U.reg)&&(!q||(i.t+' '+i.s+' '+(i.x||'')).toLowerCase().includes(q)));
+}
+function renderNews(){
+ const cats=[{k:'all',n:'全部'}].concat(N&&N.cats||[]);
+ $('cats').innerHTML=cats.map(c=>`<button class="chip ${U.cat===c.k?'on':''}" role="tab" aria-selected="${U.cat===c.k}" data-a="cat" data-i="${c.k}">${E(c.n)}<small>${filtered(c.k).length}</small></button>`).join('');
+ document.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('on',b.dataset.i===U.reg));
+ if(!N){$('nl').innerHTML='<div class="sub empty">新聞還沒準備好。網站每小時會自動抓一次，第一次設定好要等 GitHub 跑完（約 3 分鐘）。</div>';return}
+ const xs=filtered(U.cat);
+ if(!xs.length){$('nl').innerHTML=`<div class="sub empty">${U.q?'找不到「'+E(U.q)+'」相關的新聞':'這個分類目前沒有新聞'}</div>`;return}
+ const catName=Object.fromEntries((N.cats||[]).map(c=>[c.k,c.n]));
+ $('nl').innerHTML=xs.slice(0,U.n).map(i=>{
+  const en=i.r==='intl'&&!/[぀-ヿ一-鿿]/.test(i.t);
+  return`<div class="ni"><a class="t" href="${E(i.u)}" target="_blank" rel="noopener">${E(i.t)}</a>${i.x?`<p>${E(i.x)}</p>`:''}
+  <div class="m"><span class="pill ${i.r==='tw'?'tw':''}">${REG[i.r]||''}</span>${U.cat==='all'?`<span>${E(catName[i.c]||'')}</span>`:''}<span>${E(i.s||i.p||'')}</span><span>${ago(i.d)}</span>${en?`<a href="https://translate.google.com/?sl=auto&tl=zh-TW&text=${encodeURIComponent(i.t)}&op=translate" target="_blank" rel="noopener">翻譯標題</a>`:''}</div></div>`}).join('')
+  +(xs.length>U.n?`<button class="more" data-a="more">再顯示 ${Math.min(40,xs.length-U.n)} 則（共 ${xs.length} 則）</button>`:'');
+}
+
+function renderHead(){
+ $('eye').textContent=HIDE?'顯示金額':'隱藏金額';
+ if(!N){$('upd').textContent='新聞還沒更新';return}
+ const d=new Date(N.updated*1000),old=Date.now()/1000-N.updated>3*3600;
+ $('upd').textContent=(old?'⚠︎ ':'')+'新聞更新於 '+(iso(d)===iso(new Date())?'今天 ':md(iso(d))+' ')+hm(d);
+ $('srcs').textContent=N.sources?`${N.sources.ok} 個來源・國內外媒體、PTT`:'';
+}
+
+async function loadNews(){
+ try{const r=await fetch('news.json?t='+Math.floor(Date.now()/300000),{cache:'no-cache'});if(r.ok)N=await r.json()}catch(e){}
+ renderHead();renderMarkets();renderTrends();renderNews();
+}
+async function boot(){
+ renderHead();renderStocks();renderNews();
+ await loadNews();
+ await loadQuotes();
+}
+
+// ── 動作 ──
+const ACT={
+ cat:i=>{U.cat=i;U.n=40;LS('news-ui',{cat:U.cat,reg:U.reg});renderNews();const b=document.querySelector('.bar');if(b.getBoundingClientRect().top<70)window.scrollTo({top:window.scrollY+document.getElementById('nl').getBoundingClientRect().top-160})},
+ reg:i=>{U.reg=i;U.n=40;LS('news-ui',{cat:U.cat,reg:U.reg});renderNews()},
+ more:()=>{U.n+=40;renderNews()},
+ eye:()=>{HIDE=!HIDE;try{localStorage.setItem('money-hide',HIDE?'1':'0')}catch(e){}renderHead();renderStocks()},
+ reload:async()=>{toast('更新中…');await loadNews();await loadQuotes(true);toast('已更新')},
+ unwatch:i=>{WATCH=WATCH.filter(w=>w.sym!==i);LS('news-watch',WATCH);delete Q[i];renderStocks()},
+};
+document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;const f=ACT[el.dataset.a];if(f){e.preventDefault();f(el.dataset.i)}});
+document.addEventListener('submit',async e=>{
+ if(e.target.id!=='addf')return;e.preventDefault();
+ const sym=$('addsym').value.trim().toUpperCase().replace(/\.(TW|TWO|US)$/,'');
+ if(!sym)return toast('請輸入股票代號');
+ if(rows().some(r=>r.sym===sym))return toast(sym+' 已經在清單裡了');
+ const cur=isUS(sym)?'USD':'TWD';
+ WATCH.push({sym,cur});LS('news-watch',WATCH);toast('已加入 '+sym+'，抓股價中…');
+ await loadQuotes();
+ if(!Q[sym])toast(cur==='USD'?sym+' 抓不到報價，請告訴管理員加到美股清單':'找不到 '+sym+'，代號對嗎？');
+});
+$('q').addEventListener('input',e=>{U.q=e.target.value;U.n=40;renderNews()});
+// 放在背景一陣子再回來，自動更新
+let last=Date.now();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-last>10*60*1000){last=Date.now();loadNews().then(()=>loadQuotes(true))}});
+boot();
+</script>
+</body>
+</html>
