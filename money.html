@@ -90,6 +90,10 @@ table.pv{width:100%;border-collapse:collapse;font-size:12px}table.pv td,table.pv
 #eye{position:fixed;bottom:calc(84px + env(safe-area-inset-bottom,0px));left:max(16px,calc(50% - 244px));z-index:8;border:1.5px solid var(--line);background:var(--card);color:var(--sub);border-radius:18px;padding:5px 11px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.1)}
 #eye.on{background:var(--acc);color:var(--on);border-color:transparent}
 
+.ar{display:flex;align-items:center;gap:8px;padding:8px 2px;border-top:1px solid var(--line);cursor:pointer}.ar .sub{font-size:12px;line-height:1.3}
+.card>.ar:first-child{border-top:0}
+.grp{border:1px solid var(--line);border-radius:12px;padding:2px 10px;margin:8px 0;background:var(--bg)}
+.grp .gh{display:flex;justify-content:space-between;align-items:baseline;padding:6px 2px 4px}.grp .ar:first-of-type{border-top:0}.grp+.ar{border-top:0}
 .up{color:var(--up)}.down{color:var(--down)}
 .back{border:0;background:none;color:var(--acc);font:inherit;font-weight:700;cursor:pointer;padding:4px 0;margin-bottom:2px}
 .tilegrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
@@ -149,7 +153,7 @@ function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';cle
 const A=id=>S.accts.find(a=>a.id===id),isCard=a=>!!a&&a.type==='card';
 // 子帳戶：同一家銀行的帳戶填一樣的「所屬銀行」，選單顯示成「國泰世華・數存」
 const nm=a=>a?(a.group?a.group+'・':'')+a.name+(a.cur==='USD'?'（美元）':''):'?';
-const acno=a=>{const v=[a.code,a.no].filter(Boolean).join('-');return HIDE&&v?'•••• '+String(a.no||'').slice(-3):v};
+const acno=a=>{const n=String(a.no||'').replace(/\D/g,'');if(!n)return a.code?'('+a.code+')':'';return(a.code?'('+a.code+') ':'')+(HIDE?'•••••':'末五碼 '+n.slice(-5))};
 const copyBtn=v=>v?`<button class="go q" style="padding:2px 8px;font-size:12px" data-a="copy" data-i="${E(v)}">複製</button>`:'';
 const TY={cash:'現金',bank:'銀行',card:'信用卡'},FQ=[[0,'只有一次'],[1,'每月'],[2,'每 2 個月'],[3,'每 3 個月'],[6,'每半年'],[12,'每年']];
 const fqName=f=>(FQ.find(x=>x[0]===+f)||FQ[0])[1];
@@ -321,10 +325,14 @@ function vImp(){
  return h;
 }
 
-function acctLine(a,sub){return`<div class="li" data-a="edacct" data-i="${a.id}" ${sub?'style="padding-left:14px"':''}><div class="ic">${TY[a.type].slice(0,1)}</div><div class="sp"><div>${E(a.name)}</div><div class="sub">${TY[a.type]}${isCard(a)?` · ${a.close} 號結帳、${a.due} 號繳款${a.last4?' · 末四碼 '+E(a.last4):''}`:''}${acno(a)?' · '+E(acno(a)):''}</div></div>${a.no?copyBtn(a.no):''}<div class="num">${isCard(a)?'未繳 '+M(cardInfo(a).owe):MA(a)}</div></div>`}
+function acctLine(a,inG){
+ const n=String(a.no||'').replace(/\D/g,''),det=isCard(a)?`信用卡 · ${a.close} 號結帳、${a.due} 號繳${a.last4?' · '+E(a.last4):''}`:a.type==='cash'?'':(inG?'':'銀行')+(n?(inG?'':' · ')+(HIDE?'•••••':'末五碼 '+n.slice(-5)):'')+(a.cur==='USD'?' · 美元':'');
+ return`<div class="ar" data-a="edacct" data-i="${a.id}"><div class="sp"><div>${E(a.name)}</div>${det?`<div class="sub">${det}</div>`:''}</div>${a.no?copyBtn(a.no):''}<div class="num">${isCard(a)?'<span class="sub">未繳</span> '+M(cardInfo(a).owe):MA(a)}</div></div>`;
+}
 function acctList(){
  const gs=[],seen={};S.accts.forEach(a=>{const g=a.type!=='cash'&&a.group;if(!g)gs.push([null,[a]]);else if(seen[g])seen[g].push(a);else{seen[g]=[a];gs.push([g,seen[g]])}});
- return gs.map(([g,as])=>g?`<div class="dh" style="padding-top:10px"><b style="color:var(--ink)">${E(g)}</b><span>存款合計 ${M(as.filter(a=>!isCard(a)).reduce((s,a)=>s+conv(bal(a),a.cur,'TWD'),0))}${as.some(isCard)?'・卡費未繳 '+M(as.filter(isCard).reduce((s,a)=>s+cardInfo(a).owe,0)):''}</span></div>${as.map(a=>acctLine(a,1)).join('')}`:acctLine(as[0])).join('');
+ return gs.map(([g,as])=>{if(!g)return acctLine(as[0]);as=as.filter(a=>!isCard(a)).concat(as.filter(isCard));const dep=as.filter(a=>!isCard(a)).reduce((s,a)=>s+conv(bal(a),a.cur,'TWD'),0),owe=as.filter(isCard).reduce((s,a)=>s+cardInfo(a).owe,0);
+  return`<div class="grp"><div class="gh"><b>${E(g)}</b><span class="sub">${as.some(a=>!isCard(a))?M(dep):''}${owe?' · 卡費 '+M(owe):''}</span></div>${as.map(a=>acctLine(a,1)).join('')}</div>`}).join('');
 }
 function vSet(){
  const la=livingAuto();
