@@ -6,6 +6,8 @@
 
 - `index.html` — 新人名單（HTML / CSS / JS 都在這一個檔案）
 - `money.html` — 我的記帳（網址加上 `/money.html`），`money.webmanifest`、`money.svg` 讓它可以單獨加入主畫面
+- `news.html` — 時事與股市（網址加上 `/news.html`，或記帳 → 更多 → 時事與股市），`news.webmanifest`、`news.svg` 讓它可以單獨加入主畫面
+- `scripts/fetch_news.py` — 部署時抓新聞、熱搜、大盤和美股報價，存成 `news.json`
 - `auth.js` — Firebase 帳號密碼登入與雲端同步
 - `firebase-config.js` — 填入你的 Firebase 專案設定
 - `firestore.rules` — Firestore 安全規則（每人只能讀寫自己的資料）
@@ -57,3 +59,13 @@ python3 -m http.server 8000
 - 信用卡每筆刷卡用「消費日」記，並標出階段：未入帳 → 未出帳 → 已出帳待繳 → 已繳清。帳期依銀行入帳日算（還沒入帳先用消費日）；匯入明細時會自動跟手動記的那筆配對、補上入帳日，不會重複。點總覽的信用卡可以看每一期帳單。
 - 台灣的銀行沒有開放個人直接串接刷卡紀錄，所以是用「下載明細 → 匯入」的方式同步。
 - 資料存在 Firestore 的 `data/users/{uid}` 底下（文件名稱以 `m_` 開頭，交易紀錄按月份分開），和新人名單用同一個帳號登入。
+
+## 時事與股市（news.html）
+
+- 上面是大盤（台灣加權、櫃買、S&P 500、Nasdaq、道瓊、費城半導體、美元/台幣）和近一個月走勢。
+- 「我的股票」直接讀記帳裡記的持股：台股用證交所／櫃買中心的收盤價和漲跌，美股用網站每小時抓好的報價，算出今天持股賺賠多少。也可以加沒有買的自選股。
+- 熱門話題是 Google 熱搜（台灣、美國）。
+- 新聞分成：焦點、創業、經濟財經、美容美妝、穿搭、健康就醫、教師教育，可以切台灣／國際、搜尋。來源有 Google 新聞（聚合中央社、聯合、自由、經濟日報等各家媒體）、BBC 中文、數位時代、TechCrunch、CNBC、MarketWatch、Vogue、GQ、Allure、WHO、NYT、PTT 和 Reddit 的相關看板。英文標題旁邊有「翻譯標題」。
+- 新聞和美股報價是 GitHub Actions 每小時抓一次（`.github/workflows/pages.yml` 的 `schedule`）。GitHub 只在**預設分支**跑排程，可能晚幾分鐘。
+- 美股報價預設抓常見的 ETF 和大型股。自己的美股沒出現的話，到倉庫 **Settings → Secrets and variables → Actions → Variables** 新增 `US_SYMBOLS`，例如 `PLTR,SOFI,O`。
+- 想加減新聞來源，改 `scripts/fetch_news.py` 裡的 `FEEDS`。

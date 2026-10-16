@@ -375,7 +375,7 @@ function vGuide(){
  <h2>看不懂的字</h2><div class="card sub" style="line-height:1.9"><b>結帳日</b>：信用卡每個月算總帳的那天，這天之前刷的錢算在這一期。<br><b>繳款日</b>：最晚要把卡費繳掉的那天。<br><b>未入帳／未出帳／已出帳／已繳清</b>：一筆刷卡的 4 個階段，每筆刷卡紀錄旁邊都會標出來。點總覽的信用卡可以看每一期帳單。<br><b>建議預留</b>：接下來這段時間，帳戶裡最少要留著不要動的錢。<br><b>安全水位</b>：你希望戶頭永遠至少有多少錢（例如緊急預備金）。<br><b>複利</b>：賺到的錢也會繼續幫你賺錢，時間越久越明顯。</div>
  ${S.guideOff?'<button class="go q" data-a="guideon">在總覽重新顯示教學卡片</button>':''}`;
 }
-function vMore(){return`<h1>更多</h1><div class="tilegrid">${MORE.map(([k,i,n,d])=>`<button class="tile" data-a="tab" data-i="${k}"><i>${i}</i><b>${n}</b><span>${d}</span></button>`).join('')}</div>`}
+function vMore(){return`<h1>更多</h1><div class="tilegrid">${MORE.map(([k,i,n,d])=>`<button class="tile" data-a="tab" data-i="${k}"><i>${i}</i><b>${n}</b><span>${d}</span></button>`).join('')}<a class="tile" href="news.html" style="text-decoration:none;color:inherit;grid-column:1/-1;min-height:0"><i>▤</i><b>時事與股市</b><span>今天股價漲跌、國內外新聞、熱門話題</span></a></div>`}
 
 // ── 圖表小工具 ──
 const niceMax=v=>{if(!(v>0))return 1;const p=10**Math.floor(Math.log10(v));for(const m of[1,1.5,2,2.5,3,4,5,6,8,10])if(m*p>=v)return m*p};
