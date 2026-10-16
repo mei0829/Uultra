@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Prepare site
-        run: mkdir _site && cp index.html money.html news.html auth.js firebase-config.js manifest.webmanifest money.webmanifest news.webmanifest icon.svg money.svg news.svg _site/
+        run: mkdir _site && cp index.html money.html auth.js firebase-config.js manifest.webmanifest money.webmanifest icon.svg money.svg _site/
       - name: Fetch news and quotes
         # 抓不到也照樣部署，網頁會顯示「新聞還沒更新」
         continue-on-error: true
