@@ -483,7 +483,7 @@ const rpDates=(dt)=>{const r=rpS(),n=Math.max(1,Math.min(12,+r.n||1)),[y,m,d]=dt
  return out};
 const keepForm=()=>{const vals={};document.querySelectorAll('#app input[id],#app select[id],#app textarea[id]').forEach(el=>{if(el.type!=='file')vals[el.id]=el.value});return()=>{for(const id in vals){const el=$(id);if(el&&el.type!=='file')el.value=vals[id]}}};
 const rerenderKeep=()=>{const back=keepForm();render();back()};
-const evTog=()=>`<div class="row" style="margin-bottom:8px;gap:6px;flex-wrap:wrap"><button class="chip ${S.cv==='w'||S.cv==='r'||S.cv==='pv'?'':'on'}" data-cv="m">▦ 月</button><button class="chip ${S.cv==='w'?'on':''}" data-cv="w">▤ 週・看空檔</button><button class="chip ${S.cv==='r'?'on':''}" data-cv="r">📊 月報・出貨</button><button class="chip ${S.cv==='pv'?'on':''}" data-cv="pv">💰 業績・組織</button></div>`;
+const evTog=()=>`<div class="chips one" style="margin-bottom:8px;overflow-x:auto;scrollbar-width:none"><button class="chip ${S.cv==='w'||S.cv==='r'||S.cv==='pv'?'':'on'}" data-cv="m">▦ 月</button><button class="chip ${S.cv==='w'?'on':''}" data-cv="w">▤ 週・空檔</button><button class="chip ${S.cv==='r'?'on':''}" data-cv="r">📊 月報</button><button class="chip ${S.cv==='pv'?'on':''}" data-cv="pv">💰 業績</button></div>`;
 const shWho=x=>{if(x.own){const o=getOwn(x.own);if(o)return x.own[0]==='s'?sdName(o)+(sdLd(o)?`<span class="sub" style="font-size:11px">（${E(sdLd(o))}）</span>`:''):nm(o)}return E(x.name||'（未填）')};
 const PCT=[[10000,21],[7000,18],[4000,15],[2000,12],[1000,9],[500,6],[200,3]];
 const pctOf=pv=>{const x=PCT.find(([t])=>pv>=t);return x?x[1]:0};
