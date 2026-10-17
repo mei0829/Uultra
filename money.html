@@ -164,6 +164,8 @@ const INC=['薪資','獎金','退款','利息','其他收入'];
 const RULES=[['停車','停車費'],['路邊','停車費'],['PARKING','停車費'],['加油','交通'],['中油','交通'],['台塑石油','交通'],['高鐵','交通'],['台鐵','交通'],['臺鐵','交通'],['捷運','交通'],['悠遊卡','交通'],['一卡通','交通'],['UBER','交通'],['大車隊','交通'],['ETC','交通'],['遠通','交通'],['UBER EATS','餐飲'],['FOODPANDA','餐飲'],['統一超商','餐飲'],['7-ELEVEN','餐飲'],['全家','餐飲'],['萊爾富','餐飲'],['OK超商','餐飲'],['星巴克','餐飲'],['麥當勞','餐飲'],['全聯','日用品'],['家樂福','日用品'],['好市多','日用品'],['COSTCO','日用品'],['屈臣氏','日用品'],['康是美','日用品'],['IKEA','居家'],['中華電信','電信網路'],['台灣大哥大','電信網路'],['遠傳','電信網路'],['電信','電信網路'],['台灣電力','水電瓦斯'],['電費','水電瓦斯'],['水費','水電瓦斯'],['自來水','水電瓦斯'],['瓦斯','水電瓦斯'],['人壽','保險'],['產險','保險'],['保險','保險'],['診所','醫療'],['醫院','醫療'],['藥局','醫療'],['NETFLIX','娛樂'],['SPOTIFY','娛樂'],['YOUTUBE','娛樂'],['APPLE.COM','娛樂'],['GOOGLE','娛樂'],['威秀','娛樂'],['蝦皮','購物'],['MOMO','購物'],['PCHOME','購物'],['博客來','學習'],['稅','稅費'],['監理','稅費'],['薪資','薪資'],['薪轉','薪資'],['利息','利息']];
 const DEF=()=>({accts:[{id:'cash',name:'現金',type:'cash',init:0},{id:'bank',name:'銀行帳戶',type:'bank',init:0},{id:'card1',name:'信用卡',type:'card',init:0,close:5,due:20,since:today()}],tx:[],bills:[],cats:{out:OUT.slice(),in:INC.slice()},rules:RULES.map(([k,c])=>({k,c})),living:null,keep:0,lastAcct:'cash',perk:{extra:'',q:'',amt:'',sum:null,cache:{}},fx:{USD:32,d:'',auto:0},plan:{income:'',from:'',items:[],done:''},payees:[],trades:[],prices:{},fee:{disc:1,min:20},budget:{total:0,cats:{}},calc:{p:100000,c:5000,r:6,y:20,goal:3000000},skin:'',mode:'auto',guideOff:false});
 let S;try{const r=localStorage.getItem('money-v1');S=Object.assign(DEF(),r?JSON.parse(r):{})}catch(e){S=DEF()}
+// 舊資料：用現金付的不可能是自動扣款
+S.bills.forEach(b=>{const a=S.accts.find(x=>x.id===b.acct);if(b.auto&&a&&a.type==='cash'){b.auto=false;delete b.autoRec}});
 if(!S.cats.out.includes('房貸'))S.cats.out.splice(Math.max(0,S.cats.out.indexOf('居家')+1),0,'房貸');
 const U={fs:'',cardId:'',cyc:'',tab:'home',h:30,mon:today().slice(0,7),fa:'',q:'',sheet:null,imp:null,cm:today().slice(0,7),cd:today(),bm:today().slice(0,7),cn:6,chm:''};
 const CL={st:'☁︎ 連線中…',last:{},LT0:0,HAS0:false};try{CL.LT0=+localStorage.getItem('money-t')||0;CL.HAS0=!!localStorage.getItem('money-v1')}catch(e){}
@@ -243,7 +245,7 @@ function forecast(H){
  S.bills.forEach(b=>occ(b,end).forEach(o=>{
   const a=A(b.acct),inc=b.kind==='in';
   if(isCard(a)&&!inc){const due=dueOf(a,closeOf(a,o));if(due<=end)ev.push({d:due<t0?t0:due,late:due<t0,amt:-b.amt,name:b.name,sub:md(o)+' 刷 '+a.name+'，跟著卡費繳',k:'bill'})}
-  else ev.push({d:o<t0?t0:o,late:o<t0,amt:(inc?1:-1)*conv(+b.amt,bcur(b),'TWD'),name:b.name,sub:(b.kind==='inv'?'定期投資・':'')+nm(a)+(b.auto?' 自動扣繳':''),k:inc?'inc':'bill'})}));
+  else ev.push({d:o<t0?t0:o,late:o<t0,amt:(inc?1:-1)*conv(+b.amt,bcur(b),'TWD'),name:b.name,sub:(b.kind==='inv'?'定期投資・':'')+nm(a)+(isAuto(b)?' 自動扣款':''),k:inc?'inc':'bill'})}));
  ev.sort((x,y)=>x.d<y.d?-1:x.d>y.d?1:x.amt-y.amt);
  const liq=liquid(),daily=living()/30.4;let cum=0,min=liq,minD=t0;
  ev.forEach(e=>{cum+=e.amt;e.run=liq+cum-daily*dleft(e.d);if(e.run<min){min=e.run;minD=e.d}});
@@ -299,14 +301,15 @@ function vTx(){
 }
 
 const bcur=b=>b.kind==='inv'?b.cur||'TWD':(A(b.acct)||{}).cur||'TWD';
+const isAuto=b=>!!b.auto&&(A(b.acct)||{}).type!=='cash';
 const billPM=k=>S.bills.filter(b=>(b.kind||'out')===k&&+b.freq&&(!b.end||b.end>=today())).reduce((s,b)=>s+conv(b.amt,bcur(b),'TWD')/b.freq,0);
-const PRESETS=[{name:'停車費',cat:'停車費',auto:true,freq:1,note:'政府路邊停車費代扣，每月金額不固定，填大概的月平均即可'},{name:'電話費',cat:'電信網路',auto:true,freq:1},{name:'電費',cat:'水電瓦斯',freq:2},{name:'水費',cat:'水電瓦斯',freq:2},{name:'瓦斯費',cat:'水電瓦斯',freq:2},{name:'房租',cat:'居家',freq:1},{name:'房貸',cat:'房貸',freq:1,auto:true,bank:1,note:'銀行每月自動扣款'},{name:'保險費',cat:'保險',freq:12},{name:'牌照稅',cat:'稅費',freq:12},{name:'燃料費',cat:'稅費',freq:12},{name:'薪水',cat:'薪資',freq:1,kind:'in'},{name:'定期定額',freq:1,kind:'inv'}];
+const PRESETS=[{name:'停車費',cat:'停車費',freq:1,note:'政府路邊停車費代扣，每月金額不固定，填大概的月平均即可'},{name:'電話費',cat:'電信網路',freq:1},{name:'電費',cat:'水電瓦斯',freq:2},{name:'水費',cat:'水電瓦斯',freq:2},{name:'瓦斯費',cat:'水電瓦斯',freq:2},{name:'房租',cat:'居家',freq:1},{name:'房貸',cat:'房貸',freq:1,bank:1,note:'銀行每月自動扣款'},{name:'保險費',cat:'保險',freq:12},{name:'牌照稅',cat:'稅費',freq:12},{name:'燃料費',cat:'稅費',freq:12},{name:'薪水',cat:'薪資',freq:1,kind:'in'},{name:'定期定額',freq:1,kind:'inv'}];
 function vBills(){
  const bs=S.bills.slice().sort((a,b)=>a.next<b.next?-1:1),t0=today();
  const pm=k=>billPM(k);
  let h=`<h1>固定收支</h1><div class="card"><div class="row"><div class="sp"><div class="sub">每月固定支出</div><b class="num">${M(pm('out'))}</b></div><div class="sp"><div class="sub">每月定期投資</div><b class="num">${M(pm('inv'))}</b></div><div class="sp"><div class="sub">每月固定收入</div><b class="num in">${M(pm('in'))}</b></div></div><div class="sub" style="margin-top:4px">半年、一年繳一次的，會平均攤到每個月。</div></div>
  <div class="note">這裡放「固定時間會發生」的錢，分三種：<b>要繳的錢</b>（房貸、房租、保險、水電、稅…）、<b>固定收入</b>（薪水）、<b>定期投資</b>（定期定額）。每月、每 2/3 個月、每半年、每年都可以設。信用卡帳單會自動從刷卡紀錄算，不用加。</div>`;
- h+=bs.length?'<div class="card">'+bs.map(b=>{const a=A(b.acct),n=dleft(b.next),late=b.next<t0;return`<div class="li" data-a="edbill" data-i="${b.id}" style="flex-wrap:wrap"><div class="dt">${md(b.next)}<small>${late?'<span class="late">逾期</span>':n===0?'今天':n+' 天後'}</small></div><div class="sp"><div>${E(b.name)} ${b.auto?'<span class="pill">自動扣繳</span>':''}</div><div class="sub">${b.kind==='inv'?'定期投資 '+E(b.sym||'')+' · ':''}${fqName(b.freq)} · ${E(a?nm(a):'未指定帳戶')}${b.end?' · 到 '+b.end.slice(0,4)+'/'+ +b.end.slice(5,7)+'，還有 '+occ(b,b.end).length+' 期':''}${b.note?' · '+E(b.note):''}</div>${(()=>{const p=S.payees.find(x=>x.id===b.payee);return p?`<div class="sub">匯到 ${E(p.name)} ${E(acno(p))} ${copyBtn(p.no)}</div>`:''})()}</div><div class="num ${b.kind==='in'?'in':''}">${b.kind==='in'?'+':''}${MC(b.amt,bcur(b))}</div>
+ h+=bs.length?'<div class="card">'+bs.map(b=>{const a=A(b.acct),n=dleft(b.next),late=b.next<t0;return`<div class="li" data-a="edbill" data-i="${b.id}" style="flex-wrap:wrap"><div class="dt">${md(b.next)}<small>${late?'<span class="late">逾期</span>':n===0?'今天':n+' 天後'}</small></div><div class="sp"><div>${E(b.name)} ${b.kind==='inv'?'':isAuto(b)?`<span class="pill">銀行自動扣款</span>${b.autoRec?' <span class="pill y">自動記帳</span>':''}`:'<span class="pill">自己繳</span>'}</div><div class="sub">${b.kind==='inv'?'定期投資 '+E(b.sym||'')+' · ':''}${fqName(b.freq)} · ${E(a?nm(a):'未指定帳戶')}${b.end?' · 到 '+b.end.slice(0,4)+'/'+ +b.end.slice(5,7)+'，還有 '+occ(b,b.end).length+' 期':''}${b.note?' · '+E(b.note):''}</div>${(()=>{const p=S.payees.find(x=>x.id===b.payee);return p?`<div class="sub">匯到 ${E(p.name)} ${E(acno(p))} ${copyBtn(p.no)}</div>`:''})()}</div><div class="num ${b.kind==='in'?'in':''}">${b.kind==='in'?'+':''}${MC(b.amt,bcur(b))}</div>
  ${n<=3?`<div class="row" style="width:100%;justify-content:flex-end;gap:6px"><button class="go q" data-a="skipbill" data-i="${b.id}">${b.kind==='in'?'沒入帳，略過':'略過這期'}</button><button class="go q" data-a="paybill" data-i="${b.id}">${b.kind==='in'?'已入帳':b.kind==='inv'?'已扣款（記到股票）':'已繳'}（記一筆）</button></div>`:''}</div>`}).join('')+'</div>':'<div class="card sub">還沒有固定項目。點下面的常用項目快速新增。</div>';
  h+=`<h2>新增固定項目</h2><div class="chips">${PRESETS.map((p,i)=>`<button class="chip" data-a="addbill" data-i="${i}">${E(p.name)}</button>`).join('')}<button class="chip" data-a="addbill" data-i="-1">＋ 其他</button></div>`;
  return h;
@@ -566,7 +569,7 @@ const HELP=[
  ['add','記一筆（花錢、收入、轉帳）',['tx','home','cal'],`按右下角「<b>＋</b>」：<br>・<b>支出</b>：打金額、選帳戶和分類。說明裡有「全家」「中油」這類字會自動選分類。<br>・<b>收入</b>：薪水選「收入」，帳戶選銀行（不能選信用卡），日期是入帳日。<br>・<b>轉帳／繳卡費</b>：自己帳戶之間搬錢、繳信用卡費都用這個，<b>不算收入支出</b>。`],
  ['card','信用卡：刷卡到繳清的 4 個階段',['card','tx','home'],`刷卡時用「刷卡那天」記，網站會標出：<br><b>… 未入帳</b> 銀行還沒收到 → <b>○ 未出帳</b> 等結帳日 → <b>● 已出帳</b> 要繳 → <b>✓ 已繳清</b><br>匯入銀行明細時會自動跟你記的那筆配對、補上入帳日，不會重複。繳卡費時在總覽點那張卡 →「<b>記錄繳卡費</b>」。`],
  ['cycle','結帳日、繳款日某個月不一樣',['card','set'],`平常照「每月幾號」自動算。銀行某一期因為假日改日期時：<br>總覽點那張卡 →「<b>接下來的日期</b>」→ 按「<b>修改</b>」，照帳單上的日期填，<b>只會改那一期</b>。<br>建議每次收到帳單時看一眼，跟網站一樣就不用管。銀行永久改日期的話，到「設定 → 帳戶」改每月固定日。`],
- ['bills','固定收支（房貸、帳單、薪水、定期定額）',['bills'],`放「固定時間會發生的錢」，分三種：<b>要繳的錢</b>、<b>固定收入</b>、<b>定期投資</b>。<br>可以設每月、每 2/3 個月、每半年、每年；房貸、分期可以填「最後一期」。<br>到期前 3 天會出現按鈕：繳了按「<b>已繳</b>」，已經從明細匯入的按「略過這期」。定期定額按「已扣款」會自動記成股票買進。`],
+ ['bills','固定收支（房貸、帳單、薪水、定期定額）',['bills'],`放「固定時間會發生的錢」，分三種：<b>要繳的錢</b>、<b>固定收入</b>、<b>定期投資</b>。<br>可以設每月、每 2/3 個月、每半年、每年；房貸、分期可以填「最後一期」。<br>每一項要選「<b>怎麼繳</b>」：<br>・<b>自己繳</b>（轉帳、現金、超商）：到期前 3 天提醒你，繳完按「<b>已繳（記一筆）</b>」才會記帳。<br>・<b>銀行自動扣款</b>：可以勾「<b>自動幫我記一筆</b>」，到扣款日網站自己記，不用按。<br>已經從銀行明細匯入過的，按「略過這期」就不會重複。定期定額按「已扣款」會自動記成股票買進。`],
  ['plan','分帳戶：這個月可以花多少',['plan'],`薪水進來先分好：收入 − 一定要繳的（房貸、帳單）＝ 可以分配的錢。<br>按「<b>套用這個建議</b>」會自動分成生活費 50%、想買的 20%、存起來 30%，再點每一塊調整。<br>分給生活費的就是這個月能花的，總覽最上面會顯示「<b>這個月還可以花</b>」。`],
  ['imp','匯入明細、截圖辨識',['imp'],`「更多 → 匯入明細」：<br>・銀行／信用卡網站下載的 <b>CSV</b> 直接選檔<br>・<b>截圖</b>或刷卡簡訊：選「用 AI 辨識」<br>・電子發票載具的 CSV 也可以<br>重複的會自動不勾選；轉到自己帳戶的，可以把類型改成「轉到…」，就不會算成支出。`],
  ['perk','刷卡優惠：用哪張卡最划算',['perk'],`打要去哪裡刷（例：中油、夢時代），按「幫我比較」，AI 會上網查現在的優惠，告訴你用哪張卡、CUBE 要切哪個權益。<br>在「我的卡」幫每張卡填<b>官方卡名</b>，查得比較準。每天第一次打開會自動更新各卡重點。結果僅供參考，刷大筆前到銀行 App 確認。`],
@@ -636,7 +639,7 @@ function vCal(){
  const m=U.cm,d0=pd(m+'-01'),y=d0.getFullYear(),mo=d0.getMonth(),n=dim(y,mo),t0=today(),end=m+'-'+String(n).padStart(2,'0');
  const out={},ev={},addE=(d,o)=>{(ev[d]=ev[d]||[]).push(o)};
  S.tx.forEach(t=>{if(t.type==='out'&&t.d.startsWith(m))out[t.d]=(out[t.d]||0)+t.amt});
- S.bills.forEach(b=>occ(b,end).forEach(o=>{if(o.startsWith(m))addE(o,{name:b.name,amt:b.amt,inc:b.kind==='in',sub:b.kind==='inv'?'定期投資扣款':b.auto?'自動扣繳':'要繳'})}));
+ S.bills.forEach(b=>occ(b,end).forEach(o=>{if(o.startsWith(m))addE(o,{name:b.name,amt:b.amt,inc:b.kind==='in',sub:b.kind==='inv'?'定期投資扣款':isAuto(b)?'自動扣繳':'要繳'})}));
  S.accts.filter(isCard).forEach(c=>cardInfo(c).open.forEach(s=>{if(s.due.startsWith(m))addE(s.due,{name:c.name+' 卡費',amt:s.left,sub:'繳款截止'})}));
  if(!U.cd.startsWith(m))U.cd=t0.startsWith(m)?t0:m+'-01';
  const cd=U.cd,tot=Object.values(out).reduce((a,b)=>a+b,0);
@@ -797,7 +800,9 @@ function sheetBill(o){
  <label class="fl"><span>${inc?'入帳帳戶':'從哪個帳戶扣'}</span><select data-m="sheet.o.acct">${S.accts.filter(a=>K==='out'||!isCard(a)).map(a=>`<option value="${a.id}" ${o.acct===a.id?'selected':''}>${E(nm(a))}</option>`).join('')}</select></label>
  ${+o.freq?`<label class="fl w"><span>最後一期是哪天（選填；房貸、分期填最後一期，沒有就空著）</span><input type="date" value="${o.end||''}" data-m="sheet.o.end"></label>`:''}
  ${inv?'':`<label class="fl"><span>分類</span><select data-m="sheet.o.cat">${cs.map(c=>`<option ${c===o.cat?'selected':''}>${E(c)}</option>`).join('')}</select></label>
- <label class="row" style="align-self:end;height:38px"><input type="checkbox" data-m="sheet.o.auto" ${o.auto?'checked':''}><span>自動扣繳</span></label>`}
+ <span></span>
+ <div class="fl w"><span>${inc?'怎麼入帳':'怎麼繳'}</span><div class="chips">${[[0,inc?'我自己存／轉進來':'我自己繳（轉帳、現金、超商）'],[1,inc?'公司自動匯入':'銀行自動扣款']].map(([v,n])=>`<button class="chip ${!!o.auto===!!v?'on':''}" data-a="bauto" data-i="${v}">${n}</button>`).join('')}</div></div>
+ ${o.auto?`<label class="row fl w"><input type="checkbox" data-m="sheet.o.autoRec" ${o.autoRec?'checked':''}><span>到${inc?'入帳':'扣款'}日<b>自動幫我記一筆</b>（不用再按「已繳」）</span></label>${(A(o.acct)||{}).type==='cash'?'<div class="sub w" style="color:var(--bad)">現金沒辦法自動扣款，請把「從哪個帳戶扣」改成銀行或信用卡。</div>':''}`:`<div class="sub w">到期前 3 天會在這頁提醒你。繳完按「<b>已繳（記一筆）</b>」就會記帳。</div>`}`}
  ${K==='out'?`<label class="fl w"><span>匯款到（選填）</span><select data-m="sheet.o.payee"><option value="">不用匯款</option>${S.payees.map(p=>`<option value="${p.id}" ${o.payee===p.id?'selected':''}>${E(p.name)} ${E(acno(p))}</option>`).join('')}</select></label>`:''}
  <label class="fl w"><span>備註</span><input value="${E(o.note)}" data-m="sheet.o.note"></label></div>
  ${inv?'<div class="note">扣款那天按「已扣款」，輸入買到幾股，就會自動記成一筆股票「買進」，錢從上面的帳戶扣，不算成花費。</div>':''}
@@ -1173,6 +1178,13 @@ const setP=(o,p,v)=>{const k=p.split('.');let a=o;while(k.length>1)a=a[k.shift()
 const getP=(o,p)=>p.split('.').reduce((a,k)=>a==null?a:a[k],o);
 function openTx(o){U.sheet={k:'tx',o};render();if(!o.id)setTimeout(()=>{const f=$('famt');f&&f.focus()},50)}
 function openBill(o){U.sheet={k:'bill',o};render()}
+function autoBills(){
+ const t0=today();let n=0;
+ S.bills.slice().forEach(b=>{if(!isAuto(b)||!b.autoRec||b.kind==='inv')return;let g=0;
+  while(b.next&&b.next<=t0&&g++<24){S.tx.push({id:nid()+n,d:b.next,type:b.kind==='in'?'in':'out',amt:+b.amt,acct:b.acct,cat:b.cat,note:b.name,bill:b.id,src:'auto',ts:Date.now()+n});n++;
+   if(!+b.freq||(b.end&&addM(b.next,+b.freq,b.day)>b.end)){S.bills=S.bills.filter(x=>x!==b);break}b.next=addM(b.next,+b.freq,b.day)}});
+ if(n){save();render();toast('已自動記下 '+n+' 筆到期的固定收支')}
+}
 function payBill(b,skip){
  if(!skip&&b.kind==='inv'){
   const v=prompt(`${b.name}（${b.sym}）這期扣了多少${b.cur==='USD'?'美元':'錢'}？`,b.amt);if(v===null)return;const n=pAmt(v);if(!(n>0))return toast('金額不正確');
@@ -1220,12 +1232,13 @@ const ACT={
  deltx:()=>{if(!confirm('刪除這筆紀錄？'))return;S.tx=S.tx.filter(x=>x.id!==U.sheet.o.id);U.sheet=null;save();render()},
  addbill:i=>{const p=PRESETS[+i]||{name:'',cat:'其他',freq:1};openBill({name:p.name,kind:p.kind||'out',amt:'',freq:p.freq,next:today(),end:'',sym:'',acct:p.kind||p.bank?firstBank():(p.auto&&S.accts.find(isCard)||A(firstBank())||S.accts[0]).id,cat:p.cat||'其他',auto:!!p.auto||p.kind==='inv',note:p.note||''})},
  edbill:i=>{const b=S.bills.find(x=>x.id===i);if(b)openBill(Object.assign({},b))},
+ bauto:i=>{const o=U.sheet.o;o.auto=i==='1';if(o.auto&&o.autoRec==null)o.autoRec=true;render()},
  bmk:i=>{U.sheet.o.cur=i;render()},
  bk:i=>{const o=U.sheet.o;o.kind=i;const cs=S.cats[i==='in'?'in':'out'];if(!cs.includes(o.cat))o.cat=cs[0];if(i!=='out'&&isCard(A(o.acct)))o.acct=firstBank();render()},
  savebill:()=>{const o=U.sheet.o,amt=pAmt(o.amt);
   if(!o.name.trim())return toast('請輸入名稱');if(!(amt>=0))return toast('請輸入金額');if(!o.next)return toast('請選日期');
   if(o.end&&o.end<o.next)return toast('最後一期不能早於下次扣款日');if(o.kind==='inv'&&!String(o.sym||'').trim())return toast('請輸入要買的股票代號');
-  const b={id:o.id||nid(),name:o.name.trim(),kind:o.kind,amt,freq:+o.freq,next:o.next,day:+o.next.slice(8,10),end:+o.freq?o.end||'':'',acct:o.acct,cat:o.kind==='inv'?'':o.cat,auto:!!o.auto,note:(o.note||'').trim(),payee:o.kind==='out'&&o.payee||''};
+  const b={id:o.id||nid(),name:o.name.trim(),kind:o.kind,amt,freq:+o.freq,next:o.next,day:+o.next.slice(8,10),end:+o.freq?o.end||'':'',acct:o.acct,cat:o.kind==='inv'?'':o.cat,auto:!!o.auto,autoRec:!!(o.auto&&o.autoRec),note:(o.note||'').trim(),payee:o.kind==='out'&&o.payee||''};
   if(o.kind==='inv'){b.sym=String(o.sym).trim().toUpperCase();b.sname=String(o.sname||'').trim();if(o.cur==='USD')b.cur='USD'}
   const k=S.bills.findIndex(x=>x.id===b.id);if(k>=0)S.bills[k]=b;else S.bills.push(b);U.sheet=null;save();render()},
  delbill:()=>{if(!confirm('刪除這個固定項目？（已記錄的支出不會被刪）'))return;S.bills=S.bills.filter(x=>x.id!==U.sheet.o.id);U.sheet=null;save();render()},
@@ -1447,6 +1460,7 @@ try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if
   }
   Object.keys(docs).forEach(id=>{if(id!=='m__meta')CL.last[id.slice(2)]=docs[id].j});
   if((ct===0&&hasLocal)||lt>ct)cloudPush();else CL.st='☁︎ 已同步到雲端';
+  autoBills();
  }catch(e){CL.st='⚠︎ 雲端連線失敗，資料只存在這支手機'}
  if(U.tab==='set')render();
 })();
