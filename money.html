@@ -87,7 +87,9 @@ table.pv{width:100%;border-collapse:collapse;font-size:12px}table.pv td,table.pv
 .it select{height:32px!important;padding:4px 6px;font-size:13px}
 .st{display:inline-block;font-size:11px;line-height:1.6;padding:0 7px;border-radius:9px;border:1px solid var(--line);color:var(--sub);white-space:nowrap;margin-top:2px}
 .st.pending{border-style:dashed}.st.pre{opacity:.7}.st.open{color:var(--acc);border-color:var(--acc)}.st.billed{color:var(--amber);border-color:var(--amber)}.st.paid{color:var(--ok);border-color:var(--ok)}
-#eye{position:fixed;bottom:calc(84px + env(safe-area-inset-bottom,0px));left:max(16px,calc(50% - 244px));z-index:8;border:1.5px solid var(--line);background:var(--card);color:var(--sub);border-radius:18px;padding:5px 11px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.1)}
+#helpb{position:fixed;bottom:calc(84px + env(safe-area-inset-bottom,0px));left:max(16px,calc(50% - 244px));z-index:8;width:32px;height:32px;border-radius:50%;border:1.5px solid var(--line);background:var(--card);color:var(--acc);font:inherit;font-weight:700;font-size:16px;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.1);padding:0}
+.hp{border-top:1px solid var(--line)}.hp>button{width:100%;text-align:left;border:0;background:none;font:inherit;color:var(--ink);padding:11px 2px;cursor:pointer;display:flex;justify-content:space-between;font-weight:700}.hp>div{font-size:14px;line-height:1.75;padding:0 2px 12px;color:var(--ink)}.hp>div b{color:var(--acc)}
+#eye{position:fixed;bottom:calc(84px + env(safe-area-inset-bottom,0px));left:calc(max(16px,calc(50% - 244px)) + 40px);z-index:8;border:1.5px solid var(--line);background:var(--card);color:var(--sub);border-radius:18px;padding:5px 11px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.1)}
 #eye.on{background:var(--acc);color:var(--on);border-color:transparent}
 
 .ar{display:flex;align-items:center;gap:8px;padding:8px 2px;border-top:1px solid var(--line);cursor:pointer}.ar .sub{font-size:12px;line-height:1.3}
@@ -134,7 +136,7 @@ svg.ch{width:100%;height:auto;display:block;overflow:visible}svg.ch text{font-si
 </head>
 <body>
 <div id="auth" data-title="我的記帳"></div>
-<div id="app"></div><nav id="nav"></nav><div id="sheet"></div><div id="toast"></div><div id="tip"></div><button id="eye" data-a="eye" aria-label="隱藏金額"></button><input type="file" id="snapf" accept="image/*" style="display:none">
+<div id="app"></div><nav id="nav"></nav><div id="sheet"></div><div id="toast"></div><div id="tip"></div><button id="helpb" data-a="help" aria-label="使用說明">?</button><button id="eye" data-a="eye" aria-label="隱藏金額"></button><input type="file" id="snapf" accept="image/*" style="display:none">
 <script type="module" src="auth.js"></script>
 <script type="text/plain" id="app-src">
 const iso=d=>{const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())},today=()=>iso(new Date());
@@ -556,6 +558,24 @@ function vPerk(){
  <button class="go q" style="margin-top:8px" data-a="pksum" ${U.pkSum||!cards.length?'disabled':''}>現在重新整理</button></div>`;
  return h;
 }
+// ── 使用說明（左下角的「?」）：會先打開跟目前這頁有關的那一段 ──
+const HELP=[
+ ['start','從零開始記帳',['home','guide'],`過去的帳不用補，現在戶頭裡的錢就是過去收支的結果。<br>1. 「更多 → 設定與風格 → 帳戶」把信用卡加好（結帳日、繳款日）<br>2. 按「<b>開始記帳（填今天的餘額）</b>」：填現金、各銀行現在有多少、信用卡已出帳未繳和未出帳的金額<br>3. 之後只記新的花費就好。偶爾對不上，在總覽按「<b>更新銀行餘額</b>」填網銀上的數字，差額會自動補平。`],
+ ['add','記一筆（花錢、收入、轉帳）',['tx','home','cal'],`按右下角「<b>＋</b>」：<br>・<b>支出</b>：打金額、選帳戶和分類。說明裡有「全家」「中油」這類字會自動選分類。<br>・<b>收入</b>：薪水選「收入」，帳戶選銀行（不能選信用卡），日期是入帳日。<br>・<b>轉帳／繳卡費</b>：自己帳戶之間搬錢、繳信用卡費都用這個，<b>不算收入支出</b>。`],
+ ['card','信用卡：刷卡到繳清的 4 個階段',['card','tx','home'],`刷卡時用「刷卡那天」記，網站會標出：<br><b>… 未入帳</b> 銀行還沒收到 → <b>○ 未出帳</b> 等結帳日 → <b>● 已出帳</b> 要繳 → <b>✓ 已繳清</b><br>匯入銀行明細時會自動跟你記的那筆配對、補上入帳日，不會重複。繳卡費時在總覽點那張卡 →「<b>記錄繳卡費</b>」。`],
+ ['cycle','結帳日、繳款日某個月不一樣',['card','set'],`平常照「每月幾號」自動算。銀行某一期因為假日改日期時：<br>總覽點那張卡 →「<b>接下來的日期</b>」→ 按「<b>修改</b>」，照帳單上的日期填，<b>只會改那一期</b>。<br>建議每次收到帳單時看一眼，跟網站一樣就不用管。銀行永久改日期的話，到「設定 → 帳戶」改每月固定日。`],
+ ['bills','固定收支（房貸、帳單、薪水、定期定額）',['bills'],`放「固定時間會發生的錢」，分三種：<b>要繳的錢</b>、<b>固定收入</b>、<b>定期投資</b>。<br>可以設每月、每 2/3 個月、每半年、每年；房貸、分期可以填「最後一期」。<br>到期前 3 天會出現按鈕：繳了按「<b>已繳</b>」，已經從明細匯入的按「略過這期」。定期定額按「已扣款」會自動記成股票買進。`],
+ ['plan','分帳戶：這個月可以花多少',['plan'],`薪水進來先分好：收入 − 一定要繳的（房貸、帳單）＝ 可以分配的錢。<br>按「<b>套用這個建議</b>」會自動分成生活費 50%、想買的 20%、存起來 30%，再點每一塊調整。<br>分給生活費的就是這個月能花的，總覽最上面會顯示「<b>這個月還可以花</b>」。`],
+ ['imp','匯入明細、截圖辨識',['imp'],`「更多 → 匯入明細」：<br>・銀行／信用卡網站下載的 <b>CSV</b> 直接選檔<br>・<b>截圖</b>或刷卡簡訊：選「用 AI 辨識」<br>・電子發票載具的 CSV 也可以<br>重複的會自動不勾選；轉到自己帳戶的，可以把類型改成「轉到…」，就不會算成支出。`],
+ ['perk','刷卡優惠：用哪張卡最划算',['perk'],`打要去哪裡刷（例：中油、夢時代），按「幫我比較」，AI 會上網查現在的優惠，告訴你用哪張卡、CUBE 要切哪個權益。<br>在「我的卡」幫每張卡填<b>官方卡名</b>，查得比較準。每天第一次打開會自動更新各卡重點。結果僅供參考，刷大筆前到銀行 App 確認。`],
+ ['stock','股票（台股、美股）',['stock'],`記「買進／賣出／領股利」，網站算持股、賺賠。可以「<b>截圖匯入持股</b>」。<br>每天第一次打開會自動更新股價和美元匯率，抓不到時點「現價」自己填。選了「錢從哪個帳戶進出」，銀行餘額會一起變。`],
+ ['budget','預算、圖表、月曆',['budget','chart','cal'],`<b>預算</b>：每個分類一個月最多花多少，用到 80% 變黃、超過變紅。<br><b>圖表</b>：每月花多少、錢花在哪。<br><b>月曆</b>：每天花多少，有小圓點的日子要繳錢。`],
+ ['acct','帳戶、子帳戶、帳號',['set'],`「設定 → 帳戶」：銀行選下拉選單會自動帶銀行代碼；同一家銀行的子帳戶會排在一起，信用卡也可以選發卡銀行。<br>帳號只顯示末五碼，按「<b>複製</b>」會複製完整帳號。也可以存「常用匯款帳號」。`],
+ ['privacy','隱藏金額、備份、同步',['set','home'],`左下角「<b>隱藏金額</b>」：朋友在旁邊時按一下，所有金額變成 ••••，再按一次恢復。<br>資料會自動同步到雲端，換手機登入同一個帳號就會回來。「設定」可以下載備份檔。`],
+];
+function sheetHelp(o){return`<div class="row"><b class="sp" style="font-size:17px">使用說明</b><button class="x" data-a="close">×</button></div>
+ <div class="sub" style="margin:4px 0 6px">點標題展開。還有不懂的，也可以看「更多 → 新手教學」。</div>
+ ${HELP.map(([k,t,,body])=>`<div class="hp"><button data-a="hpk" data-i="${k}"><span>${t}</span><span class="sub">${o.open===k?'▴':'▾'}</span></button>${o.open===k?`<div>${body}</div>`:''}</div>`).join('')}`}
 function sheetCyc(o){const c=A(o.cid);return`<div class="row"><b class="sp" style="font-size:17px">修改 ${E(c.name)} 這一期</b><button class="x" data-a="close">×</button></div>
  <div class="sub" style="margin:6px 0">照帳單或銀行 App 上寫的填。只會改這一期，其他月份還是照每月 ${c.close} 號結帳、${c.due} 號繳款。</div>
  <div class="grid"><label class="fl"><span>結帳日</span><input type="date" value="${o.close}" data-m="sheet.o.close"></label><label class="fl"><span>繳款截止日</span><input type="date" value="${o.due}" data-m="sheet.o.due"></label></div>
@@ -803,7 +823,7 @@ function renderNow(){
  CI={};$('tip').style.display='none';$('eye').textContent=HIDE?'顯示金額':'隱藏金額';$('eye').classList.toggle('on',HIDE);$('eye').setAttribute('aria-label',HIDE?'顯示金額':'隱藏金額');
  $('app').innerHTML=(sub?'<button class="back" data-a="tab" data-i="more">‹ 更多</button>':'')+V[U.tab]();
  $('nav').innerHTML=TABS.map(([k,i,n])=>`<button class="${U.tab===k||(k==='more'&&sub)?'on':''}" data-a="tab" data-i="${k}"><b>${i}</b>${n}</button>`).join('');
- const sh=U.sheet,SH={cyc:sheetCyc,pcard:sheetPCard,pitem:sheetPItem,payee:sheetPayee,start:sheetStart,tx:sheetTx,bill:sheetBill,acct:sheetAcct,trade:sheetTrade,recon:sheetRecon,hold:sheetHold};$('sheet').innerHTML=sh?`<div class="sheet" data-a="bg"><div>${SH[sh.k](sh.o)}</div></div>`:'';
+ const sh=U.sheet,SH={help:sheetHelp,cyc:sheetCyc,pcard:sheetPCard,pitem:sheetPItem,payee:sheetPayee,start:sheetStart,tx:sheetTx,bill:sheetBill,acct:sheetAcct,trade:sheetTrade,recon:sheetRecon,hold:sheetHold};$('sheet').innerHTML=sh?`<div class="sheet" data-a="bg"><div>${SH[sh.k](sh.o)}</div></div>`:'';
  window.scrollTo(0,y);
  document.querySelectorAll('[data-entry]').forEach(el=>{const k=el.dataset.entry,P=S.perk||{},r=k==='sum'?P.sum&&P.sum.r:(P.cache[pkKey(P.q,P.amt)]||{}).r,html=r&&r._entry;if(html){try{el.attachShadow({mode:'open'}).innerHTML=html}catch(e){}}});
  if(am){const f=document.querySelector(`[data-m="${am}"]`);if(f&&f.tagName!=='SELECT'){f.focus();try{f.setSelectionRange(cp,cp)}catch(e){}}}
@@ -1226,6 +1246,8 @@ const ACT={
 Object.assign(ACT,{
  pkq:i=>{S.perk.q=i;save();perkGo(false)},
  pkgo:i=>perkGo(!!i),
+ help:()=>{const h=HELP.find(x=>x[2].includes(U.tab))||HELP[0];U.sheet={k:'help',o:{open:h[0]}};render()},
+ hpk:i=>{const o=U.sheet.o;o.open=o.open===i?'':i;render()},
  cycedit:cl=>{const c=A(U.cardId)||S.accts.find(isCard),key=cycKey(c,cl);U.sheet={k:'cyc',o:{cid:c.id,key,close:cl,due:dueOf(c,cl),had:!!(c.ov||{})[key]}};render()},
  cycsave:()=>{const o=U.sheet.o,c=A(o.cid);if(!o.close||!o.due)return toast('兩個日期都要填');if(o.due<o.close)return toast('繳款日不能早於結帳日');
   c.ov=c.ov||{};const def=cyc(Object.assign({},c,{ov:{}}),+o.key.slice(0,4),+o.key.slice(5,7)-1),dd=dueOf(Object.assign({},c,{ov:{}}),def.close);
