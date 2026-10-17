@@ -183,8 +183,13 @@ function bal(a){let v=+a.init||0;for(const t of S.tx){if(t.acct===a.id)v+=t.type
 const tradeCash=t=>t.type==='buy'?-(t.sh*t.px+(+t.fee||0)):t.type==='sell'?t.sh*t.px-(+t.fee||0)-(+t.tax||0):+t.amt||0;
 const liquid=()=>S.accts.filter(a=>!isCard(a)).reduce((s,a)=>s+conv(bal(a),a.cur,'TWD'),0);
 // 某天刷卡會在哪天結帳、哪天要繳
-function closeOf(c,s){const d=pd(s),k=+c.close||1,cd=ymd(d.getFullYear(),d.getMonth(),k);return s<=cd?cd:ymd(d.getFullYear(),d.getMonth()+1,k)}
-function dueOf(c,cl){const d=pd(cl),k=+c.due||1;return ymd(d.getFullYear(),d.getMonth()+(k>(+c.close||1)?0:1),k)}
+// 某個月的結帳日（有修改過就用修改後的）
+const cyc=(c,y,m)=>{const x=new Date(y,m,1),key=iso(x).slice(0,7),o=(c.ov||{})[key]||{};return{key,close:o.close||ymd(x.getFullYear(),x.getMonth(),+c.close||1),due:o.due}};
+function closeOf(c,s){const d=pd(s);for(let i=-1;i<=1;i++){const k=cyc(c,d.getFullYear(),d.getMonth()+i);if(s<=k.close)return k.close}return cyc(c,d.getFullYear(),d.getMonth()+2).close}
+function dueOf(c,cl){const ov=c.ov||{};for(const k in ov)if(ov[k].due&&(ov[k].close||cyc(c,+k.slice(0,4),+k.slice(5,7)-1).close)===cl)return ov[k].due;
+ const d=pd(cl),k=+c.due||1;return ymd(d.getFullYear(),d.getMonth()+(k>(+c.close||1)?0:1),k)}
+// 這個結帳日屬於哪個月份（用來存修改）
+function cycKey(c,cl){const d=pd(cl);for(let i=-1;i<=1;i++){const k=cyc(c,d.getFullYear(),d.getMonth()+i);if(k.close===cl)return k.key}return cl.slice(0,7)}
 function nextDue(c,s){const d=pd(s),k=+c.due||1,x=ymd(d.getFullYear(),d.getMonth(),k);return x>=s?x:ymd(d.getFullYear(),d.getMonth()+1,k)}
 // 每一期帳單：刷卡、退款歸到所屬帳期，繳款從最舊的帳期開始抵
 // 每一期帳單：刷卡、退款依「入帳日」（還沒入帳就用消費日）歸到帳期；繳款依日期從最舊的帳期開始抵，抵完的帳期記下繳清日
@@ -455,11 +460,15 @@ function vCard(){
  <span class="st billed">● 已出帳</span> 已經在帳單上，要在 ${c.due} 號前繳<br>
  <span class="st paid">✓ 已繳清</span> 這一期的錢已經繳給銀行了</div>
  <div class="sub" style="margin-top:6px">記帳時用「刷卡那天」記；匯入銀行明細時，會自動跟你記的那筆配對、補上入帳日，不會重複。</div></div>`;
+ const cur=closeOf(c,t0),nxt=closeOf(c,shiftD(cur,1)),ovN=Object.keys(c.ov||{}).length;
+ h+=`<div class="card"><b>接下來的日期</b><div class="sub" style="margin-bottom:4px">銀行有時候會因為假日調整，跟帳單上不一樣就點「修改」，只改那一期。</div>
+ ${[[cur,'本期'],[nxt,'下期']].map(([cl,n])=>{const key=cycKey(c,cl),od=(c.ov||{})[key];return`<div class="ar" style="cursor:default"><div class="sp"><div>${n}：<b>${md(cl)}</b> 結帳、<b>${md(dueOf(c,cl))}</b> 前繳款</div>${od?'<div class="sub" style="color:var(--amber)">已修改過（原本 '+c.close+' 號結帳、'+c.due+' 號繳款）</div>':''}</div><button class="go q" data-a="cycedit" data-i="${cl}">修改</button></div>`}).join('')}
+ ${ovN?`<div class="sub" style="margin-top:4px">共有 ${ovN} 期用了修改過的日期。</div>`:''}</div>`;
  const list=I.st.slice().reverse().filter(s=>s.amt>0||s.tx.length);
  if(!list.length)return h+'<div class="card sub">這張卡還沒有紀錄。</div>';
  h+=list.map(s=>{const L=lab(s),o=U.cyc===s.close,pend=s.tx.filter(t=>!t.pd).length;return`<div class="card"><div class="row" data-a="cyc" data-i="${s.close}" style="cursor:pointer"><div class="sp"><b>${s.close==='init'?'期初（開始記帳前的帳單）':md(s.close)+' 結帳'}</b>　<span class="st ${L[1]}">${L[0]}</span><div class="sub">${s.close==='init'?'開始記帳時已出帳、還沒繳的':s.tx.length+' 筆'+(c.start&&+c.cur0&&s.close===closeOf(c,c.start)?'＋開始記帳前已刷 '+M(c.cur0):'')}${pend&&L[1]!=='paid'?`・${pend} 筆未入帳`:''}${s.left>0.5&&s.left<s.amt-0.5?`・已繳 ${M(s.amt-s.left)}`:''}</div></div><div style="text-align:right"><b class="num">${M(s.amt)}</b>${s.left>0.5&&L[1]!=='open'?`<div class="sub num">還要繳 ${M(s.left)}</div>`:''}</div><span class="sub">${o?'▴':'▾'}</span></div>
  ${o?`<div style="margin-top:6px">${s.tx.slice().sort((a,b)=>a.d<b.d?1:-1).map(t=>txLine(t)+(t.pd||L[1]==='paid'?'':`<div style="text-align:right;margin:-4px 0 6px"><button class="go q" data-a="posted" data-i="${t.id}">銀行已入帳</button></div>`)).join('')||'<div class="sub">沒有明細（期初金額）</div>'}</div>`:''}
- ${s.left>0.5&&L[1]==='billed'?`<button class="go q" style="margin-top:8px" data-a="paycard" data-i="${c.id}">記錄繳卡費</button>`:''}</div>`}).join('');
+ <div class="row" style="gap:6px;margin-top:8px;justify-content:flex-end">${s.close!=='init'?`<button class="go q" data-a="cycedit" data-i="${s.close}">改這期日期</button>`:''}${s.left>0.5&&L[1]==='billed'?`<button class="go q" data-a="paycard" data-i="${c.id}">記錄繳卡費</button>`:''}</div></div>`}).join('');
  return h;
 }
 // ── 分帳戶（信封理財）：每月收入先分到幾個用途，每個用途可以放到一個帳戶 ──
@@ -547,6 +556,10 @@ function vPerk(){
  <button class="go q" style="margin-top:8px" data-a="pksum" ${U.pkSum||!cards.length?'disabled':''}>現在重新整理</button></div>`;
  return h;
 }
+function sheetCyc(o){const c=A(o.cid);return`<div class="row"><b class="sp" style="font-size:17px">修改 ${E(c.name)} 這一期</b><button class="x" data-a="close">×</button></div>
+ <div class="sub" style="margin:6px 0">照帳單或銀行 App 上寫的填。只會改這一期，其他月份還是照每月 ${c.close} 號結帳、${c.due} 號繳款。</div>
+ <div class="grid"><label class="fl"><span>結帳日</span><input type="date" value="${o.close}" data-m="sheet.o.close"></label><label class="fl"><span>繳款截止日</span><input type="date" value="${o.due}" data-m="sheet.o.due"></label></div>
+ <div class="row" style="margin-top:14px;gap:8px">${o.had?'<button class="go g" data-a="cycreset">改回每月固定日</button>':''}<span class="sp"></span><button class="go" data-a="cycsave">儲存</button></div>`}
 function sheetPCard(o){return`<div class="row"><b class="sp" style="font-size:17px">${o.id?'修改':'加一張想比較的卡'}</b><button class="x" data-a="close">×</button></div>
  <div class="grid"><label class="fl w"><span>顯示的名字（短一點）</span><input value="${E(o.n)}" data-m="sheet.o.n" placeholder="例：Richart"></label>
  <label class="fl w"><span>官方卡名（給 AI 查用）</span><input value="${E(o.o)}" data-m="sheet.o.o" list="cardlist" placeholder="例：台新 Richart 卡">${cardDL()}</label></div>
@@ -772,7 +785,7 @@ function sheetAcct(o){
  <label class="fl"><span>每月幾號前要繳</span><input inputmode="numeric" value="${E(o.due)}" data-m="sheet.o.due"></label>
  <label class="fl w"><span>已出帳還沒繳的金額（之後會匯入這期明細的話填 0，避免重複）</span><input inputmode="decimal" value="${E(o.init)}" data-m="sheet.o.init"></label>`
  :`<label class="fl w"><span>現在實際有多少錢${o.cur==='USD'?'（美元）':''}${o.id?'（改這裡就是對帳）':''}</span><div class="row" style="gap:6px"><input inputmode="decimal" value="${E(o.now)}" data-m="sheet.o.now"><button class="go q" data-a="snapacct">截圖辨識</button></div></label>`}</div>
- ${c?'<div class="sub" style="margin-top:6px">結帳日、繳款日印在信用卡帳單上。之後的刷卡會自動算進對應的那一期帳單。</div>':''}
+ ${c?'<div class="sub" style="margin-top:6px">結帳日、繳款日印在信用卡帳單上。某個月因為假日不一樣的話，不用改這裡：到總覽點這張卡 →「接下來的日期」→ 修改那一期就好。</div>':''}
  <div class="row" style="margin-top:14px;gap:8px">${o.id?'<button class="go r" data-a="delacct">刪除</button>':''}<span class="sp"></span><button class="go" data-a="saveacct">儲存</button></div>`;
 }
 
@@ -790,7 +803,7 @@ function renderNow(){
  CI={};$('tip').style.display='none';$('eye').textContent=HIDE?'顯示金額':'隱藏金額';$('eye').classList.toggle('on',HIDE);$('eye').setAttribute('aria-label',HIDE?'顯示金額':'隱藏金額');
  $('app').innerHTML=(sub?'<button class="back" data-a="tab" data-i="more">‹ 更多</button>':'')+V[U.tab]();
  $('nav').innerHTML=TABS.map(([k,i,n])=>`<button class="${U.tab===k||(k==='more'&&sub)?'on':''}" data-a="tab" data-i="${k}"><b>${i}</b>${n}</button>`).join('');
- const sh=U.sheet,SH={pcard:sheetPCard,pitem:sheetPItem,payee:sheetPayee,start:sheetStart,tx:sheetTx,bill:sheetBill,acct:sheetAcct,trade:sheetTrade,recon:sheetRecon,hold:sheetHold};$('sheet').innerHTML=sh?`<div class="sheet" data-a="bg"><div>${SH[sh.k](sh.o)}</div></div>`:'';
+ const sh=U.sheet,SH={cyc:sheetCyc,pcard:sheetPCard,pitem:sheetPItem,payee:sheetPayee,start:sheetStart,tx:sheetTx,bill:sheetBill,acct:sheetAcct,trade:sheetTrade,recon:sheetRecon,hold:sheetHold};$('sheet').innerHTML=sh?`<div class="sheet" data-a="bg"><div>${SH[sh.k](sh.o)}</div></div>`:'';
  window.scrollTo(0,y);
  document.querySelectorAll('[data-entry]').forEach(el=>{const k=el.dataset.entry,P=S.perk||{},r=k==='sum'?P.sum&&P.sum.r:(P.cache[pkKey(P.q,P.amt)]||{}).r,html=r&&r._entry;if(html){try{el.attachShadow({mode:'open'}).innerHTML=html}catch(e){}}});
  if(am){const f=document.querySelector(`[data-m="${am}"]`);if(f&&f.tagName!=='SELECT'){f.focus();try{f.setSelectionRange(cp,cp)}catch(e){}}}
@@ -1213,6 +1226,11 @@ const ACT={
 Object.assign(ACT,{
  pkq:i=>{S.perk.q=i;save();perkGo(false)},
  pkgo:i=>perkGo(!!i),
+ cycedit:cl=>{const c=A(U.cardId)||S.accts.find(isCard),key=cycKey(c,cl);U.sheet={k:'cyc',o:{cid:c.id,key,close:cl,due:dueOf(c,cl),had:!!(c.ov||{})[key]}};render()},
+ cycsave:()=>{const o=U.sheet.o,c=A(o.cid);if(!o.close||!o.due)return toast('兩個日期都要填');if(o.due<o.close)return toast('繳款日不能早於結帳日');
+  c.ov=c.ov||{};const def=cyc(Object.assign({},c,{ov:{}}),+o.key.slice(0,4),+o.key.slice(5,7)-1),dd=dueOf(Object.assign({},c,{ov:{}}),def.close);
+  if(o.close===def.close&&o.due===dd)delete c.ov[o.key];else c.ov[o.key]={close:o.close,due:o.due};U.sheet=null;save();render();toast('已修改這一期的日期')},
+ cycreset:()=>{const o=U.sheet.o,c=A(o.cid);if(c.ov)delete c.ov[o.key];U.sheet=null;save();render();toast('已改回每月固定日')},
  addpcard:()=>{U.sheet={k:'pcard',o:{n:'',o:''}};render()},
  edpcard:i=>{const x=(S.perk.more||[]).find(y=>y.id===i);if(x){U.sheet={k:'pcard',o:Object.assign({},x)};render()}},
  savepcard:()=>{const o=U.sheet.o,n=String(o.n||'').trim(),of=String(o.o||'').trim();if(!n&&!of)return toast('請輸入卡名');S.perk.more=S.perk.more||[];const x={id:o.id||nid(),n:n||of,o:of};const k=S.perk.more.findIndex(y=>y.id===x.id);if(k>=0)S.perk.more[k]=x;else S.perk.more.push(x);U.sheet=null;save();render()},
