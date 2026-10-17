@@ -354,6 +354,13 @@ function acctList(){
  return acctGroups().map(([g,as],i)=>{if(!g)return`<div id="ag${i}" class="jt">${acctLine(as[0])}</div>`;as=as.filter(a=>!isCard(a)).concat(as.filter(isCard));const dep=as.filter(a=>!isCard(a)).reduce((s,a)=>s+conv(bal(a),a.cur,'TWD'),0),owe=as.filter(isCard).reduce((s,a)=>s+cardInfo(a).owe,0);
   return`<div class="grp jt" id="ag${i}"><div class="gh"><b>${E(g)}</b><span class="sub">${as.some(a=>!isCard(a))?M(dep):''}${owe?' · 卡費 '+M(owe):''}</span></div>${as.map(a=>acctLine(a,1)).join('')}</div>`}).join('');
 }
+// 已有的規則：依分類收在一起、字小一點，可以搜尋
+function ruleList(){
+ const q=String(U.rq||'').trim().toUpperCase(),by={};
+ S.rules.forEach((r,i)=>{if(q&&!(r.k.toUpperCase().includes(q)||r.c.toUpperCase().includes(q)))return;(by[r.c]=by[r.c]||[]).push([r,i])});
+ const ks=Object.keys(by);if(!ks.length)return`<div class="sub" style="margin-top:8px">${q?'沒有符合的規則，可以用上面新增':'還沒有規則'}</div>`;
+ return ks.map(c=>`<div style="padding:6px 0;border-top:1px solid var(--line);margin-top:6px"><div class="sub" style="font-weight:700;color:var(--ink)">${E(c)}（${by[c].length}）</div><div style="display:flex;flex-wrap:wrap;gap:2px 10px;font-size:12px;color:var(--sub);margin-top:2px">${by[c].map(([r,i])=>`<span style="white-space:nowrap">${E(r.k)}<button class="x" style="font-size:12px;padding:0 2px" data-a="ruledel" data-i="${i}" aria-label="刪除 ${E(r.k)}">×</button></span>`).join('')}</div></div>`).join('');
+}
 function vSet(){
  const la=livingAuto();
  let h=`<h1>設定</h1><h2>風格</h2><div class="card">${skinPicker()}</div><h2>帳戶</h2><div class="jbox">${acctJump()}<div class="card">${acctList()}
@@ -364,9 +371,10 @@ function vSet(){
  <label class="fl"><span>每月日常花費（空白＝自動，目前 ${M(la)}）</span><input inputmode="numeric" data-m="living" data-s="1" data-n="1" value="${S.living==null?'':E(S.living)}" placeholder="${Math.round(la)}"></label>
  <label class="fl"><span>安全水位（最少想留的錢）</span><input inputmode="numeric" data-m="keep" data-s="1" data-n="1" value="${E(S.keep||'')}" placeholder="0"></label></div>
  <div class="sub" style="margin-top:6px">日常花費是吃飯、交通這類不固定的支出；自動估算會用最近 3 個月的紀錄，扣掉已經列在「固定收支」裡的分類。</div></div>
- <h2>自動分類規則（說明裡有關鍵字就歸到該分類）</h2><div class="card">
+ <h2>自動分類規則</h2><div class="card"><div class="sub" style="margin-bottom:6px">記帳說明裡有這些關鍵字，就自動歸到該分類。</div>
  <div class="row" style="gap:6px"><input id="rk" placeholder="關鍵字，例：停車"><select id="rc">${S.cats.out.concat(S.cats.in).map(c=>`<option>${E(c)}</option>`).join('')}</select><button class="go q" data-a="ruleadd">新增</button></div>
- <div class="chips" style="margin-top:8px">${S.rules.map((r,i)=>`<span class="pill">${E(r.k)} → ${E(r.c)} <button class="x" style="font-size:14px" data-a="ruledel" data-i="${i}">×</button></span>`).join('')}</div></div>
+ <button class="go q" style="margin-top:8px;width:100%" data-a="rulesv">${U.rulesOpen?'▴ 收起':'▾ 看已經有的 '+S.rules.length+' 條規則'}</button>
+ ${U.rulesOpen?`<input style="margin-top:8px" placeholder="搜尋關鍵字或分類，例：中油" value="${E(U.rq||'')}" data-m="rq" data-r="1">${ruleList()}`:''}</div>
  <h2>分類（用逗號分開）</h2><div class="card"><label class="fl"><span>支出</span><textarea rows="2" data-m="cats.out" data-s="1" data-l="1">${E(S.cats.out.join('，'))}</textarea></label><label class="fl" style="margin-top:6px"><span>收入</span><textarea rows="2" data-m="cats.in" data-s="1" data-l="1">${E(S.cats.in.join('，'))}</textarea></label></div>
  <h2>帳號與備份</h2><div class="card">
  ${window.FBU?`<div class="row" style="margin-bottom:8px"><span class="sp sub">帳號：${E(FBU.email)}</span><button class="go q" data-a="logout">登出</button></div>`:''}
@@ -1167,7 +1175,8 @@ const ACT={
   else{delete a.close;delete a.due;delete a.since;const now=pAmt(o.now)||0;a.init=0;a.init=now-bal(a)}
   if(!old)S.accts.push(a);U.sheet=null;save();render()},
  delacct:()=>{const id=U.sheet.o.id;if(S.tx.some(t=>t.acct===id||t.to===id)||S.bills.some(b=>b.acct===id)||S.trades.some(t=>t.acct===id))return toast('這個帳戶還有紀錄或帳單，不能刪除');if(S.accts.length<2)return toast('至少要留一個帳戶');if(!confirm('刪除這個帳戶？'))return;S.accts=S.accts.filter(a=>a.id!==id);U.sheet=null;save();render()},
- ruleadd:()=>{const k=$('rk').value.trim(),c=$('rc').value;if(!k)return toast('請輸入關鍵字');S.rules=S.rules.filter(r=>r.k!==k);S.rules.unshift({k,c});save();render()},
+ ruleadd:()=>{const k=$('rk').value.trim(),c=$('rc').value;if(!k)return toast('請輸入關鍵字');const ex=S.rules.find(r=>r.k.toUpperCase()===k.toUpperCase());if(ex&&ex.c===c)return toast('「'+k+'」已經有了，會歸到 '+c);if(ex)toast('「'+k+'」原本歸到 '+ex.c+'，已改成 '+c);S.rules=S.rules.filter(r=>r.k!==k);S.rules.unshift({k,c});save();render()},
+ rulesv:()=>{U.rulesOpen=!U.rulesOpen;render()},
  ruledel:i=>{S.rules.splice(+i,1);save();render()},
  impparse:()=>impParse(),
  impai:()=>impAI(),
@@ -1276,7 +1285,7 @@ function field(e){
  if(el.dataset.n)v=v===''?(p==='living'?null:''):+v;
  if(el.dataset.l)v=String(v).split(/[,，、\s]+/).map(x=>x.trim()).filter(Boolean);
  if(el.dataset.l&&!v.length)return;
- setP(p.startsWith('imp.')||p.startsWith('sheet.')||p==='q'?U:S,p,v);
+ setP(p.startsWith('imp.')||p.startsWith('sheet.')||p==='q'||p==='rq'?U:S,p,v);
  if(el.dataset.s)save();
  if(el.dataset.fs)U.sheet.o.feeSet=1;
  if(el.dataset.fxm&&e.type==='change'){const v=pAmt(el.value);if(v>0){S.fx={USD:v,d:today(),auto:0};save();render()}return}
