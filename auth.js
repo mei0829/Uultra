@@ -82,7 +82,8 @@ const sampler = {
     }
     const msg = String(last && last.message);
     console.error('AI', last);
-    if (/quota|429|RESOURCE_EXHAUSTED|rate/i.test(msg)) throw { code: 'quota' };
+    // 分辨是「每分鐘次數太多」還是「今天的額度用完」
+    if (/quota|429|RESOURCE_EXHAUSTED|rate/i.test(msg)) throw { code: /per.?day|PerDay|daily/i.test(msg) ? 'quota_day' : /per.?minute|PerMinute/i.test(msg) ? 'quota_min' : 'quota' };
     if (/not been used|disabled|PERMISSION_DENIED|403|api-not-enabled|not enabled/i.test(msg)) throw { code: 'none' };
     throw { code: 'fail' };
   }
