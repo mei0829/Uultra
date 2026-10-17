@@ -159,7 +159,7 @@ const addM=(s,n,day)=>{const d=pd(s);return ymd(d.getFullYear(),d.getMonth()+n,d
 const OUT=['餐飲','交通','停車費','購物','日用品','居家','房貸','電信網路','水電瓦斯','保險','醫療','娛樂','學習','稅費','其他'];
 const INC=['薪資','獎金','退款','利息','其他收入'];
 const RULES=[['停車','停車費'],['路邊','停車費'],['PARKING','停車費'],['加油','交通'],['中油','交通'],['台塑石油','交通'],['高鐵','交通'],['台鐵','交通'],['臺鐵','交通'],['捷運','交通'],['悠遊卡','交通'],['一卡通','交通'],['UBER','交通'],['大車隊','交通'],['ETC','交通'],['遠通','交通'],['UBER EATS','餐飲'],['FOODPANDA','餐飲'],['統一超商','餐飲'],['7-ELEVEN','餐飲'],['全家','餐飲'],['萊爾富','餐飲'],['OK超商','餐飲'],['星巴克','餐飲'],['麥當勞','餐飲'],['全聯','日用品'],['家樂福','日用品'],['好市多','日用品'],['COSTCO','日用品'],['屈臣氏','日用品'],['康是美','日用品'],['IKEA','居家'],['中華電信','電信網路'],['台灣大哥大','電信網路'],['遠傳','電信網路'],['電信','電信網路'],['台灣電力','水電瓦斯'],['電費','水電瓦斯'],['水費','水電瓦斯'],['自來水','水電瓦斯'],['瓦斯','水電瓦斯'],['人壽','保險'],['產險','保險'],['保險','保險'],['診所','醫療'],['醫院','醫療'],['藥局','醫療'],['NETFLIX','娛樂'],['SPOTIFY','娛樂'],['YOUTUBE','娛樂'],['APPLE.COM','娛樂'],['GOOGLE','娛樂'],['威秀','娛樂'],['蝦皮','購物'],['MOMO','購物'],['PCHOME','購物'],['博客來','學習'],['稅','稅費'],['監理','稅費'],['薪資','薪資'],['薪轉','薪資'],['利息','利息']];
-const DEF=()=>({accts:[{id:'cash',name:'現金',type:'cash',init:0},{id:'bank',name:'銀行帳戶',type:'bank',init:0},{id:'card1',name:'信用卡',type:'card',init:0,close:5,due:20,since:today()}],tx:[],bills:[],cats:{out:OUT.slice(),in:INC.slice()},rules:RULES.map(([k,c])=>({k,c})),living:null,keep:0,lastAcct:'cash',fx:{USD:32,d:'',auto:0},plan:{income:'',from:'',items:[],done:''},payees:[],trades:[],prices:{},fee:{disc:1,min:20},budget:{total:0,cats:{}},calc:{p:100000,c:5000,r:6,y:20,goal:3000000},skin:'',mode:'auto',guideOff:false});
+const DEF=()=>({accts:[{id:'cash',name:'現金',type:'cash',init:0},{id:'bank',name:'銀行帳戶',type:'bank',init:0},{id:'card1',name:'信用卡',type:'card',init:0,close:5,due:20,since:today()}],tx:[],bills:[],cats:{out:OUT.slice(),in:INC.slice()},rules:RULES.map(([k,c])=>({k,c})),living:null,keep:0,lastAcct:'cash',perk:{extra:'',q:'',amt:'',sum:null,cache:{}},fx:{USD:32,d:'',auto:0},plan:{income:'',from:'',items:[],done:''},payees:[],trades:[],prices:{},fee:{disc:1,min:20},budget:{total:0,cats:{}},calc:{p:100000,c:5000,r:6,y:20,goal:3000000},skin:'',mode:'auto',guideOff:false});
 let S;try{const r=localStorage.getItem('money-v1');S=Object.assign(DEF(),r?JSON.parse(r):{})}catch(e){S=DEF()}
 if(!S.cats.out.includes('房貸'))S.cats.out.splice(Math.max(0,S.cats.out.indexOf('居家')+1),0,'房貸');
 const U={fs:'',cardId:'',cyc:'',tab:'home',h:30,mon:today().slice(0,7),fa:'',q:'',sheet:null,imp:null,cm:today().slice(0,7),cd:today(),bm:today().slice(0,7),cn:6,chm:''};
@@ -492,6 +492,50 @@ function sheetPItem(o){
  <div class="fl" style="margin-top:8px"><span class="sub">這筆錢負責哪些花費？（選了就會追蹤這個月還剩多少；存錢、投資不用選）</span><div class="chips" style="margin-top:4px">${S.cats.out.map(c=>`<button class="chip ${(o.cats||[]).includes(c)?'on':''}" data-a="pcat" data-i="${E(c)}">${E(c)}</button>`).join('')}</div></div>
  <div class="row" style="margin-top:14px;gap:8px">${o.id?'<button class="go r" data-a="delpitem">刪除</button>':''}<span class="sp"></span><button class="go" data-a="savepitem">儲存</button></div>`;
 }
+// ── 刷卡優惠：用 Gemini＋Google 搜尋查最新優惠，結果記住一天 ──
+const PKQ=['中油','全聯','7-ELEVEN','蝦皮','momo','夢時代','好市多','Uber Eats','高鐵','日本消費','保費','Netflix'];
+const pkCards=()=>S.accts.filter(isCard).map(a=>(a.group?a.group+' ':'')+a.name+(a.last4?'（末四碼 '+a.last4+'）':'')).concat(String(S.perk.extra||'').split(/[,，、\n]+/).map(x=>x.trim()).filter(Boolean));
+const pkKey=(q,amt)=>String(q).trim().toLowerCase()+'|'+(+amt||'');
+const pkSrc=r=>(r&&r._src||[]).length?`<div class="sub" style="margin-top:8px">資料來源：${r._src.slice(0,6).map(x=>`<a href="${E(x.u)}" target="_blank" rel="noopener">${E(x.t||'網頁')}</a>`).join('、')}</div>`:'';
+const pkEntry=k=>`<div data-entry="${k}" style="margin-top:6px"></div>`;
+function vPerk(){
+ const P=S.perk,cards=pkCards(),r=(P.cache[pkKey(P.q,P.amt)]||{}).r,sm=P.sum;
+ if(cards.length&&(!sm||sm.d!==today())&&!U.pkSum&&!U.pkSumTried){U.pkSumTried=1;setTimeout(()=>perkSum(false),0)}
+ let h=`<h1>刷卡優惠</h1><div class="note">AI 會上網查各家銀行「現在」的優惠來比較，結果僅供參考，刷卡前請以銀行 App／官網公告為準（有些要登錄或搭配行動支付）。</div>
+ <div class="card"><div class="sub">我的卡（從「設定 → 帳戶」的信用卡帶入）</div><div class="chips" style="margin:6px 0">${cards.length?cards.map(c=>`<span class="pill">${E(c)}</span>`).join(''):'<span class="sub">還沒有信用卡，先到「設定」新增</span>'}</div>
+ <label class="fl"><span>其他想一起比較的卡（選填，用逗號分開）</span><input value="${E(P.extra)}" data-m="perk.extra" data-s="1" placeholder="例：台新 Richart 卡、玉山 Unicard"></label></div>
+ <div class="card"><b>要去哪裡刷？</b><div class="row" style="gap:6px;margin-top:6px"><input id="pkq" value="${E(P.q)}" data-m="perk.q" data-s="1" placeholder="例：中油、夢時代、蝦皮"><input inputmode="numeric" value="${E(P.amt)}" data-m="perk.amt" data-s="1" placeholder="金額" style="width:84px;flex:none"></div>
+ <div class="chips" style="margin-top:8px">${PKQ.map(x=>`<button class="chip" data-a="pkq" data-i="${E(x)}">${E(x)}</button>`).join('')}</div>
+ <button class="go" style="width:100%;margin-top:10px" data-a="pkgo" ${U.pkBusy||!cards.length?'disabled':''}>${U.pkBusy?'AI 上網查詢中…（約 10～30 秒）':'幫我比較'}</button></div>`;
+ if(r&&P.q){const b=r.best||{};h+=`<h2>在「${E(P.q)}」${P.amt?'刷 '+M(+P.amt):''}</h2><div class="card" style="border-color:var(--acc)"><div class="sub">最推薦</div><div class="big" style="font-size:22px">${E(b.card||'—')}</div>
+  ${b.plan?`<div style="margin-top:4px">👉 <b>${E(b.plan)}</b></div>`:''}<div class="row" style="margin-top:6px;gap:6px;flex-wrap:wrap">${b.rate?`<span class="pill y">${E(b.rate)}</span>`:''}${b.limit?`<span class="pill">${E(b.limit)}</span>`:''}${b.until?`<span class="pill">到 ${E(b.until)}</span>`:''}</div>
+  ${b.why?`<div class="sub" style="margin-top:6px">${E(b.why)}</div>`:''}${(b.steps||[]).length?`<ol style="margin:8px 0 0 18px;padding:0;font-size:14px">${b.steps.map(x=>`<li>${E(x)}</li>`).join('')}</ol>`:''}</div>
+  ${(r.others||[]).length?`<div class="card"><div class="sub">其他卡</div>${r.others.map(o=>`<div class="ar" style="cursor:default"><div class="sp"><div>${E(o.card)}</div>${o.note?`<div class="sub">${E(o.note)}</div>`:''}</div><b class="num">${E(o.rate||'')}</b></div>`).join('')}</div>`:''}
+  ${r.tips?`<div class="note">💡 ${E(r.tips)}</div>`:''}<div class="card" style="padding:8px 12px"><div class="sub">${E(r.asOf?'資料日期 '+r.asOf+'・':'')}${md((P.cache[pkKey(P.q,P.amt)]||{}).d||today())} 查詢</div>${pkSrc(r)}${pkEntry('q')}<button class="go q" style="margin-top:6px" data-a="pkgo" data-i="1">重新查詢</button></div>`}
+ h+=`<h2>各卡本期重點${sm&&sm.d?'（'+md(sm.d)+' 更新）':''}</h2><div class="card">${U.pkSum?'<div class="sub">AI 上網整理中…</div>':sm&&sm.r?(sm.r.cards||[]).map(c=>`<div style="padding:8px 0;border-top:1px solid var(--line)"><b>${E(c.card)}</b>${(c.plans||[]).length?`<div class="sub" style="margin-top:4px">可切換的權益／方案</div>${c.plans.map(x=>`<div class="row" style="gap:6px;font-size:13px;padding:2px 0"><span class="sp"><b>${E(x.name)}</b> <span class="sub">${E(x.covers||'')}</span></span><span class="num">${E(x.rate||'')}</span></div>`).join('')}`:''}${(c.highlights||[]).map(x=>`<div style="font-size:13px">・${E(x)}</div>`).join('')}${c.notice?`<div class="sub" style="color:var(--amber)">⚠︎ ${E(c.notice)}</div>`:''}</div>`).join('')+pkSrc(sm.r)+pkEntry('sum'):'<div class="sub">每天第一次打開這頁會自動上網更新。</div>'}
+ <button class="go q" style="margin-top:8px" data-a="pksum" ${U.pkSum||!cards.length?'disabled':''}>現在重新整理</button></div>`;
+ return h;
+}
+async function perkSum(force){
+ const cards=pkCards();if(!cards.length)return;U.pkSum=1;if(U.tab==='perk')render();
+ try{const r=await askAI(`你是台灣信用卡優惠整理員。今天是 ${today()}。請用 Google 搜尋查以下信用卡「目前正在進行」的主要回饋與當期活動，以銀行官網和可靠的信用卡比較網站為主。若有國泰世華 CUBE 卡，列出它現在可以切換的每一個權益方案名稱、主要通路與回饋％。
+卡片：${cards.join('、')}
+只回傳 JSON（不要其他文字）：{"cards":[{"card":"卡名","plans":[{"name":"權益或方案名稱","covers":"主要通路","rate":"回饋"}],"highlights":["通路或類別：回饋（期限）"],"notice":"本期要注意的事，例如要登錄、即將到期"}],"asOf":"資料日期"}。查不到就寫「不確定」。`,null,true);
+  S.perk.sum={d:today(),r};save()}
+ catch(e){console.error(e);if(force)toast(aiErr(e))}
+ U.pkSum=0;if(U.tab==='perk')render();
+}
+async function perkGo(force){
+ const P=S.perk,q=String(P.q||'').trim(),cards=pkCards();if(!q)return toast('先輸入要在哪裡刷');if(!cards.length)return toast('先到「設定」新增信用卡');
+ const k=pkKey(q,P.amt),c=P.cache[k];if(!force&&c&&c.d===today())return render();
+ U.pkBusy=1;render();
+ try{const r=await askAI(`你是台灣信用卡優惠顧問。今天是 ${today()}。使用者要在「${q}」消費${+P.amt?'約 '+(+P.amt)+' 元':''}。使用者持有：${cards.join('、')}。
+請用 Google 搜尋查各卡「目前正在進行」的官方優惠（含通路加碼、行動支付、需要登錄的活動；國泰世華 CUBE 卡要查現在可切換的權益方案名稱與回饋％），比較後告訴使用者這筆用哪張卡最划算、需要做什麼。
+只回傳 JSON（不要其他文字）：{"best":{"card":"卡名","plan":"要切換的權益或要登錄的活動，沒有就空字串","rate":"回饋，例：3% 小樹點","why":"一句話原因","steps":["要做的步驟"],"limit":"回饋上限或條件","until":"活動期限"},"others":[{"card":"卡名","rate":"回饋","note":"一句話"}],"tips":"其他提醒","asOf":"資料日期"}。查不到確定資訊時 rate 寫「不確定」並在 tips 說明。`,null,true);
+  P.cache[k]={d:today(),r};const ks=Object.keys(P.cache);if(ks.length>30)ks.sort((a,b)=>P.cache[a].d<P.cache[b].d?-1:1).slice(0,ks.length-30).forEach(x=>delete P.cache[x]);save()}
+ catch(e){console.error(e);toast(aiErr(e))}
+ U.pkBusy=0;render();
+}
 // ── 月曆 ──
 function vCal(){
  const m=U.cm,d0=pd(m+'-01'),y=d0.getFullYear(),mo=d0.getMonth(),n=dim(y,mo),t0=today(),end=m+'-'+String(n).padStart(2,'0');
@@ -697,7 +741,7 @@ function sheetAcct(o){
 }
 
 const TABS=[['home','◎','總覽'],['tx','✎','記帳'],['cal','▦','月曆'],['bills','◷','固定收支'],['more','⋯','更多']];
-const MORE=[['plan','◫','分帳戶','薪水進來先分好：固定支出、生活費、存錢、投資'],['budget','◔','預算','每個分類一個月能花多少，快超過會提醒'],['chart','▥','圖表','每個月花多少、錢都花在哪'],['stock','↗','股票','持股、賺賠、股利一次看'],['news','▤','時事與股市','今天股價漲跌、國內外新聞、熱門話題'],['calc','％','複利計算','每月存一點，以後會變多少'],['imp','⇣','匯入明細','信用卡、銀行、電子發票、截圖'],['set','⚙︎','設定與風格','帳戶、顏色、深色模式、備份'],['guide','?','新手教學','從頭一步一步開始']];
+const MORE=[['perk','✦','刷卡優惠','在哪裡刷用哪張卡、CUBE 要切哪個權益'],['plan','◫','分帳戶','薪水進來先分好：固定支出、生活費、存錢、投資'],['budget','◔','預算','每個分類一個月能花多少，快超過會提醒'],['chart','▥','圖表','每個月花多少、錢都花在哪'],['stock','↗','股票','持股、賺賠、股利一次看'],['news','▤','時事與股市','今天股價漲跌、國內外新聞、熱門話題'],['calc','％','複利計算','每月存一點，以後會變多少'],['imp','⇣','匯入明細','信用卡、銀行、電子發票、截圖'],['set','⚙︎','設定與風格','帳戶、顏色、深色模式、備份'],['guide','?','新手教學','從頭一步一步開始']];
 let RD=0,RD2=0,KF=0;
 function render(){
  // 換掉畫面時，正在輸入的欄位失焦會觸發 change；那次重畫延後到這次畫完再做
@@ -706,12 +750,13 @@ function render(){
  if(RD2){RD2=0;render()}
 }
 function renderNow(){
- const y=window.scrollY,V={plan:vPlan,card:vCard,home:vHome,tx:vTx,cal:vCal,bills:vBills,more:vMore,budget:vBudget,chart:vChart,stock:vStock,news:vNews,calc:vCalc,imp:vImp,set:vSet,guide:vGuide},sub=MORE.some(m=>m[0]===U.tab),ae=KF&&document.activeElement,am=ae&&ae.dataset&&ae.dataset.m,cp=am&&ae.selectionStart;KF=0;
+ const y=window.scrollY,V={perk:vPerk,plan:vPlan,card:vCard,home:vHome,tx:vTx,cal:vCal,bills:vBills,more:vMore,budget:vBudget,chart:vChart,stock:vStock,news:vNews,calc:vCalc,imp:vImp,set:vSet,guide:vGuide},sub=MORE.some(m=>m[0]===U.tab),ae=KF&&document.activeElement,am=ae&&ae.dataset&&ae.dataset.m,cp=am&&ae.selectionStart;KF=0;
  CI={};$('tip').style.display='none';$('eye').textContent=HIDE?'顯示金額':'隱藏金額';$('eye').classList.toggle('on',HIDE);$('eye').setAttribute('aria-label',HIDE?'顯示金額':'隱藏金額');
  $('app').innerHTML=(sub?'<button class="back" data-a="tab" data-i="more">‹ 更多</button>':'')+V[U.tab]();
  $('nav').innerHTML=TABS.map(([k,i,n])=>`<button class="${U.tab===k||(k==='more'&&sub)?'on':''}" data-a="tab" data-i="${k}"><b>${i}</b>${n}</button>`).join('');
  const sh=U.sheet,SH={pitem:sheetPItem,payee:sheetPayee,start:sheetStart,tx:sheetTx,bill:sheetBill,acct:sheetAcct,trade:sheetTrade,recon:sheetRecon,hold:sheetHold};$('sheet').innerHTML=sh?`<div class="sheet" data-a="bg"><div>${SH[sh.k](sh.o)}</div></div>`:'';
  window.scrollTo(0,y);
+ document.querySelectorAll('[data-entry]').forEach(el=>{const k=el.dataset.entry,P=S.perk||{},r=k==='sum'?P.sum&&P.sum.r:(P.cache[pkKey(P.q,P.amt)]||{}).r,html=r&&r._entry;if(html){try{el.attachShadow({mode:'open'}).innerHTML=html}catch(e){}}});
  if(am){const f=document.querySelector(`[data-m="${am}"]`);if(f&&f.tagName!=='SELECT'){f.focus();try{f.setSelectionRange(cp,cp)}catch(e){}}}
 }
 
@@ -832,7 +877,7 @@ async function impAI(){
 }
 
 const aiErr=e=>{const c=e&&e.code;return c==='quota'?'AI 免費額度用完了，請稍後再試':c==='none'?'AI 還沒啟用：請到 Firebase 主控台開啟 AI Logic':c==='empty'?'AI 看不懂這張圖':'AI 辨識失敗，請再試一次'};
-async function askAI(prompt,file){const sm=window.claude&&await claude.use('sample');if(!sm)throw{code:'none'};return sm.json(prompt,file?{images:file}:{})}
+async function askAI(prompt,file,search){const sm=window.claude&&await claude.use('sample');if(!sm)throw{code:'none'};return sm.json(prompt,Object.assign(file?{images:file}:{},search?{search:true}:{}))}
 
 // ── 總資產、對帳、截圖辨識、股價 ──
 function assetCard(liq){
@@ -1128,6 +1173,9 @@ const ACT={
   U.imp=null;U.sheet=null;U.fa='';U.tab='guide';save();render();window.scrollTo(0,0);toast('已清空，照著教學一步一步來')},
 };
 Object.assign(ACT,{
+ pkq:i=>{S.perk.q=i;save();perkGo(false)},
+ pkgo:i=>perkGo(!!i),
+ pksum:()=>perkSum(true),
  eye:()=>{HIDE=!HIDE;try{localStorage.setItem('money-hide',HIDE?'1':'0')}catch(e){}render();toast(HIDE?'金額已隱藏，再按一下就會顯示':'金額已顯示')},
  plandef:()=>{const fx=Math.round(billPM('out')),iv=Math.round(billPM('inv')),bc=[...new Set(S.bills.filter(b=>(b.kind||'out')==='out').map(b=>b.cat))];
   S.plan.items=[{id:nid(),name:'固定支出（房貸、帳單）',amt:fx,acct:'',cats:bc,fixed:true},{id:nid()+'a',name:'生活費',amt:'',acct:'',cats:['餐飲','交通','停車費','日用品'].filter(c=>S.cats.out.includes(c))},{id:nid()+'b',name:'想要的（購物、娛樂）',amt:'',acct:'',cats:['購物','娛樂'].filter(c=>S.cats.out.includes(c))},{id:nid()+'c',name:'存起來（緊急預備金）',amt:'',acct:'',cats:[]},{id:nid()+'d',name:'定期投資',amt:iv,acct:'',cats:[]}];
@@ -1204,6 +1252,7 @@ const tipEl=$('tip'),posTip=e=>{const w=tipEl.offsetWidth,h=tipEl.offsetHeight;t
 document.addEventListener('pointerover',e=>{const el=e.target.closest&&e.target.closest('[data-tip]');if(!el){tipEl.style.display='none';return}tipEl.innerHTML=el.getAttribute('data-tip');tipEl.style.display='block';posTip(e)});
 document.addEventListener('pointermove',e=>{if(tipEl.style.display==='block')posTip(e)});
 window.addEventListener('scroll',()=>{tipEl.style.display='none'},{passive:true});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='pkq'&&!e.isComposing){e.preventDefault();S.perk.q=e.target.value;save();perkGo(false)}});
 document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;if(el.tagName==='A')e.preventDefault();const f=ACT[el.dataset.a];if(f)f(el.dataset.i,el,e)});
 function field(e){
  const el=e.target,p=el.dataset&&el.dataset.m;if(!p)return;

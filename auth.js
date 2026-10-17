@@ -60,10 +60,20 @@ const sampler = {
     let last;
     for (const name of AI_MODELS) {
       try {
-        const m = aim.getGenerativeModel(ai, { model: name, generationConfig: { responseMimeType: 'application/json' } });
+        // search：讓 Gemini 用 Google 搜尋查最新資料（這時不能指定 JSON 格式，改從文字裡取出 JSON）
+        const srch = opts && opts.search;
+        const m = aim.getGenerativeModel(ai, srch ? { model: name, tools: [{ googleSearch: {} }] } : { model: name, generationConfig: { responseMimeType: 'application/json' } });
         const r = await m.generateContent(parts);
-        const t = r.response.text().trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/, '');
-        try { return JSON.parse(t); } catch (x) { throw { code: 'empty' }; }
+        let t = r.response.text().trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/, '');
+        if (srch) { const a = t.indexOf('{'), b = t.lastIndexOf('}'); if (a >= 0 && b > a) t = t.slice(a, b + 1); }
+        let o;
+        try { o = JSON.parse(t); } catch (x) { throw { code: 'empty' }; }
+        if (srch && o && typeof o === 'object') {
+          const g = ((r.response.candidates || [])[0] || {}).groundingMetadata || {};
+          o._src = (g.groundingChunks || []).map(c => c.web).filter(Boolean).map(w => ({ t: w.title || w.domain || '', u: w.uri }));
+          o._entry = (g.searchEntryPoint && g.searchEntryPoint.renderedContent) || '';
+        }
+        return o;
       } catch (e) {
         last = e;
         if (e && e.code === 'empty') throw e;
