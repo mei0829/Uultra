@@ -465,31 +465,45 @@ function spendCard(){
  return`<div class="card" data-a="tab" data-i="plan" style="cursor:pointer"><div class="row"><div class="sp"><div class="sub">這個月還可以花</div><div class="big ${left<=0?'neg':''}">${M(left)}</div></div><div style="text-align:right"><div class="sub">平均每天</div><b class="num">${M(left/dl)}</b></div></div>
  ${its.map((x,i)=>`<div class="row sub" style="margin-top:3px"><span class="sp">${E(x.name)}</span><span class="num ${L[i].left<0?'neg':''}">${L[i].left<0?'超過 '+M(-L[i].left):'剩 '+M(L[i].left)}</span></div>`).join('')}</div>`;
 }
+// 建議怎麼分「還沒分的錢」：生活費 50%、想買的 20%、存起來 30%
+const PSUG=[['生活','生活費',0.5,['餐飲','交通','停車費','日用品']],['想要','想要的（購物、娛樂）',0.2,['購物','娛樂']],['存','存起來（緊急預備金）',0.3,[]]];
+function planSug(){const P=S.plan,rest=planInc()-P.items.reduce((a,x)=>a+pa(x),0);if(rest<100)return null;
+ const r=PSUG.map(([k,name,f,cats])=>({k,name,cats,add:Math.floor(rest*f/100)*100,it:P.items.find(x=>x.mode!=='rest'&&x.name.includes(k))}));r[r.length-1].add=Math.round(rest-r.slice(0,-1).reduce((a,x)=>a+x.add,0));return r}
 function vPlan(){
- const P=S.plan,inc=planInc(),tot=P.items.reduce((a,x)=>a+pa(x),0),rest=inc-tot,m=today().slice(0,7),from=A(P.from)||A(firstBank());
+ const P=S.plan,inc=planInc(),m=today().slice(0,7),from=A(P.from)||A(firstBank());
  const d=pd(today()),dl=dim(d.getFullYear(),d.getMonth())-d.getDate()+1;
- let h=`<h1>分帳戶</h1><div class="note">每一項都可以點進去改：要用<b>固定金額</b>（例：生活費 12,000）、<b>收入的 %</b>（例：存 20%）、或<b>剩下的全部</b>（其他分完剩多少就放多少，只能選一項）。<br>做法：薪水一進來，先照下面的分法把錢「分好」，可以真的轉到不同的子帳戶。分給「生活費」的錢就是這個月能花的，花完就停，不會不小心花到房貸或存款。<br>常見比例：必要支出 50%、想要的 30%、存起來 20%，可以照自己的狀況調。</div>
- <div class="card"><div class="grid"><label class="fl"><span>每月收入（空白＝用「固定收支」裡的固定收入 ${M(billPM('in'))}）</span><input inputmode="numeric" value="${E(P.income)}" placeholder="${Math.round(billPM('in'))}" data-m="plan.income" data-s="1" data-r="1"></label>
- <label class="fl"><span>薪水進到哪個帳戶</span><select data-m="plan.from" data-s="1" data-r="1">${S.accts.filter(a=>!isCard(a)).map(a=>`<option value="${a.id}" ${from&&from.id===a.id?'selected':''}>${E(nm(a))}</option>`).join('')}</select></label></div></div>`;
- if(!P.items.length)return h+`<div class="card"><div class="sub" style="margin-bottom:8px">還沒有分配。按下面會幫你建好常用的 5 個用途，固定帳單和定期投資的金額會自動帶入，其他再自己填。</div><button class="go" data-a="plandef">用建議的分法開始</button></div>`;
- h+=`<div class="card"><div class="row"><b class="sp">每月 ${M(inc)} 這樣分</b><span class="num ${rest<-0.5?'neg':''}">${rest<-0.5?'超出 '+M(-rest):rest>0.5?'還沒分 '+M(rest):'✓ 剛好分完'}</span></div>
- <div class="meter" style="display:flex;gap:2px;height:10px;margin:8px 0">${P.items.filter(x=>pa(x)>0).map((x,i)=>`<i style="width:${Math.min(100,pa(x)/Math.max(inc,tot)*100)}%;background:var(--acc);opacity:${1-i*0.14}"></i>`).join('')}</div>
- ${P.items.map(x=>{const a=A(x.acct),pl=(x.cats||[]).length?planLeft(x,m):null;return`<div class="li" data-a="edpitem" data-i="${x.id}"><div class="sp"><div><b>${E(x.name)}</b> <span class="sub">${inc?Math.round(pa(x)/inc*100)+'%':''}</span></div><div class="sub">${pmode(x)} · ${a?'放在 '+E(nm(a)):'不另外轉帳'}${(x.cats||[]).length?' · 管：'+E(x.cats.join('、')):''}</div>
- ${pl?`<div class="meter"><i style="width:${pa(x)?Math.min(100,pl.sp/pa(x)*100):0}%;background:${pl.left<0?'var(--bad)':pl.sp>=pa(x)*0.8?'var(--amber)':'var(--acc)'}"></i></div><div class="sub">${x.fixed?'這個月已繳 '+M(pl.sp)+'，還要繳 '+M(Math.max(0,pl.left)):''}</div><div class="sub" ${x.fixed?'hidden':''}>這個月花了 ${M(pl.sp)}，${pl.left<0?'<b class="neg">超過 '+M(-pl.left)+'</b>':'還剩 '+M(pl.left)+'，每天約 '+M(pl.left/dl)}</div>`:''}</div><b class="num">${M(pa(x))}</b></div>`}).join('')}
- <button class="go q" style="margin-top:8px" data-a="addpitem">＋ 新增用途</button></div>`;
+ const fixed=P.items.filter(x=>x.fixed),rest=inc-P.items.reduce((a,x)=>a+pa(x),0),fx=fixed.reduce((a,x)=>a+pa(x),0);
+ let h=`<h1>分帳戶</h1><div class="note">薪水一進來，先決定每一塊錢要做什麼：<br>① 先扣掉<b>一定要繳的</b>（房貸、帳單）<br>② 剩下的分成：<b>生活費</b>（吃飯、交通）、<b>想買的</b>、<b>存起來</b><br>分給生活費的錢，就是這個月可以花的，花完就停。</div>
+ <div class="card"><label class="fl"><span>每月收入（薪水）</span><input inputmode="numeric" value="${E(P.income)}" placeholder="${Math.round(billPM('in'))||'例：56000'}" data-m="plan.income" data-s="1" data-r="1"></label></div>`;
+ if(!P.items.length)return h+`<div class="card"><div class="sub" style="margin-bottom:8px">按下面，會先幫你放好「固定支出、生活費、想買的、存起來、定期投資」5 塊，房貸和帳單的金額會自動帶入。</div><button class="go" style="width:100%" data-a="plandef">開始分配</button></div>`;
+ h+=`<div class="card"><div class="row"><span class="sp">收入</span><b class="num">${M(inc)}</b></div>${fx?`<div class="row"><span class="sp">− 一定要繳的（房貸、帳單）</span><b class="num">${M(fx)}</b></div>`:''}
+ ${P.items.filter(x=>!x.fixed&&pa(x)>0).map(x=>`<div class="row"><span class="sp">− ${E(x.name)}</span><b class="num">${M(pa(x))}</b></div>`).join('')}
+ <div class="row" style="border-top:1px solid var(--line);margin-top:6px;padding-top:6px"><b class="sp">${rest<-0.5?'⚠︎ 分太多了':rest>0.5?'還沒分配的錢':'✓ 每一塊錢都分好了'}</b><b class="num ${rest<-0.5?'neg':''}">${rest<-0.5?'超出 '+M(-rest):M(Math.max(0,rest))}</b></div></div>`;
+ const sg=planSug();
+ if(sg)h+=`<div class="card" style="border-color:var(--acc)"><b>建議這樣分剩下的 ${M(rest)}</b>${sg.map(x=>`<div class="row" style="margin-top:4px"><span class="sp">${E(x.it?x.it.name:x.name)}</span><b class="num">＋${M(x.add)}</b></div>`).join('')}
+  <div class="sub" style="margin-top:4px">生活費 50%、想買的 20%、存起來 30%。套用後還是可以點每一項自己改。</div><button class="go" style="width:100%;margin-top:8px" data-a="plansug">套用這個建議</button></div>`;
+ h+=`<h2>每一塊（點一下可以改金額）</h2><div class="card">${P.items.map(x=>{const v=pa(x),a=A(x.acct),pl=(x.cats||[]).length&&!x.fixed?planLeft(x,m):null;
+  const line=x.fixed?(x.cats||[]).length?'房貸、帳單，每月固定要繳':'每月固定要繳':!v?'<span style="color:var(--acc)">還沒設定金額，點一下設定 ›</span>':pl?(pl.left<0?`這個月花了 ${M(pl.sp)}，<b class="neg">超過 ${M(-pl.left)}</b>`:`這個月花了 ${M(pl.sp)}，還剩 ${M(pl.left)}（每天約 ${M(pl.left/dl)}）`):(x.name.includes('投資')?'每月拿去投資':'每月存起來，不要動');
+  return`<div class="ar" data-a="edpitem" data-i="${x.id}"><div class="sp"><div><b>${E(x.name)}</b>${x.mode==='pct'?` <span class="pill">收入 ${+x.pct}%</span>`:x.mode==='rest'?' <span class="pill">剩下的全部</span>':''}</div><div class="sub">${line}${a?' · 放在 '+E(nm(a)):''}</div>${pl&&v?`<div class="meter"><i style="width:${Math.min(100,pl.sp/v*100)}%;background:${pl.left<0?'var(--bad)':pl.sp>=v*0.8?'var(--amber)':'var(--acc)'}"></i></div>`:''}</div><b class="num">${M(v)}</b></div>`}).join('')}
+ <button class="go q" style="margin-top:8px" data-a="addpitem">＋ 新增一塊</button></div>`;
  const tr=P.items.filter(x=>pa(x)>0&&x.acct&&from&&x.acct!==from.id);
- if(tr.length)h+=`<h2>發薪日要做的轉帳</h2><div class="card">${tr.map(x=>`<div class="row" style="padding:4px 0"><span class="sp">${E(nm(from))} → <b>${E(nm(A(x.acct)))}</b><div class="sub">${E(x.name)}</div></span><b class="num">${M(pa(x))}</b></div>`).join('')}
- ${P.done===m?`<div class="sub in" style="margin-top:6px">✓ 這個月已經記錄分配了</div>`:`<button class="go" style="margin-top:8px;width:100%" data-a="plando">我轉好了，幫我記下這些轉帳</button><div class="sub" style="margin-top:4px">會記成「轉帳」，不算收入支出，只是把錢搬到各個帳戶。</div>`}</div>`;
+ h+=`<h2>要不要真的把錢分到不同帳戶？（選擇性）</h2><div class="card"><div class="sub">如果你有子帳戶（例如「生活費」帳戶），點上面的某一塊 →「更多設定」→ 選「放到哪個帳戶」，發薪日就會列出要轉哪些錢。不分帳戶也沒關係，網站一樣會幫你算還剩多少。</div>
+ <label class="fl" style="margin-top:8px"><span>薪水進到哪個帳戶</span><select data-m="plan.from" data-s="1" data-r="1">${S.accts.filter(a=>!isCard(a)).map(a=>`<option value="${a.id}" ${from&&from.id===a.id?'selected':''}>${E(nm(a))}</option>`).join('')}</select></label>
+ ${tr.length?`<div class="sub" style="margin-top:10px">發薪日要做的轉帳：</div>${tr.map(x=>`<div class="row" style="padding:4px 0"><span class="sp">${E(nm(from))} → <b>${E(nm(A(x.acct)))}</b><div class="sub">${E(x.name)}</div></span><b class="num">${M(pa(x))}</b></div>`).join('')}
+ ${P.done===m?`<div class="sub in" style="margin-top:6px">✓ 這個月已經記錄分配了</div>`:`<button class="go" style="margin-top:8px;width:100%" data-a="plando">我轉好了，幫我記下這些轉帳</button>`}`:''}</div>`;
  return h;
 }
 function sheetPItem(o){
- return`<div class="row"><b class="sp" style="font-size:17px">${o.id?'編輯用途':'新增用途'}</b><button class="x" data-a="close">×</button></div>
- <div class="grid"><label class="fl w"><span>名稱</span><input value="${E(o.name)}" data-m="sheet.o.name" placeholder="例：生活費、存錢、旅遊基金"></label>
- <div class="fl w"><span>怎麼分</span><div class="chips">${[['amt','固定金額'],['pct','收入的 %'],['rest','剩下的全部']].map(([k,n])=>`<button class="chip ${(o.mode||'amt')===k?'on':''}" data-a="pmode" data-i="${k}">${n}</button>`).join('')}</div></div>
- ${(o.mode||'amt')==='amt'?`<label class="fl"><span>每月放多少錢</span><input inputmode="numeric" value="${E(o.amt)}" data-m="sheet.o.amt" placeholder="例：12000"></label>`:o.mode==='pct'?`<label class="fl"><span>收入的幾 %（每月收入 ${M(planInc())}）</span><input inputmode="decimal" value="${E(o.pct||'')}" data-m="sheet.o.pct" data-pv="1" placeholder="例：20"><span class="sub" id="pctpv">${o.pct?'＝ 每月 '+M(planInc()*(+o.pct||0)/100):''}</span></label>`:`<div class="fl"><span class="sub">其他用途分完，剩下多少就放多少</span><b id="restpv">目前約 ${M(Math.max(0,planInc()-S.plan.items.filter(y=>y.id!==o.id&&y.mode!=='rest').reduce((a,y)=>a+pa(y),0)))}</b></div>`}
- <label class="fl"><span>放到哪個帳戶</span><select data-m="sheet.o.acct"><option value="">不另外轉（留在原帳戶）</option>${S.accts.filter(a=>!isCard(a)).map(a=>`<option value="${a.id}" ${o.acct===a.id?'selected':''}>${E(nm(a))}</option>`).join('')}</select></label></div>
- <label class="row" style="margin-top:8px"><input type="checkbox" data-m="sheet.o.fixed" ${o.fixed?'checked':''}><span>這是固定要繳的錢（房貸、帳單），不算「還可以花」</span></label>
- <div class="fl" style="margin-top:8px"><span class="sub">這筆錢負責哪些花費？（選了就會追蹤這個月還剩多少；存錢、投資不用選）</span><div class="chips" style="margin-top:4px">${S.cats.out.map(c=>`<button class="chip ${(o.cats||[]).includes(c)?'on':''}" data-a="pcat" data-i="${E(c)}">${E(c)}</button>`).join('')}</div></div>
+ const mode=o.mode||'amt',adv=o._adv||mode!=='amt'||o.acct;
+ return`<div class="row"><b class="sp" style="font-size:17px">${o.id?'修改':'新增一塊'}</b><button class="x" data-a="close">×</button></div>
+ <div class="grid"><label class="fl w"><span>名稱</span><input value="${E(o.name)}" data-m="sheet.o.name" placeholder="例：生活費、旅遊基金"></label>
+ ${mode==='amt'?`<label class="fl w"><span>每個月放多少錢</span><input class="amt" inputmode="numeric" value="${E(o.amt||'')}" data-m="sheet.o.amt" placeholder="例：12000"></label>`:''}</div>
+ <button class="go q" style="margin-top:10px" data-a="padv">${adv?'▴ 收起更多設定':'▾ 更多設定（用比例、分到別的帳戶、追蹤哪些花費）'}</button>
+ ${adv?`<div class="grid" style="margin-top:6px"><div class="fl w"><span>怎麼算金額</span><div class="chips">${[['amt','固定金額'],['pct','收入的 %'],['rest','剩下的全部']].map(([k,n])=>`<button class="chip ${mode===k?'on':''}" data-a="pmode" data-i="${k}">${n}</button>`).join('')}</div></div>
+ ${mode==='pct'?`<label class="fl w"><span>收入的幾 %（每月收入 ${M(planInc())}）</span><input inputmode="decimal" value="${E(o.pct||'')}" data-m="sheet.o.pct" data-pv="1" placeholder="例：20"><span class="sub" id="pctpv">${o.pct?'＝ 每月 '+M(planInc()*(+o.pct||0)/100):''}</span></label>`:mode==='rest'?`<div class="fl w"><span class="sub">其他分完，剩多少就放多少</span><b id="restpv">目前約 ${M(Math.max(0,planInc()-S.plan.items.filter(y=>y.id!==o.id&&y.mode!=='rest').reduce((a,y)=>a+pa(y),0)))}</b></div>`:''}
+ <label class="fl w"><span>放到哪個帳戶（有子帳戶才需要）</span><select data-m="sheet.o.acct"><option value="">不用，留在薪轉帳戶</option>${S.accts.filter(a=>!isCard(a)).map(a=>`<option value="${a.id}" ${o.acct===a.id?'selected':''}>${E(nm(a))}</option>`).join('')}</select></label></div>
+ <label class="row" style="margin-top:8px"><input type="checkbox" data-m="sheet.o.fixed" ${o.fixed?'checked':''}><span>這是一定要繳的錢（房貸、帳單）</span></label>
+ <div class="fl" style="margin-top:8px"><span class="sub">這塊錢要負責哪些花費？（選了就會告訴你這個月還剩多少）</span><div class="chips" style="margin-top:4px">${S.cats.out.map(c=>`<button class="chip ${(o.cats||[]).includes(c)?'on':''}" data-a="pcat" data-i="${E(c)}">${E(c)}</button>`).join('')}</div></div>`:''}
  <div class="row" style="margin-top:14px;gap:8px">${o.id?'<button class="go r" data-a="delpitem">刪除</button>':''}<span class="sp"></span><button class="go" data-a="savepitem">儲存</button></div>`;
 }
 // ── 刷卡優惠：用 Gemini＋Google 搜尋查最新優惠，結果記住一天 ──
@@ -1183,6 +1197,8 @@ Object.assign(ACT,{
  addpitem:()=>{U.sheet={k:'pitem',o:{name:'',amt:'',acct:'',cats:[]}};render()},
  edpitem:i=>{const x=S.plan.items.find(y=>y.id===i);if(x){U.sheet={k:'pitem',o:Object.assign({},x,{cats:(x.cats||[]).slice()})};render()}},
  pmode:i=>{U.sheet.o.mode=i;render()},
+ padv:()=>{const o=U.sheet.o;o._adv=!o._adv;render()},
+ plansug:()=>{const sg=planSug();if(!sg)return;sg.forEach((x,k)=>{if(x.it){x.it.mode='amt';x.it.amt=pa(x.it)+x.add}else S.plan.items.push({id:nid()+k,name:x.name,mode:'amt',amt:x.add,acct:'',cats:x.cats.filter(c=>S.cats.out.includes(c))})});save();render();toast('分好了！點每一塊可以再調整')},
  pcat:i=>{const c=U.sheet.o.cats;const k=c.indexOf(i);if(k>=0)c.splice(k,1);else c.push(i);render()},
  savepitem:()=>{const o=U.sheet.o,mode=o.mode||'amt';if(!String(o.name||'').trim())return toast('請輸入名稱');
   const amt=mode==='amt'?(o.amt===''||o.amt==null?0:pAmt(o.amt)):0,pct=mode==='pct'?pAmt(o.pct):0;
