@@ -252,8 +252,49 @@ if(typeof window!=='undefined'&&window.addEventListener){window.addEventListener
 function lfixUpd(){const el=$('lfix');if(!el)return;let nm2='';if(S.tab==='ld'&&!S.view&&document.querySelectorAll){const cs=document.querySelectorAll('div.card[data-lz]');for(const c of cs){const r=c.getBoundingClientRect();if(r.top<=40&&r.bottom>90){const l=S.leaders.find(x=>x.id===+c.dataset.lz);if(l)nm2=l.name;break}}}
  if(nm2){el.style.display='flex';el.textContent='★ '+nm2}else el.style.display='none'}
 if(typeof window!=='undefined'&&window.addEventListener)window.addEventListener('scroll',lfixUpd,{passive:true});
+const FEAT=[
+['業績 PV 輸入 記業績 %','💰 記業績（PV、幾 %）','課表 → 上方「💰 業績」→「記一筆業績」，選日期、填 PV、選是誰的業績',{tab:'ev',cv:'pv'}],
+['組織人數 夥伴組織 突破 加入時間軸','👥 組織人數・加入時間軸・突破','課表 →「💰 業績」→ 往下滑到「組織人數」「加入時間軸」',{tab:'ev',cv:'pv'}],
+['月報 統計 月底 自己の人 約旁線 深線','📊 月報（每月統計）','課表 → 上方「📊 月報」，點四格看明細',{tab:'ev',cv:'r'}],
+['出貨 記出貨 組數','📦 記一筆出貨','課表 →「📊 月報」→「本月時間軸」右上「＋ 記一筆出貨」；特惠的出貨在首頁特惠裡記',{tab:'ev',cv:'r'}],
+['特惠 優惠 出貨 誰有興趣','🏷 近期特惠','首頁最上面「近期特惠」，右邊 ＋ 新增；按「出貨・名單」記出貨、看誰有興趣',{tab:'today'}],
+['金玉良言 名言 每日一句','💬 金玉良言','首頁「今日金玉良言」，按「全部」可新增、搜尋',{tab:'today'}],
+['每日跟進 打勾 跟進','🌱 每日跟進','首頁「每日跟進」，勾＝今天有跟進，按 ＋ 看要做的事和六步驟',{tab:'today'}],
+['下次聯絡 提醒 該聯絡','⏰ 下次聯絡・該聯絡了','設定：新人資訊「聯絡打勾」→「設定下次聯絡」；日期到了首頁會出現「該聯絡了」',{tab:'today'}],
+['活動後待處理 對答案 跟進完畢 不跟進','活動後待處理','首頁「活動後待處理」，按 ＋ 展開',{tab:'today'}],
+['新增活動 課表 聚會 重複 每週','▦ 新增活動（可設定重複）','課表 → 右上「＋ 新增」，下面有「🔁 重複」',{tab:'ev',cv:'m'}],
+['搜尋活動 找活動','🔍 搜尋活動','課表 → 月曆上方的搜尋框',{tab:'ev',cv:'m'}],
+['匯入 課表照片 AI','📷 拍照匯入課表','課表 → 右上「📷 匯入」',{tab:'ev',cv:'m'}],
+['軟性 輕創 專業 分類','軟性／輕創／專業','新增或修改活動時選「約的方向」；類型選「課程」自動是專業',{tab:'ev',cv:'m'}],
+['刪除活動 修改活動','✎ 修改／刪除活動','課表 → 活動卡片下方「✎ 修改・刪除・照片」',{tab:'ev',cv:'m'}],
+['新人 名單 新增新人','☰ 新人名單・新增新人','新人 →「新人」，右上 ＋ 新增',{tab:'list',lv:'list'}],
+['旁線 深線 新朋友','旁線・深線名單','新人 →「旁・深」',{tab:'list',lv:'side'}],
+['地區 縣市 通車','📍 地區聚會','新人 →「地區」',{tab:'list',lv:'area'}],
+['分類 ABCD','分類','新人 →「分類」',{tab:'list',lv:'cat'}],
+['社團','社團與聚會','新人 →「社團」',{tab:'list',lv:'grp'}],
+['星座','星座','新人 →「星座」',{tab:'list',lv:'zod'}],
+['靈數 生命靈數','生命靈數','新人 →「靈數」',{tab:'list',lv:'life'}],
+['架構 架構圖 上線 下線','◎ 架構圖','下方「架構」；調整順序按右上「調整順序」',{tab:'org'}],
+['領導人 總表 夥伴 幫忙 深線','★ 領導人總表','下方「領導人」→「總表」；我的夥伴在上面一區',{tab:'ld',ldv:'tbl'}],
+['領導人卡片 皇冠 重點跟進 保母 教練 教師 新朋友','★ 領導人卡片','下方「領導人」→「卡片」，按 ＋ 打開；左上皇冠＝重點跟進',{tab:'ld',ldv:'card'}],
+['對答案 紀錄 刪除 異議','✎ 全部對答案・回答異議庫','下方「答案」；每筆右上 × 可刪除',{tab:'ans'}],
+['備份 主題 顏色 設定 邀請 帳號 登出','⚙ 設定（備份、主題、邀請名單）','下方「設定」',{tab:'bk'}],
+['六步驟 拜三師 管理班 NDO','啟動新人六步驟','打開任一位新人 → 「進度」區的 1～6',{tab:'list',lv:'list'}],
+['產品 用過 有興趣 常客','🛍 新人用過的產品','打開新人 →「產品」區；旁線在卡片裡「🛍 產品」',{tab:'list',lv:'list'}],
+['聯絡打勾 聯絡紀錄 今天有聯絡','✓ 聯絡打勾・近期聯絡紀錄','打開新人 →「✓ 聯絡打勾」「📞 近期聯絡紀錄」',{tab:'list',lv:'list'}],
+['他是誰的人 深線設定','設定深線（是誰的人）','打開新人 →「目前跟進的領導人」上方「他是誰的人？」',{tab:'list',lv:'list'}],
+['IG Line 領導人跟進','領導人 +IG／+Line','打開新人 →「目前跟進的領導人」，點領導人後下面的 ＋IG、＋Line',{tab:'list',lv:'list'}],
+['生日 年齡','🎂 生日','打開新人 → 基本資料；首頁有「一週內生日」',{tab:'list',lv:'list'}],
+['業績紀錄 上Pin Pin','💰 新人業績・上 Pin 紀錄','打開新人 →「業績紀錄」「上 Pin 紀錄」',{tab:'list',lv:'list'}],
+['加入日期 續約','加入日期・續約','打開新人 → 勾「加入」會記今天，可在基本資料改日期',{tab:'list',lv:'list'}],
+['照片 合照','📷 照片','新人：「認識時的照片」；領導人：卡片「領導人資料・合照」；活動：「✎ 修改・刪除・照片」',{tab:'list',lv:'list'}],
+['給領導人的資料 複製','⧉ 複製給領導人','打開新人 →「給領導人的資料」→「複製給領導人」',{tab:'list',lv:'list'}],
+['離線 沒網路','📴 離線使用','先有網路打開一次，之後沒網路也能用；建議加到主畫面',null],
+];
+const featHit=q=>{q=q.trim().toLowerCase();if(!q)return [];return FEAT.map((f,i)=>({f,i})).filter(({f})=>[f[0],f[1],f[2]].join(' ').toLowerCase().includes(q)||q.split(/\s+/).every(w=>[f[0],f[1],f[2]].join(' ').toLowerCase().includes(w)))};
+const tqRes=()=>{const q=S.tq||'';if(!q.trim())return '<div class="sub" style="font-size:12px;margin-top:4px">常用：'+['業績','出貨','特惠','深線','重複','月報'].map(w=>`<button class="chip" data-a="tqw" data-z1="${w}" style="padding:2px 8px;font-size:12px;margin:2px">${w}</button>`).join('')+'</div>';const h=featHit(q);const tips=TIPS.flatMap(([t,a])=>a.filter(x=>x.toLowerCase().includes(q.trim().toLowerCase())).map(x=>[t,x]));return (h.map(({f,i})=>`<div style="margin-top:8px;padding:8px;border:1px solid var(--line);border-radius:10px"><b style="font-size:14px">${f[1]}</b><div class="sub" style="font-size:12.5px;line-height:1.5;margin-top:2px">${f[2]}</div>${f[3]?`<button class="go q" data-a="fgo" data-z1="${i}" style="margin-top:6px;font-size:12px;padding:3px 12px">前往 ›</button>`:''}</div>`).join('')+tips.map(([t,x])=>`<div class="sub" style="margin-top:6px;font-size:12.5px">• <b>${t}</b>：${x}</div>`).join(''))||'<div class="sub" style="font-size:12px;margin-top:6px">找不到，換個說法試試（例：業績、出貨、活動、深線）</div>'};
 function tipsUI(){const el=$('tipx');if(!el)return;const f=$('fab');el.style.right=(f&&f.innerHTML)?'56px':'14px';
- el.innerHTML=`<button class="fabb" data-tp="1" aria-label="使用說明" style="font-size:16px;font-weight:700">${S.tp?'×':'?'}</button>${S.tp?`<div class="fabp" style="right:0;max-height:70vh;overflow:auto;width:min(92vw,340px)"><b>使用說明小撇步</b>${TIPS.map(([h,a],i)=>`<details ${i===0?'open':''} style="margin-top:8px"><summary style="cursor:pointer;font-weight:600">${h}</summary>${a.map(x=>`<div class="sub" style="margin:4px 0;font-size:12.5px;line-height:1.5">• ${x}</div>`).join('')}</details>`).join('')}</div>`:''}`}
+ el.innerHTML=`<button class="fabb" data-tp="1" aria-label="使用說明" style="font-size:16px;font-weight:700">${S.tp?'×':'?'}</button>${S.tp?`<div class="fabp" style="right:0;max-height:70vh;overflow:auto;width:min(92vw,340px)"><b>🔍 找功能</b><input id="tq" value="${E(S.tq||'')}" placeholder="打關鍵字，例：業績、出貨、深線" style="margin-top:6px"><div id="tqr">${tqRes()}</div><div class="sub" style="margin-top:12px;font-weight:700">使用說明小撇步</div>${TIPS.map(([h,a],i)=>`<details ${i===0?'open':''} style="margin-top:8px"><summary style="cursor:pointer;font-weight:600">${h}</summary>${a.map(x=>`<div class="sub" style="margin:4px 0;font-size:12.5px;line-height:1.5">• ${x}</div>`).join('')}</details>`).join('')}</div>`:''}`}
 const addMo=(ds,n)=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(ds||'');if(!m)return '';const t=new Date(+m[1],+m[2]-1+n,1),dim=new Date(t.getFullYear(),t.getMonth()+1,0).getDate();t.setDate(Math.min(+m[3],dim));return iso(t)};
 const rdOk=p=>p.joined&&/^\d{4}-\d{2}-\d{2}$/.test(p.rd||'');
 const rnList=()=>{const lim=addMo(today(),3);return S.people.filter(p=>rdOk(p)&&p.rd<=lim).map(p=>({p,rd:p.rd,dl:dleft(p.rd)})).sort((a,b)=>a.rd.localeCompare(b.rd))};
@@ -1166,6 +1207,8 @@ document.addEventListener('click',e=>{if(e.target.closest('a[href]'))return;
  else if(d.pwv){S.pwv=S.pwv===+d.pwv?null:+d.pwv}
  else if(d.rnw){const q=P(+d.rnw);if(q&&rdOk(q))q.rd=addMo(q.rd,12)}
  else if(d.tp){S.tp=!S.tp;if(S.tp)S.ap=false}
+ else if(d.a==='tqw'){S.tq=d.z1;tipsUI();return}
+ else if(d.a==='fgo'){const f=FEAT[+d.z1];if(f&&f[3]){Object.assign(S,f[3]);S.view=null;S.tp=false;S.hl=null;S.pn=null;scrollTo(0,0)}}
  else if(d.lx){S.lxo=S.lxo||{};S.lxo[d.lx]=!S.lxo[d.lx]}
  else if(d.a==='actopen'){S.ao=!S.ao}
  else if(d.sno){S.sno=S.sno||{};S.sno[d.sno]=!S.sno[d.sno]}
@@ -1273,7 +1316,7 @@ if(el.dataset.pkg!==undefined){S.pkg=+el.value;render();return}
  if(el.dataset.pa){const[i,k]=el.dataset.pa.split('|'),q=P(+i),a=(plan().acts[i]||[]).find(x=>x.k===k);if(a){if(a.path){set(q,a.path,el.checked);if(a.path==='joined'&&!el.checked)kids(q.id).forEach(c=>c.up=q.up)}else plan().done[i+'|'+k]=el.checked}render();return}
  if(el.dataset.p&&p){set(p,el.dataset.p,el.dataset.num?+el.value:el.value);if(el.dataset.p==='jd'&&p.jd&&!p.rd)p.rd=addMo(p.jd,12);save();{const hs=$('hdrsum');if(hs)hs.innerHTML=hdrSum(p)}if(el.dataset.p==='live'){p.live2='';save()}if(['name','next','live','ig','jd','rd','life','mbti'].includes(el.dataset.p))render()}
 });
-document.addEventListener('input',e=>{if(e.target.id==='qsearch'){S.qs=e.target.value;const pos=e.target.selectionStart;render();const q=$('qsearch');if(q){q.focus();q.setSelectionRange(pos,pos)}return}if(e.target.id==='evq'){S.evq=e.target.value;const pos=e.target.selectionStart;render();const q=$('evq');if(q){q.focus();q.setSelectionRange(pos,pos)}return}if(e.target.id==='aq'){S.aq=e.target.value;const pos=e.target.selectionStart;render();const q=$('aq');q.focus();q.setSelectionRange(pos,pos);return}if(e.target.dataset.no!==undefined)e.target.value=e.target.value.replace(/\D/g,'').slice(0,3);if(e.target.id==='q'){S.q=e.target.value;const pos=e.target.selectionStart;render();const q=$('q');q.focus();q.setSelectionRange(pos,pos)}});
+document.addEventListener('input',e=>{if(e.target.id==='qsearch'){S.qs=e.target.value;const pos=e.target.selectionStart;render();const q=$('qsearch');if(q){q.focus();q.setSelectionRange(pos,pos)}return}if(e.target.id==='tq'){S.tq=e.target.value;const r1=$('tqr');if(r1)r1.innerHTML=tqRes();return}if(e.target.id==='evq'){S.evq=e.target.value;const pos=e.target.selectionStart;render();const q=$('evq');if(q){q.focus();q.setSelectionRange(pos,pos)}return}if(e.target.id==='aq'){S.aq=e.target.value;const pos=e.target.selectionStart;render();const q=$('aq');q.focus();q.setSelectionRange(pos,pos);return}if(e.target.dataset.no!==undefined)e.target.value=e.target.value.replace(/\D/g,'').slice(0,3);if(e.target.id==='q'){S.q=e.target.value;const pos=e.target.selectionStart;render();const q=$('q');q.focus();q.setSelectionRange(pos,pos)}});
 let LDR=null;
 function moveLeader(id,to){const k=S.leaders.findIndex(x=>x.id===id),j=S.leaders.findIndex(x=>x.id===to);if(k<0||j<0||k===j)return false;const[x]=S.leaders.splice(k,1);S.leaders.splice(j,0,x);return true}
 document.addEventListener('pointerdown',e=>{const h=e.target.closest&&e.target.closest('[data-lh]');if(!h)return;LDR={id:+h.dataset.lh,z:null};e.preventDefault&&e.preventDefault()});
@@ -1298,7 +1341,7 @@ const odzAt=(x,y)=>{const el=document.elementFromPoint&&document.elementFromPoin
 document.addEventListener('pointermove',e=>{if(!ODR)return;const z=odzAt(e.clientX,e.clientY);if(z!==ODR.z){document.querySelectorAll('[data-dz]').forEach(n=>n.style.outline='');ODR.z=z;const n=z&&document.querySelector('[data-dz="'+z+'"]');if(n&&z!==String(ODR.id))n.style.outline='2px solid var(--acc)'}});
 const odend=e=>{if(!ODR)return;const z=ODR.z||odzAt(e.clientX,e.clientY),id=ODR.id;ODR=null;document.querySelectorAll('[data-dz]').forEach(n=>n.style.outline='');if(z!==null&&dropObj(id,z)){save();render()}else if(z!==null)toast('不能放到自己或自己的下層')};
 document.addEventListener('pointerup',odend);document.addEventListener('pointercancel',()=>{ODR=null});
-const CTR=['evco','pedit','rpt','lfe','evq','rp','epx','evx','pold','pmo','prdv','prnv','shf','evc','evf','enf','eip','prc','prt','rsc','fx','lfx','mrk','nxo','nxv','fua','qm','qs','qoff','rco','rcall','mrp','osort','cto','ctall','area','trip','pm','pnew','pkgw','tab','view','q','flt','cf','lv','fb','fs','fl','fc','pn','aq','pkg','pd','cm','av'];
+const CTR=['tq','evco','pedit','rpt','lfe','evq','rp','epx','evx','pold','pmo','prdv','prnv','shf','evc','evf','enf','eip','prc','prt','rsc','fx','lfx','mrk','nxo','nxv','fua','qm','qs','qoff','rco','rcall','mrp','osort','cto','ctall','area','trip','pm','pnew','pkgw','tab','view','q','flt','cf','lv','fb','fs','fl','fc','pn','aq','pkg','pd','cm','av'];
 CL.msg=()=>CL.st;
 function cloudQ(){if(!CL.col||!CL.ok)return;clearTimeout(CL.tm);CL.st='☁︎ 等待同步…';CL.tm=setTimeout(cloudPush,1500)}
 async function cloudPush(){
