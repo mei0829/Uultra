@@ -569,8 +569,8 @@ function buyCalc(){const c=ci(),b=S.bon,amt=Math.max(0,cEval(c.amt)||0),pl=b.pl[
 // 複製給顧客的文字（不含 PV、BV 這些內部數字）
 function buyTxt(){const r=buyCalc(),b=S.bon,c=ci(),pl=r.pl,L=[];L.push(pl?`【新辦${pl.n} 優惠試算】`:c.plan==='ac'?'【長客計劃 試算】':'【結帳試算】');if((c.bname||'').trim())L.push(c.bname.trim());if(r.fee)L.push(`${pl.feeT}：${fN(r.fee)} 元`);L.push(`商品原價：${fN(r.amt,2)} 元`);
  if(pl){if(r.disc)L.push(`${10-pl.disc/10} 折優惠：−${fN(r.disc)} 元`);if(r.cpU)L.push(`千折百 ${r.cpU} 張：−${fN(r.cpU*b.cpOff)} 元`)}
- L.push(`商品結帳金額：${fN(r.sales)} 元`);if(r.rb)L.push(`回饋金：−${fN(r.rb)} 元（匯到戶頭）`);
- const sv=r.disc+r.cpU*b.cpOff+r.rb;if(sv)L.push(`✨ 商品共省下 ${fN(sv)} 元`);if(r.rb)L.push(`✨ 最終花 ${fN(r.sales-r.rb)} 元`);
+ if(r.rb)L.push(`回饋金：−${fN(r.rb)} 元（匯到戶頭）`);
+ const sv=r.disc+r.cpU*b.cpOff+r.rb;if(sv)L.push(`✨ 商品共省下 ${fN(sv)} 元`);L.push(`✨ 最終花 ${fN(r.sales-r.rb)} 元`);
  if(pl)L.push(`🎁 ${pl.cpM} 個月後還會再送 ${pl.cp2} 張千折百（滿 ${fN(b.cpMin)} 折 ${b.cpOff}）`);
  if(c.plan==='ac')L.push(`🔁 連續買 ${b.ac.r1n} 個月，第 ${b.ac.r1n} 個月回饋 ${b.ac.r1}%；之後每 ${b.ac.r2n} 個月回饋 ${b.ac.r2}%`);
  return L.join('\n')}
