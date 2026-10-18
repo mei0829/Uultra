@@ -254,6 +254,7 @@ function lfixUpd(){const el=$('lfix');if(!el)return;let nm2='';if(S.tab==='ld'&&
  if(nm2){el.style.display='flex';el.textContent='★ '+nm2}else el.style.display='none'}
 if(typeof window!=='undefined'&&window.addEventListener)window.addEventListener('scroll',lfixUpd,{passive:true});
 const FEAT=[
+['計算機 獎金 試算 結帳 長客 新辦 會員 直銷商 千折百 打折 BV PV 回饋','🧮 計算機（結帳、獎金、長客）','課表 → 上方「🧮 計算機」；規則在「⚙ 規則設定」改',{tab:'ev',cv:'calc'}],
 ['業績 PV 輸入 記業績 %','💰 記業績（PV、幾 %）','課表 → 上方「💰 業績」→「記一筆業績」，選日期、填 PV、選是誰的業績',{tab:'ev',cv:'pv'}],
 ['組織人數 夥伴組織 突破 加入時間軸','👥 組織人數・加入時間軸・突破','課表 →「💰 業績」→ 往下滑到「組織人數」「加入時間軸」',{tab:'ev',cv:'pv'}],
 ['月報 統計 月底 自己の人 約旁線 深線','📊 月報（每月統計）','課表 → 上方「📊 月報」，點四格看明細',{tab:'ev',cv:'r'}],
@@ -530,7 +531,7 @@ const rpDates=(dt)=>{const r=rpS(),n=Math.max(1,Math.min(12,+r.n||1)),[y,m,d]=dt
  return out};
 const keepForm=()=>{const vals={};document.querySelectorAll('#app input[id],#app select[id],#app textarea[id]').forEach(el=>{if(el.type!=='file')vals[el.id]=el.value});return()=>{for(const id in vals){const el=$(id);if(el&&el.type!=='file')el.value=vals[id]}}};
 const rerenderKeep=()=>{const back=keepForm();render();back()};
-const evTog=()=>`<div class="chips one" style="margin-bottom:8px;overflow-x:auto;scrollbar-width:none"><button class="chip ${S.cv==='w'||S.cv==='r'||S.cv==='pv'?'':'on'}" data-cv="m">▦ 月</button><button class="chip ${S.cv==='w'?'on':''}" data-cv="w">▤ 週・空檔</button><button class="chip ${S.cv==='r'?'on':''}" data-cv="r">📊 月報</button><button class="chip ${S.cv==='pv'?'on':''}" data-cv="pv">💰 業績</button></div>`;
+const evTog=()=>`<div class="chips one" style="margin-bottom:8px;overflow-x:auto;scrollbar-width:none"><button class="chip ${S.cv==='w'||S.cv==='r'||S.cv==='pv'||S.cv==='calc'?'':'on'}" data-cv="m">▦ 月</button><button class="chip ${S.cv==='w'?'on':''}" data-cv="w">▤ 週・空檔</button><button class="chip ${S.cv==='r'?'on':''}" data-cv="r">📊 月報</button><button class="chip ${S.cv==='pv'?'on':''}" data-cv="pv">💰 業績</button><button class="chip ${S.cv==='calc'?'on':''}" data-cv="calc">🧮 計算機</button></div>`;
 const shWho=x=>{if(x.own){const o=getOwn(x.own);if(o)return x.own[0]==='s'?sdName(o)+(sdLd(o)?`<span class="sub" style="font-size:11px">（${E(sdLd(o))}）</span>`:''):nm(o)}return E(x.name||'（未填）')};
 const PCT=[[10000,21],[7000,18],[4000,15],[2000,12],[1000,9],[500,6],[200,3]];
 const pctOf=pv=>{const x=PCT.find(([t])=>pv>=t);return x?x[1]:0};
@@ -540,6 +541,63 @@ const pvSum=(who,ym)=>{const ks=pvKeys(who);return (S.pv||[]).filter(x=>ks.inclu
 const pvWho=w=>w==='me'?'我':w.startsWith('l|')?E((S.leaders.find(x=>x.id===+w.slice(2))||{name:'（已刪除）'}).name):(P(+w.slice(2))?nm(P(+w.slice(2))):'（已刪除）');
 const pctPill=pv=>{const p=pctOf(pv);return `<span class="pill" style="font-size:11px;font-weight:700;background:${p?'#9A7BB0':'var(--line)'};color:${p?'#fff':'var(--sub)'};border-color:transparent">${p}%</span>`};
 const descOf=pid=>{const out=[],go=id=>kids(id).forEach(c=>{out.push(c);go(c.id)});go(pid);return out};
+// 🧮 計算機：結帳試算、獎金（扣下線差額）、長客計劃；規則都能在「規則設定」改
+const BON0=()=>({tax:5,bvx:50,pct:[[10000,21],[7000,18],[4000,15],[2000,12],[1000,9],[500,6],[200,3]],cpMin:1000,cpOff:100,
+ pl:{m:{n:'會員',fee:200,feeT:'加入費（不可退費）',cp:2,disc:20,cap:1000,cp2:2,cpM:3},d:{n:'直銷商',fee:1000,feeT:'押金（不做時可退）',cp:5,disc:20,cap:1500,cp2:5,cpM:3}},
+ ac:{r1n:6,r1:100,r2n:6,r2:120},prods:[]});
+S.bon=Object.assign(BON0(),S.bon||{});
+const bonPct=()=>PCT.splice(0,PCT.length,...S.bon.pct.filter(x=>+x[0]>0).map(x=>[+x[0],+x[1]]).sort((a,b)=>b[0]-a[0]));bonPct();
+const ci=()=>S.ci=S.ci||{sub:'buy',plan:'',unit:'pv',legs:[]};
+const cnum=x=>+(String(x==null?'':x).replace(/[^\d.]/g,''))||0;
+const fN=(n,d)=>(+(+n).toFixed(d||0)).toLocaleString(undefined,{maximumFractionDigits:d||0});
+const pvOfAmt=a=>a*(1-S.bon.tax/100)/S.bon.bvx;
+const cIn=(k,ph,w,val)=>`<input data-ci="${k}" inputmode="decimal" placeholder="${ph}" value="${E(val!==undefined?val:(ci()[k]||''))}" style="${w?'width:'+w+';flex:none;':''}height:36px;padding:4px 8px">`;
+const cRow=(a,b,st)=>`<div class="row" style="padding:5px 0;border-top:1px solid var(--line);${st||''}"><span class="sp">${a}</span><span style="flex:none;text-align:right">${b}</span></div>`;
+const plTxt=pl=>`${pl.feeT.replace(/（.*/,'')} ${fN(pl.fee)} 元${(pl.feeT.match(/（.*）/)||[''])[0]}・千折百 ${pl.cp} 張・${pl.disc?10-pl.disc/10:''} 折最多折 ${fN(pl.cap)} 元・${pl.cpM} 個月後再送 ${pl.cp2} 張`;
+function buyCalc(){const c=ci(),b=S.bon,amt=cnum(c.amt),pl=b.pl[c.plan];let disc=0,cpU=0,fee=0,capL=0,cpL=0;
+ if(pl){capL=c.capL!==undefined&&c.capL!==''?cnum(c.capL):pl.cap;cpL=c.cpL!==undefined&&c.cpL!==''?cnum(c.cpL):pl.cp;disc=Math.min(Math.round(amt*pl.disc/100),capL);cpU=Math.min(cpL,Math.floor(amt/b.cpMin));fee=c.nofee?0:pl.fee}
+ const sales=Math.max(0,amt-disc-cpU*b.cpOff),own=c.pv!==undefined&&c.pv!=='',pv=own?cnum(c.pv):pvOfAmt(sales);return {amt,disc,cpU,fee,sales,pv,bv:pv*b.bvx,pl,capL,cpL,own}}
+function buyRes(){const r=buyCalc(),b=S.bon,c=ci();if(!r.amt)return '<div class="sub" style="margin-top:8px">輸入商品金額就會算出來</div>';
+ return `<div style="margin-top:8px">${cRow('商品原價',fN(r.amt)+' 元')}${r.pl?cRow(`${10-r.pl.disc/10} 折優惠<span class="sub" style="font-size:12px">（還可折 ${fN(r.capL)} 元）</span>`,'−'+fN(r.disc)+' 元')+cRow(`千折百 ${r.cpU} 張<span class="sub" style="font-size:12px">（滿 ${fN(b.cpMin)} 折 ${b.cpOff}，還有 ${r.cpL} 張）</span>`,'−'+fN(r.cpU*b.cpOff)+' 元'):''}
+ ${cRow('<b>結帳金額（算營業額）</b>',`<b style="font-size:20px;color:var(--acc)">${fN(r.sales)} 元</b>`)}
+ ${r.fee?cRow(`＋ ${E(r.pl.feeT)}<span class="sub" style="font-size:12px">（不算營業額）</span>`,'+'+fN(r.fee)+' 元')+cRow('<b>今天總共要付</b>',`<b>${fN(r.sales+r.fee)} 元</b>`):''}
+ ${cRow(`這筆的分數${r.own?'（自己填的）':`<span class="sub" style="font-size:12px">（營業額 × ${100-b.tax}% ÷ ${b.bvx}）</span>`}`,`<b>${fN(r.pv,2)} PV</b>・${fN(r.bv)} BV`)}
+ ${r.pl?`<div class="sub" style="font-size:12px;margin-top:4px">用完還剩千折百 ${Math.max(0,r.cpL-r.cpU)} 張、8 折還可折 ${fN(Math.max(0,r.capL-r.disc))} 元；${r.pl.cpM} 個月後再送 ${r.pl.cp2} 張千折百</div>`:''}
+ ${c.plan==='ac'?`<div class="sub" style="font-size:12px;margin-top:4px">長客計劃照原價結帳，不能跟新人優惠一起用。連續買滿 ${b.ac.r1n} 個月回饋 ${b.ac.r1}%，之後每 ${b.ac.r2n} 個月回饋 ${b.ac.r2}%（看「🔁 長客計劃」）</div>`:''}
+ <div style="text-align:right;margin-top:8px"><button class="go q" data-a="cbadd">＋ 把 ${fN(r.pv,2)} PV 記到我的業績</button></div></div>`}
+function bonCalc(){const c=ci(),b=S.bon,toPV=v=>c.unit==='amt'?pvOfAmt(cnum(v)):cnum(v),my=toPV(c.my),legs=(c.legs||[]).map(l=>({n:l.n||'下線',pv:toPV(l.v)})).filter(l=>l.pv>0),tot=my+legs.reduce((n,l)=>n+l.pv,0),p=pctOf(tot);
+ legs.forEach(l=>{l.p=pctOf(l.pv);l.ded=l.pv*b.bvx*l.p/100;l.mine=l.pv*b.bvx*Math.max(0,p-l.p)/100});const gross=tot*b.bvx*p/100,ded=legs.reduce((n,l)=>n+l.ded,0);return {my,legs,tot,p,gross,ded,bonus:Math.max(0,gross-ded)}}
+function bonRes(){const r=bonCalc(),b=S.bon;if(!r.tot)return '<div class="sub" style="margin-top:8px">輸入業績就會算出來</div>';const nx=pctNext(r.tot);let nb=0;if(nx){const t2=r.tot+nx.need;nb=t2*b.bvx*nx.p/100-r.ded}
+ return `<div style="margin-top:8px;padding:10px;border-radius:12px;background:#9A7BB01a"><div class="sub" style="font-size:12px">本月獎金約</div><div style="font-size:28px;font-weight:700;color:#9A7BB0">NT$ ${fN(r.bonus)}</div><div class="sub" style="font-size:12px">總業績 ${fN(r.tot,2)} PV・達到 ${r.p}%</div></div>
+ ${cRow('我自己（含顧客）',fN(r.my,2)+' PV')}${r.legs.map(l=>cRow('下線・'+E(l.n),fN(l.pv,2)+' PV')).join('')}${cRow('<b>總業績</b>',`<b>${fN(r.tot,2)} PV</b> = ${fN(r.tot*b.bvx)} BV`)}
+ ${cRow(`總 BV × 我的 ${r.p}%`,fN(r.gross)+' 元')}${r.legs.map(l=>cRow(`<span class="sub">扣 ${E(l.n)} 自己領的 ${l.p}%</span>`,`<span class="sub">−${fN(l.ded)} 元</span>`)).join('')}${cRow('<b>我的獎金</b>',`<b>${fN(r.bonus)} 元</b>`)}
+ ${r.legs.length?`<div class="sub" style="font-size:12px;margin-top:4px">${r.legs.map(l=>`${E(l.n)}：差額 ${r.p}% − ${l.p}% = ${Math.max(0,r.p-l.p)}%，給我 ${fN(l.mine)} 元`).join('<br>')}</div>`:''}
+ ${nx?`<div style="font-size:13px;margin-top:6px">💡 再 <b>${fN(nx.need,2)} PV</b>（約營業額 ${fN(nx.need*b.bvx/(1-b.tax/100))} 元）就到 ${nx.p}%，獎金會變成約 <b>${fN(nb)} 元</b></div>`:'<div style="font-size:13px;margin-top:6px">🎉 已經是最高 %</div>'}
+ <div class="sub" style="font-size:11px;margin-top:4px">下線也到最高 % 時的領導獎金，這裡沒有算進去</div>`}
+function acCalc(){const c=ci(),a=S.bon.ac,p=cnum(c.acp),u=cnum(c.acu)||1;return {p,u,l:(c.acl||'包').trim()||'包',o:p/u,r1:p*a.r1n/(u*(a.r1n+a.r1/100)),r2:p*a.r2n/(u*(a.r2n+a.r2/100))}}
+const acTxt=()=>{const r=acCalc(),a=S.bon.ac,n=(ci().acn||'').trim();return `${n?n+' ':''}${fN(r.p)}元／${fN(r.u)}${r.l}\n原價平均 ${r.o.toFixed(2)} 元／${r.l}\n長客第一輪（連續 ${a.r1n} 個月）平均 ${r.r1.toFixed(2)} 元／${r.l}\n第二輪起（每 ${a.r2n} 個月回饋 ${a.r2}%）平均 ${r.r2.toFixed(2)} 元／${r.l}`};
+function acRes(){const r=acCalc(),a=S.bon.ac;if(!r.p)return '<div class="sub" style="margin-top:8px">輸入價格和數量就會算出來</div>';const sv=x=>`<span class="sub" style="font-size:12px">省 ${((1-x/r.o)*100).toFixed(1)}%</span>`;
+ return `<div style="margin-top:8px">${cRow('原價平均',r.o.toFixed(2)+' 元／'+E(r.l))}${cRow(`<b>第一輪</b><div class="sub" style="font-size:12px">連續買 ${a.r1n} 個月，第 ${a.r1n} 個月回饋 ${a.r1}%（付 ${a.r1n} 份拿 ${a.r1n+a.r1/100} 份）</div>`,`<b style="font-size:18px;color:var(--acc)">${r.r1.toFixed(2)}</b> 元／${E(r.l)}<br>${sv(r.r1)}`)}${cRow(`<b>第二輪起</b><div class="sub" style="font-size:12px">第 ${a.r1n+1} 個月開始，每 ${a.r2n} 個月回饋 ${a.r2}%</div>`,`<b style="font-size:18px;color:var(--acc)">${r.r2.toFixed(2)}</b> 元／${E(r.l)}<br>${sv(r.r2)}`)}
+ <div class="row" style="gap:6px;margin-top:8px"><span class="sp"></span><button class="go q" data-a="accp" style="flex:none">⧉ 複製給顧客</button><button class="go q" data-a="acsave" style="flex:none">💾 記住這個產品</button></div></div>`}
+const calcRes=()=>{const k=ci().sub;return k==='bon'?bonRes():k==='ac'?acRes():k==='buy'?buyRes():''};
+const calcUpd=()=>{const r=$('calcres');if(r)r.innerHTML=calcRes()};
+function calcView(){const c=ci(),b=S.bon,sub=c.sub||'buy';
+ const seg=`<div class="chips" style="margin-bottom:8px">${[['buy','🛒 結帳試算'],['bon','💵 獎金'],['ac','🔁 長客計劃'],['set','⚙ 規則設定']].map(([k,n])=>`<button class="chip ${sub===k?'on':''}" data-a="csub" data-z1="${k}">${n}</button>`).join('')}</div>`;
+ const lb=t=>`<div class="sub" style="font-size:12px;margin:8px 0 2px">${t}</div>`;
+ if(sub==='buy'){const pl=b.pl[c.plan];return seg+`<div class="card"><b>🛒 結帳試算</b>${lb('方案（長客跟新人優惠只能選一個）')}<div class="chips">${[['','一般'],['m','新辦'+b.pl.m.n],['d','新辦'+b.pl.d.n],['ac','長客計劃']].map(([k,n])=>`<button class="chip ${c.plan===k?'on':''}" data-a="cplan" data-z1="${k}">${n}</button>`).join('')}</div>${pl?`<div class="sub" style="font-size:12px;margin-top:4px">${E(plTxt(pl))}</div>`:''}
+ ${lb('商品原價合計（元）')}${cIn('amt','例：3200')}${pl?`<div class="row" style="gap:8px"><div class="sp">${lb('千折百還有幾張')}${cIn('cpL',String(pl.cp))}</div><div class="sp">${lb('8 折還可以折多少元')}${cIn('capL',String(pl.cap))}</div></div><label class="row" style="gap:6px;margin-top:6px;font-size:13px"><input type="checkbox" data-cik="nofee" ${c.nofee?'checked':''} style="width:18px;height:18px;flex:none">這次不用付${E(pl.feeT.replace(/（.*/,''))}（不是新辦當天）</label>`:''}
+ ${lb('商品標示的 PV（不填就依營業額自動算）')}${cIn('pv','自動計算')}<div id="calcres">${buyRes()}</div></div>`}
+ if(sub==='bon'){const u=c.unit==='amt'?'元':'PV';return seg+`<div class="card"><div class="row"><b class="sp">💵 獎金試算</b><button class="go q" data-a="cfill" style="flex:none;font-size:12px">帶入本月業績紀錄</button></div>${lb('輸入方式')}<div class="chips">${[['pv','用 PV'],['amt','用營業額（元）']].map(([k,n])=>`<button class="chip ${(c.unit||'pv')===k?'on':''}" data-a="cunit" data-z1="${k}">${n}</button>`).join('')}</div>
+ ${lb('我自己＋顧客的業績（'+u+'）')}${cIn('my','例：'+(u==='PV'?'800':'40000'))}${lb('下線（各自整條線的業績，系統會扣掉他自己領的 %）')}${(c.legs||[]).map((l,i)=>`<div class="row" style="gap:6px;margin-top:4px"><input data-cleg="${i}|n" placeholder="名字" value="${E(l.n||'')}" style="height:36px;padding:4px 8px"><input data-cleg="${i}|v" inputmode="decimal" placeholder="${u}" value="${E(l.v||'')}" style="height:36px;padding:4px 8px;width:110px;flex:none"><button class="x" data-a="clegx" data-z1="${i}" style="flex:none;font-size:16px">×</button></div>`).join('')}<button class="go q" data-a="clegadd" style="margin-top:6px">＋ 加一位下線</button><div id="calcres">${bonRes()}</div></div>`}
+ if(sub==='ac'){return seg+`<div class="card"><b>🔁 長客計劃</b><div class="sub" style="font-size:12px">打產品名稱，存過的會自動帶出價格</div>${lb('產品名稱')}<input data-ci="acn" list="acdl" placeholder="例：益生菌" value="${E(c.acn||'')}" style="height:36px;padding:4px 8px"><datalist id="acdl">${b.prods.map(p=>`<option value="${E(p.n)}">`).join('')}</datalist><div class="row" style="gap:8px"><div class="sp">${lb('價格（元）')}${cIn('acp','例：1700')}</div><div class="sp">${lb('數量')}${cIn('acu','例：14')}</div><div style="width:70px;flex:none">${lb('單位')}<input data-ci="acl" placeholder="包" value="${E(c.acl||'')}" style="height:36px;padding:4px 8px"></div></div><div id="calcres">${acRes()}</div></div>
+ ${b.prods.length?`<div class="card"><b>存過的產品</b>${b.prods.map((p,i)=>{const a=b.ac,r1=p.p*a.r1n/(p.u*(a.r1n+a.r1/100)),r2=p.p*a.r2n/(p.u*(a.r2n+a.r2/100)),ar=S.arm==='ac'+i;return `<div class="row" style="gap:6px;padding:6px 0;border-top:1px solid var(--line)"><span class="sp" data-a="acld" data-z1="${i}" style="cursor:pointer"><b>${E(p.n)}</b> <span class="sub" style="font-size:12px">${fN(p.p)}元／${fN(p.u)}${E(p.l)}</span><div style="font-size:12px;color:var(--acc)">第一輪 ${r1.toFixed(2)}・第二輪 ${r2.toFixed(2)} 元／${E(p.l)}</div></span><button class="x" data-a="acdel" data-z1="${i}" style="flex:none;font-size:${ar?12:16}px;color:${ar?'var(--bad)':'var(--sub)'}">${ar?'再按一次刪除':'×'}</button></div>`}).join('')}</div>`:''}`}
+ const bi=(k,val,w,tx)=>`<input data-bs="${k}" ${tx?'':'inputmode="decimal"'} value="${E(val)}" style="height:34px;padding:3px 8px;${w?'width:'+w+';flex:none':''}">`;
+ const fl=(t,k,val,tx)=>`<label class="fl"><span>${t}</span>${bi(k,val,'',tx)}</label>`;
+ return seg+`<div class="card"><b>⚙ 獎金規則</b><div class="grid" style="margin-top:6px">${fl('先扣稅（%）','tax',b.tax)}${fl('PV × 幾倍 = BV','bvx',b.bvx)}</div>${lb('獎金級距（可改、可加減）')}<div class="row sub" style="gap:6px;font-size:12px"><span style="width:90px;flex:none">PV 達到</span><span style="width:60px;flex:none">%</span><span class="sp" style="text-align:right">BV／可領</span><span style="width:22px;flex:none"></span></div>${b.pct.map((x,i)=>`<div class="row" style="gap:6px;margin-top:4px">${bi('pct.'+i+'.0',x[0],'90px')}${bi('pct.'+i+'.1',x[1],'60px')}<span class="sp" style="text-align:right;font-size:12px">${fN(x[0]*b.bvx)} BV<br>${fN(x[0]*b.bvx*x[1]/100)} 元</span><button class="x" data-a="bpdel" data-z1="${i}" style="flex:none;font-size:16px">×</button></div>`).join('')}<button class="go q" data-a="bpadd" style="margin-top:6px">＋ 加一級</button></div>
+ <div class="card"><b>🏷 千折百</b><div class="grid" style="margin-top:6px">${fl('滿多少元','cpMin',b.cpMin)}${fl('折多少元','cpOff',b.cpOff)}</div></div>
+ ${['m','d'].map(k=>{const pl=b.pl[k],p='pl.'+k+'.';return `<div class="card"><b>新辦${E(pl.n)}</b><div class="grid" style="margin-top:6px">${fl('費用名稱','pl.'+k+'.feeT',pl.feeT,1)}${fl('費用（元，不算營業額）',p+'fee',pl.fee)}${fl('送千折百（張）',p+'cp',pl.cp)}${fl('打折（折掉 %，8 折填 20）',p+'disc',pl.disc)}${fl('打折最多折（元）',p+'cap',pl.cap)}${fl('幾個月後再送',p+'cpM',pl.cpM)}${fl('再送千折百（張）',p+'cp2',pl.cp2)}</div></div>`}).join('')}
+ <div class="card"><b>🔁 長客計劃</b><div class="grid" style="margin-top:6px">${fl('第一輪：連續幾個月','ac.r1n',b.ac.r1n)}${fl('第一輪回饋（%）','ac.r1',b.ac.r1)}${fl('第二輪：每幾個月','ac.r2n',b.ac.r2n)}${fl('第二輪回饋（%）','ac.r2',b.ac.r2)}</div></div>
+ <div style="text-align:center;margin:10px 0"><button class="x" data-a="bonrst" style="font-size:12px;color:${S.arm==='bonrst'?'var(--bad)':'var(--sub)'}">${S.arm==='bonrst'?'再按一次，全部恢復預設（存過的產品會留著）':'恢復預設規則'}</button></div>`}
 function pvView(){const ym=S.cm,[Y,M]=ym.split('-').map(Number),pvs=(S.pv||[]).filter(x=>(x.date||'').startsWith(ym)),mine=S.leaders.filter(ldOrg),oth=S.leaders.filter(l=>!ldOrg(l)),lp=new Set(S.leaders.map(l=>l.pid).filter(Boolean));
  const o=(v,t)=>`<option value="${v}">${t}</option>`,sm='font-size:14px';
  const form=`<div class="card"><b>💰 記一筆業績</b><div class="grid" style="margin-top:8px"><label class="fl"><span>日期</span><input type="date" id="pvd" value="${today().startsWith(ym)?today():ym+'-01'}"></label><label class="fl"><span>PV</span><input id="pvn" inputmode="numeric" placeholder="例：350"></label><label class="fl w"><span>誰的業績</span><select id="pvw">${o('me','我自己')}${mine.length?`<optgroup label="我的夥伴">${mine.map(l=>o('l|'+l.id,E(l.name))).join('')}</optgroup>`:''}${oth.length?`<optgroup label="其他領導人">${oth.map(l=>o('l|'+l.id,E(l.name))).join('')}</optgroup>`:''}<optgroup label="新人">${S.people.filter(p=>!lp.has(p.id)).sort(byNo).map(p=>o('p|'+p.id,nm(p))).join('')}</optgroup></select></label><label class="fl w"><span>備註（選填）</span><input id="pvm" placeholder="例：蛋白素、益生菌"></label></div><button class="go q" data-a="pvadd" style="margin-top:8px;width:100%">儲存</button><div class="sub" style="font-size:11px;margin-top:6px">${PCT.slice().reverse().map(([t,p])=>p+'%＝'+t.toLocaleString()).join('・')} PV</div></div>`;
@@ -585,6 +643,7 @@ function rptView(){const ym=S.cm,[Y,M]=ym.split('-').map(Number),evs=S.events.fi
 function ev_v(){const evq=(S.evq||'').trim().toLowerCase();
  if(S.cv==='r')return `<div class="row"><h1 class="sp">俱樂部課表</h1></div>${evTog()}${rptView()}`;
  if(S.cv==='pv')return `<div class="row"><h1 class="sp">俱樂部課表</h1></div>${evTog()}${pvView()}`;
+ if(S.cv==='calc')return `<div class="row"><h1 class="sp">俱樂部課表</h1></div>${evTog()}${calcView()}`;
  const wv=S.cv==='w'?wkView():null;
  const ym=S.cm,[Y,M]=ym.split('-').map(Number),first=(new Date(Y,M-1,1).getDay()+6)%7,dn=new Date(Y,M,0).getDate();
  const all=S.events.filter(e=>e.date.startsWith(ym)),cnt={};all.forEach(e=>cnt[e.date]=(cnt[e.date]||0)+1);
@@ -1252,6 +1311,20 @@ document.addEventListener('click',e=>{if(e.target.closest('a[href]'))return;
  else if(d.a==='stcp'){const[i1,k1]=d.z1.split('|'),o=(S.stories||[]).find(x=>x.id===+i1);if(o){const tx=o[k1]||'';try{navigator.clipboard.writeText(tx).then(()=>toast('已複製'),()=>{})}catch(x){}const t=document.createElement('textarea');t.value=tx;document.body.appendChild(t);t.select();try{document.execCommand('copy')}catch(x){}t.remove();toast('已複製')}return}
  else if(d.a==='stta'){const o=(S.stories||[]).find(x=>x.id===+d.z1),ev=v('stde'+d.z1).trim();if(!o||!ev){toast('請輸入會議名稱');return}o.talks=o.talks||[];o.talks.push({date:v('stdd'+d.z1),ev});o.talks.sort((a,b)=>(b.date||'').localeCompare(a.date||''));save();render();return}
  else if(d.a==='sttd'){const[i1,k1]=d.z1.split('|'),o=(S.stories||[]).find(x=>x.id===+i1);if(o&&o.talks)o.talks.splice(+k1,1);save();render();return}
+ else if(d.a==='csub'){ci().sub=d.z1;render();return}
+ else if(d.a==='cplan'){const c=ci();c.plan=d.z1;delete c.cpL;delete c.capL;c.nofee=false;render();return}
+ else if(d.a==='cunit'){ci().unit=d.z1;render();return}
+ else if(d.a==='clegadd'){ci().legs.push({n:'',v:''});render();return}
+ else if(d.a==='clegx'){ci().legs.splice(+d.z1,1);render();return}
+ else if(d.a==='cfill'){const c=ci();c.unit='pv';c.my=String(pvSum('me',S.cm)||'');c.legs=S.leaders.filter(ldOrg).map(l=>({n:l.name,v:String(pvSum('l|'+l.id,S.cm)||'')})).filter(l=>+l.v);render();toast('已帶入本月業績紀錄');return}
+ else if(d.a==='cbadd'){const r=buyCalc();if(!r.pv){toast('先輸入金額');return}S.pv=S.pv||[];S.pv.push({id:S.pv.reduce((m,x)=>Math.max(m,x.id),0)+1,date:today(),who:'me',pv:Math.round(r.pv*100)/100});save();toast('已記到我今天的業績');return}
+ else if(d.a==='accp'){const tx=acTxt();try{navigator.clipboard.writeText(tx).then(()=>{},()=>{})}catch(x){}const t=document.createElement('textarea');t.value=tx;document.body.appendChild(t);t.select();try{document.execCommand('copy')}catch(x){}t.remove();toast('已複製');return}
+ else if(d.a==='acsave'){const c=ci(),n=(c.acn||'').trim(),p=cnum(c.acp),u=cnum(c.acu);if(!n||!p||!u){toast('請填產品名稱、價格、數量');return}const o={n,p,u,l:(c.acl||'包').trim()||'包'},i=S.bon.prods.findIndex(x=>x.n===n);if(i>=0)S.bon.prods[i]=o;else S.bon.prods.push(o);save();render();toast('已記住，下次打名稱就會帶出來');return}
+ else if(d.a==='acld'){const p=S.bon.prods[+d.z1];if(p){Object.assign(ci(),{acn:p.n,acp:String(p.p),acu:String(p.u),acl:p.l});render();scrollTo(0,0)}return}
+ else if(d.a==='acdel'){const z='ac'+d.z1;if(S.arm!==z){S.arm=z;render();return}S.arm=null;S.bon.prods.splice(+d.z1,1);save();render();return}
+ else if(d.a==='bpadd'){S.bon.pct.push([0,0]);save();render();return}
+ else if(d.a==='bpdel'){S.bon.pct.splice(+d.z1,1);bonPct();save();render();return}
+ else if(d.a==='bonrst'){if(S.arm!=='bonrst'){S.arm='bonrst';render();return}S.arm=null;const pr=S.bon.prods;S.bon=BON0();S.bon.prods=pr;bonPct();save();render();toast('已恢復預設');return}
  else if(d.a==='stgol'){stSync();const o=S.stories.find(x=>x.lid===+d.z1);if(o){S.view=null;S.tab='ans';S.av='story';S.sto=S.sto||{};S.sto[o.id]=1;S.stq='';S.stf={};render();setTimeout(()=>{const el=document.querySelector(`[data-a=stx][data-z1="${o.id}"]`);if(el)el.scrollIntoView({block:'center'})},60)}return}
  else if(d.a==='stgo'){S.view=null;S.tab='ans';S.av='story';S.sto=S.sto||{};S.sto[d.z1]=1;S.stq='';S.stf={};render();setTimeout(()=>{const el=document.querySelector(`[data-a=stx][data-z1="${d.z1}"]`);if(el)el.scrollIntoView({block:'center'})},60);return}
  else if(d.a==='tqw'){S.tq=d.z1;tipsUI();return}
@@ -1313,6 +1386,9 @@ if(el.dataset.pz){const[a1,b1,f1]=el.dataset.pz.split('|'),o=pzOwn(a1+'|'+b1);if
 if(el.dataset.wx!==undefined&&(el.dataset.wk||p)){const p=el.dataset.wk?pzOwn(el.dataset.wk):S.view&&P(S.view);if(!p)return;const a=(p.wuxing||'').split('+').slice(0,4);while(a.length<4)a.push('');a[+el.dataset.wx]=el.value;p.wuxing=a.some(Boolean)?a.join('+'):'';save();render();return}
 if(el.dataset.mradd!==undefined){const q=P(+el.value),l=+el.dataset.mradd,k=S.mrk||'nanny';if(q&&l){if(k==='nanny'){q.nannies=q.nannies||[];if(!q.nannies.includes(l))q.nannies.push(l)}else{q.mentorL=q.mentorL||{};q.mentorL[k]=l;q.mentor=q.mentor||{};q.mentor[k]=(S.leaders.find(x=>x.id===l)||{}).name||''}const ln=(S.leaders.find(x=>x.id===l)||{}).name||'';toast(`已設定：${ln} 是 ${q.nick||q.name} 的${k==='nanny'?'保母':k==='coach'?'教練':'教師'}`)}save();render();return}
 if(el.dataset.pdeep!==undefined){const q=P(+el.dataset.pdeep),lid=+el.value;if(q){if(lid){q.deep=lid;q.leaders=(q.leaders||[]).filter(x=>x!==lid);const l=S.leaders.find(x=>x.id===lid);if(l&&l.pid&&!q.up&&l.pid!==q.id)q.up=l.pid;toast('已設為 '+(l?l.name:'')+' 的人（深線）')}else{delete q.deep}}save();render();return}
+if(el.dataset.ci!==undefined||el.dataset.cleg!==undefined)return;
+if(el.dataset.cik!==undefined){ci()[el.dataset.cik]=el.checked;calcUpd();return}
+if(el.dataset.bs!==undefined){const ks=el.dataset.bs.split('.'),last=ks.pop();let o=S.bon;ks.forEach(k=>o=o[k]);o[last]=last==='feeT'?el.value.trim():cnum(el.value);if(ks[0]==='pct')bonPct();save();render();return}
 if(el.dataset.agx!==undefined){const[t1,i1,k1]=el.dataset.agx.split('|'),so=t1==='st'?(S.stories||[]).find(x=>x.id===+i1):null,o=t1==='l'?S.leaders.find(x=>x.id===+i1):(stLd(so)||so);if(o){const v1=el.value.trim();
  if(k1==='by'){if(/^\d{4}$/.test(v1)&&+v1>1900&&+v1<=new Date().getFullYear()){o.by=v1;delete o.ageD}else if(!v1)delete o.by;else{toast('出生年請填 4 位數，例如 1981');return}}
  else if(k1==='ageD'){delete o.by;if(v1==='')delete o.ageD;else o.ageD=+v1}
@@ -1378,6 +1454,7 @@ const lzAt=(x,y)=>{const el=document.elementFromPoint&&document.elementFromPoint
 document.addEventListener('pointermove',e=>{if(!LDR)return;const z=lzAt(e.clientX,e.clientY);if(z!==LDR.z){document.querySelectorAll('[data-lz]').forEach(n=>n.style.outline='');LDR.z=z;const n=z&&document.querySelector('[data-lz="'+z+'"]');if(n&&z!==String(LDR.id))n.style.outline='2px solid var(--acc)'}});
 document.addEventListener('pointerup',e=>{if(!LDR)return;const z=LDR.z||lzAt(e.clientX,e.clientY),id=LDR.id;LDR=null;document.querySelectorAll('[data-lz]').forEach(n=>n.style.outline='');if(z!==null&&moveLeader(id,+z)){save();render()}});
 document.addEventListener('pointercancel',()=>{LDR=null});
+document.addEventListener('input',e=>{const el=e.target;if(!el.dataset)return;if(el.dataset.ci!==undefined){const c=ci();c[el.dataset.ci]=el.value;if(el.dataset.ci==='acn'){const p=S.bon.prods.find(x=>x.n===el.value.trim());if(p){c.acp=String(p.p);c.acu=String(p.u);c.acl=p.l;['acp','acu','acl'].forEach(k=>{const f1=document.querySelector(`[data-ci="${k}"]`);if(f1)f1.value=c[k]})}}calcUpd()}else if(el.dataset.cleg!==undefined){const[i,k]=el.dataset.cleg.split('|'),l=ci().legs[+i];if(l){l[k]=el.value;calcUpd()}}});
 document.addEventListener('input',e=>{const el=e.target;if(!el.dataset||el.dataset.nxr===undefined)return;e.stopImmediatePropagation();S.nxv=+el.value;const d=shiftD(today(),S.nxv),l=$('nxl');if(l)l.textContent=S.nxv+' 天後・'+(+d.slice(5,7))+'/'+(+d.slice(8))},true);
 let RDR=null;
 document.addEventListener('pointerdown',e=>{const h=e.target.closest&&e.target.closest('[data-rh]');if(!h)return;RDR={k:h.dataset.rh,z:null};e.preventDefault&&e.preventDefault()});
@@ -1395,7 +1472,7 @@ const odzAt=(x,y)=>{const el=document.elementFromPoint&&document.elementFromPoin
 document.addEventListener('pointermove',e=>{if(!ODR)return;const z=odzAt(e.clientX,e.clientY);if(z!==ODR.z){document.querySelectorAll('[data-dz]').forEach(n=>n.style.outline='');ODR.z=z;const n=z&&document.querySelector('[data-dz="'+z+'"]');if(n&&z!==String(ODR.id))n.style.outline='2px solid var(--acc)'}});
 const odend=e=>{if(!ODR)return;const z=ODR.z||odzAt(e.clientX,e.clientY),id=ODR.id;ODR=null;document.querySelectorAll('[data-dz]').forEach(n=>n.style.outline='');if(z!==null&&dropObj(id,z)){save();render()}else if(z!==null)toast('不能放到自己或自己的下層')};
 document.addEventListener('pointerup',odend);document.addEventListener('pointercancel',()=>{ODR=null});
-const CTR=['sto','ste','stq','stf','tq','evco','pedit','rpt','lfe','evq','rp','epx','evx','pold','pmo','prdv','prnv','shf','evc','evf','enf','eip','prc','prt','rsc','fx','lfx','mrk','nxo','nxv','fua','qm','qs','qoff','rco','rcall','mrp','osort','cto','ctall','area','trip','pm','pnew','pkgw','tab','view','q','flt','cf','lv','fb','fs','fl','fc','pn','aq','pkg','pd','cm','av'];
+const CTR=['ci','sto','ste','stq','stf','tq','evco','pedit','rpt','lfe','evq','rp','epx','evx','pold','pmo','prdv','prnv','shf','evc','evf','enf','eip','prc','prt','rsc','fx','lfx','mrk','nxo','nxv','fua','qm','qs','qoff','rco','rcall','mrp','osort','cto','ctall','area','trip','pm','pnew','pkgw','tab','view','q','flt','cf','lv','fb','fs','fl','fc','pn','aq','pkg','pd','cm','av'];
 CL.msg=()=>CL.st;
 function cloudQ(){if(!CL.col||!CL.ok)return;clearTimeout(CL.tm);CL.st='☁︎ 等待同步…';CL.tm=setTimeout(cloudPush,1500)}
 async function cloudPush(){
