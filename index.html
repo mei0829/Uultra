@@ -543,9 +543,9 @@ const pctPill=pv=>{const p=pctOf(pv);return `<span class="pill" style="font-size
 const descOf=pid=>{const out=[],go=id=>kids(id).forEach(c=>{out.push(c);go(c.id)});go(pid);return out};
 // 🧮 計算機：結帳試算、獎金（扣下線差額）、長客計劃；規則都能在「規則設定」改
 const BON0=()=>({tax:5,bvx:50,pct:[[10000,21],[7000,18],[4000,15],[2000,12],[1000,9],[500,6],[200,3]],cpMin:1000,cpOff:100,
- pl:{m:{n:'會員',fee:200,feeT:'加入費（不可退費）',cp:2,disc:20,cap:1000,cp2:2,cpM:3},d:{n:'直銷商',fee:1000,feeT:'押金（不做時可退）',cp:5,disc:20,cap:1500,cp2:5,cpM:3}},
+ pl:{m:{n:'會員',fee:200,feeT:'加入費（不可退費）',cp:2,disc:20,cap:1000,cp2:2,cpM:3},d:{n:'直銷商',fee:1000,feeT:'押金（可退）',cp:5,disc:20,cap:1500,cp2:5,cpM:3}},
  ac:{r1n:6,r1:100,r2n:6,r2:120},prods:[]});
-S.bon=Object.assign(BON0(),S.bon||{});
+S.bon=Object.assign(BON0(),S.bon||{});if(S.bon.pl.d.feeT==='押金（不做時可退）')S.bon.pl.d.feeT='押金（可退）';
 const bonPct=()=>PCT.splice(0,PCT.length,...S.bon.pct.filter(x=>+x[0]>0).map(x=>[+x[0],+x[1]]).sort((a,b)=>b[0]-a[0]));bonPct();
 const ci=()=>S.ci=S.ci||{sub:'buy',plan:'',unit:'pv',legs:[]};
 const cnum=x=>+(String(x==null?'':x).replace(/[^\d.]/g,''))||0;
@@ -567,9 +567,9 @@ function buyCalc(){const c=ci(),b=S.bon,amt=Math.max(0,cEval(c.amt)||0),pl=b.pl[
  if(pl){capL=c.capL!==undefined&&c.capL!==''?cnum(c.capL):pl.cap;cpL=c.cpL!==undefined&&c.cpL!==''?cnum(c.cpL):pl.cp;disc=Math.min(Math.round(amt*pl.disc/100),capL);cpU=Math.min(cpL,Math.floor(amt/b.cpMin));fee=c.nofee?0:pl.fee}
  const sales=Math.max(0,amt-disc-cpU*b.cpOff),own=c.pv!==undefined&&c.pv!=='',pv=own?Math.max(0,cEval(c.pv)||0):pvOfAmt(sales);return {amt,disc,cpU,fee,sales,pv,bv:pv*b.bvx,pl,capL,cpL,own}}
 // 複製給顧客的文字（不含 PV、BV 這些內部數字）
-function buyTxt(){const r=buyCalc(),b=S.bon,c=ci(),pl=r.pl,L=[];L.push(pl?`【新辦${pl.n} 優惠試算】`:c.plan==='ac'?'【長客計劃 試算】':'【結帳試算】');L.push(`商品原價：${fN(r.amt,2)} 元`);
+function buyTxt(){const r=buyCalc(),b=S.bon,c=ci(),pl=r.pl,L=[];L.push(pl?`【新辦${pl.n} 優惠試算】`:c.plan==='ac'?'【長客計劃 試算】':'【結帳試算】');if(r.fee)L.push(`${pl.feeT}：${fN(r.fee)} 元`);L.push(`商品原價：${fN(r.amt,2)} 元`);
  if(pl){if(r.disc)L.push(`${10-pl.disc/10} 折優惠：−${fN(r.disc)} 元`);if(r.cpU)L.push(`千折百 ${r.cpU} 張：−${fN(r.cpU*b.cpOff)} 元`)}
- L.push(`商品結帳金額：${fN(r.sales)} 元`);if(r.fee){L.push(`${pl.feeT}：${fN(r.fee)} 元`);L.push(`今天總共：${fN(r.sales+r.fee)} 元`)}
+ L.push(`商品結帳金額：${fN(r.sales)} 元`);
  const sv=r.disc+r.cpU*b.cpOff;if(sv)L.push(`✨ 商品共省下 ${fN(sv)} 元`);
  if(pl)L.push(`🎁 ${pl.cpM} 個月後還會再送 ${pl.cp2} 張千折百（滿 ${fN(b.cpMin)} 折 ${b.cpOff}）`);
  if(c.plan==='ac')L.push(`🔁 連續買 ${b.ac.r1n} 個月，第 ${b.ac.r1n} 個月回饋 ${b.ac.r1}%；之後每 ${b.ac.r2n} 個月回饋 ${b.ac.r2}%`);
