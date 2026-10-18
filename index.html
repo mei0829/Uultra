@@ -566,6 +566,14 @@ const plTxt=pl=>`${pl.feeT.replace(/（.*/,'')} ${fN(pl.fee)} 元${(pl.feeT.matc
 function buyCalc(){const c=ci(),b=S.bon,amt=Math.max(0,cEval(c.amt)||0),pl=b.pl[c.plan];let disc=0,cpU=0,fee=0,capL=0,cpL=0;
  if(pl){capL=c.capL!==undefined&&c.capL!==''?cnum(c.capL):pl.cap;cpL=c.cpL!==undefined&&c.cpL!==''?cnum(c.cpL):pl.cp;disc=Math.min(Math.round(amt*pl.disc/100),capL);cpU=Math.min(cpL,Math.floor(amt/b.cpMin));fee=c.nofee?0:pl.fee}
  const sales=Math.max(0,amt-disc-cpU*b.cpOff),own=c.pv!==undefined&&c.pv!=='',pv=own?Math.max(0,cEval(c.pv)||0):pvOfAmt(sales);return {amt,disc,cpU,fee,sales,pv,bv:pv*b.bvx,pl,capL,cpL,own}}
+// 複製給顧客的文字（不含 PV、BV 這些內部數字）
+function buyTxt(){const r=buyCalc(),b=S.bon,c=ci(),pl=r.pl,L=[];L.push(pl?`【新辦${pl.n} 優惠試算】`:c.plan==='ac'?'【長客計劃 試算】':'【結帳試算】');L.push(`商品原價：${fN(r.amt,2)} 元`);
+ if(pl){if(r.disc)L.push(`${10-pl.disc/10} 折優惠：−${fN(r.disc)} 元`);if(r.cpU)L.push(`千折百 ${r.cpU} 張：−${fN(r.cpU*b.cpOff)} 元`)}
+ L.push(`商品結帳金額：${fN(r.sales)} 元`);if(r.fee){L.push(`${pl.feeT}：${fN(r.fee)} 元`);L.push(`今天總共：${fN(r.sales+r.fee)} 元`)}
+ const sv=r.disc+r.cpU*b.cpOff;if(sv)L.push(`✨ 商品共省下 ${fN(sv)} 元`);
+ if(pl)L.push(`🎁 ${pl.cpM} 個月後還會再送 ${pl.cp2} 張千折百（滿 ${fN(b.cpMin)} 折 ${b.cpOff}）`);
+ if(c.plan==='ac')L.push(`🔁 連續買 ${b.ac.r1n} 個月，第 ${b.ac.r1n} 個月回饋 ${b.ac.r1}%；之後每 ${b.ac.r2n} 個月回饋 ${b.ac.r2}%`);
+ return L.join('\n')}
 function buyRes(){const r=buyCalc(),b=S.bon,c=ci(),bad=k=>c[k]&&isNaN(cEval(c[k]));if(bad('amt')||bad('pv'))return '<div style="margin-top:8px;color:var(--bad)">算式好像不完整，請檢查一下</div>';if(!r.amt)return '<div class="sub" style="margin-top:8px">輸入商品金額就會算出來</div>';
  return `<div style="margin-top:8px">${cIsExpr(c.amt)?`<div class="sub" style="font-size:13px">${E(cNorm(c.amt).replace(/\*/g,'×').replace(/\//g,'÷'))} = <b>${fN(r.amt,2)}</b></div>`:''}${cRow('商品原價',fN(r.amt,2)+' 元')}${r.pl?cRow(`${10-r.pl.disc/10} 折優惠<span class="sub" style="font-size:12px">（還可折 ${fN(r.capL)} 元）</span>`,'−'+fN(r.disc)+' 元')+cRow(`千折百 ${r.cpU} 張<span class="sub" style="font-size:12px">（滿 ${fN(b.cpMin)} 折 ${b.cpOff}，還有 ${r.cpL} 張）</span>`,'−'+fN(r.cpU*b.cpOff)+' 元'):''}
  ${cRow('<b>結帳金額（算營業額）</b>',`<b style="font-size:20px;color:var(--acc)">${fN(r.sales)} 元</b>`)}
@@ -573,7 +581,7 @@ function buyRes(){const r=buyCalc(),b=S.bon,c=ci(),bad=k=>c[k]&&isNaN(cEval(c[k]
  ${cRow(`這筆的分數${r.own?'（自己填的）':`<span class="sub" style="font-size:12px">（營業額 × ${100-b.tax}% ÷ ${b.bvx}）</span>`}`,`<b>${fN(r.pv,2)} PV</b>・${fN(r.bv)} BV`)}
  ${r.pl?`<div class="sub" style="font-size:12px;margin-top:4px">用完還剩千折百 ${Math.max(0,r.cpL-r.cpU)} 張、8 折還可折 ${fN(Math.max(0,r.capL-r.disc))} 元；${r.pl.cpM} 個月後再送 ${r.pl.cp2} 張千折百</div>`:''}
  ${c.plan==='ac'?`<div class="sub" style="font-size:12px;margin-top:4px">長客計劃照原價結帳，不能跟新人優惠一起用。連續買滿 ${b.ac.r1n} 個月回饋 ${b.ac.r1}%，之後每 ${b.ac.r2n} 個月回饋 ${b.ac.r2}%（看「🔁 長客計劃」）</div>`:''}
- <div style="text-align:right;margin-top:8px"><button class="go q" data-a="cbadd">＋ 把 ${fN(r.pv,2)} PV 記到我的業績</button></div></div>`}
+ <div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap;justify-content:flex-end"><button class="go q" data-a="cbcp" style="flex:none;background:var(--acc);color:#fff;border-color:transparent">⧉ 複製給顧客</button><button class="go q" data-a="cbadd" style="flex:none">＋ 把 ${fN(r.pv,2)} PV 記到我的業績</button></div></div>`}
 function bonCalc(){const c=ci(),b=S.bon,toPV=v=>c.unit==='amt'?pvOfAmt(cnum(v)):cnum(v),my=toPV(c.my),legs=(c.legs||[]).map(l=>({n:l.n||'下線',pv:toPV(l.v)})).filter(l=>l.pv>0),tot=my+legs.reduce((n,l)=>n+l.pv,0),p=pctOf(tot);
  legs.forEach(l=>{l.p=pctOf(l.pv);l.ded=l.pv*b.bvx*l.p/100;l.mine=l.pv*b.bvx*Math.max(0,p-l.p)/100});const gross=tot*b.bvx*p/100,ded=legs.reduce((n,l)=>n+l.ded,0);return {my,legs,tot,p,gross,ded,bonus:Math.max(0,gross-ded)}}
 function bonRes(){const r=bonCalc(),b=S.bon;if(!r.tot)return '<div class="sub" style="margin-top:8px">輸入業績就會算出來</div>';const nx=pctNext(r.tot);let nb=0;if(nx){const t2=r.tot+nx.need;nb=t2*b.bvx*nx.p/100-r.ded}
@@ -1330,7 +1338,7 @@ document.addEventListener('click',e=>{if(e.target.closest('a[href]'))return;
  else if(d.a==='clegx'){ci().legs.splice(+d.z1,1);render();return}
  else if(d.a==='cfill'){const c=ci();c.unit='pv';c.my=String(pvSum('me',S.cm)||'');c.legs=S.leaders.filter(ldOrg).map(l=>({n:l.name,v:String(pvSum('l|'+l.id,S.cm)||'')})).filter(l=>+l.v);render();toast('已帶入本月業績紀錄');return}
  else if(d.a==='cbadd'){const r=buyCalc();if(!r.pv){toast('先輸入金額');return}S.pv=S.pv||[];S.pv.push({id:S.pv.reduce((m,x)=>Math.max(m,x.id),0)+1,date:today(),who:'me',pv:Math.round(r.pv*100)/100});save();toast('已記到我今天的業績');return}
- else if(d.a==='accp'){const tx=acTxt();try{navigator.clipboard.writeText(tx).then(()=>{},()=>{})}catch(x){}const t=document.createElement('textarea');t.value=tx;document.body.appendChild(t);t.select();try{document.execCommand('copy')}catch(x){}t.remove();toast('已複製');return}
+ else if(d.a==='accp'||d.a==='cbcp'){const tx=d.a==='cbcp'?buyTxt():acTxt();try{navigator.clipboard.writeText(tx).then(()=>{},()=>{})}catch(x){}const t=document.createElement('textarea');t.value=tx;document.body.appendChild(t);t.select();try{document.execCommand('copy')}catch(x){}t.remove();toast('已複製');return}
  else if(d.a==='acsave'){const c=ci(),n=(c.acn||'').trim(),p=cnum(c.acp),u=cnum(c.acu);if(!n||!p||!u){toast('請填產品名稱、價格、數量');return}const o={n,p,u,l:(c.acl||'包').trim()||'包'},i=S.bon.prods.findIndex(x=>x.n===n);if(i>=0)S.bon.prods[i]=o;else S.bon.prods.push(o);save();render();toast('已記住，下次打名稱就會帶出來');return}
  else if(d.a==='acld'){const p=S.bon.prods[+d.z1];if(p){Object.assign(ci(),{acn:p.n,acp:String(p.p),acu:String(p.u),acl:p.l});render();scrollTo(0,0)}return}
  else if(d.a==='acdel'){const z='ac'+d.z1;if(S.arm!==z){S.arm=z;render();return}S.arm=null;S.bon.prods.splice(+d.z1,1);save();render();return}
