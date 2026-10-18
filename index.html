@@ -589,10 +589,9 @@ function buyTxt(){const r=buyCalc(),b=S.bon,c=ci(),pl=r.pl,L=[];L.push(pl?`【�
 // 簡單版：只講原價、優惠後、回饋、實際花多少
 function buySimple(){const r=buyCalc(),b=S.bon,c=ci(),cart=c.cart||[],cn=x=>(PI(x.n)||{}).o||x.n,bn=(c.bname||'').trim(),L=[];
  const t=bn||cart.map(x=>cn(x)+((+x.q||1)>1?' ×'+x.q:'')).join('、');L.push(t?`【${t}】`:'【價格試算】');
- const off=r.disc+r.cpU*b.cpOff;
+ const off=r.disc+r.cpU*b.cpOff;if(r.fee)L.push(`${r.pl.feeT} ${fN(r.fee)} 元`);
  if(off){L.push(`原價 ${fN(r.amt,2)} 元`);L.push(`👉 ${r.pl?'新'+r.pl.n+'優惠價':'優惠價'} ${fN(r.sales)} 元（省 ${fN(off)} 元）`)}else L.push(`價格 ${fN(r.sales)} 元`);
- if(r.fee)L.push(`另付${r.pl.feeT.replace(/（(.*)）/,'（$1）')} ${fN(r.fee)} 元`);
- if(r.rb){L.push(`💰 回饋 ${fN(r.rb)} 元`);L.push(`✨ 實際只要 ${fN(r.sales-r.rb)} 元`)}
+ if(r.rb){L.push(`💰 回饋 ${fN(r.rb)} 元`);L.push(`✨ 只要 ${fN(r.sales-r.rb)} 元`)}
  return L.join('\n')}
 function buyRes(){const r=buyCalc(),b=S.bon,c=ci(),bad=k=>c[k]&&isNaN(cEval(c[k]));if(bad('amt')||bad('pv'))return '<div style="margin-top:8px;color:var(--bad)">算式好像不完整，請檢查一下</div>';if(!r.amt)return '<div class="sub" style="margin-top:8px">輸入商品金額就會算出來</div>';
  return `<div style="margin-top:8px">${cIsExpr(c.amt)?`<div class="sub" style="font-size:13px">${E(cNorm(c.amt).replace(/\*/g,'×').replace(/\//g,'÷'))} = <b>${fN(r.amt,2)}</b></div>`:''}${cRow('商品原價',fN(r.amt,2)+' 元')}${r.pl?cRow(`${10-r.pl.disc/10} 折優惠<span class="sub" style="font-size:12px">（還可折 ${fN(r.capL)} 元）</span>`,'−'+fN(r.disc)+' 元')+cRow(`千折百 ${r.cpU} 張<span class="sub" style="font-size:12px">（滿 ${fN(b.cpMin)} 折 ${b.cpOff}，還有 ${r.cpL} 張）</span>`,'−'+fN(r.cpU*b.cpOff)+' 元'):''}
