@@ -549,16 +549,25 @@ S.bon=Object.assign(BON0(),S.bon||{});
 const bonPct=()=>PCT.splice(0,PCT.length,...S.bon.pct.filter(x=>+x[0]>0).map(x=>[+x[0],+x[1]]).sort((a,b)=>b[0]-a[0]));bonPct();
 const ci=()=>S.ci=S.ci||{sub:'buy',plan:'',unit:'pv',legs:[]};
 const cnum=x=>+(String(x==null?'':x).replace(/[^\d.]/g,''))||0;
+// 算式：可以打 1700×2+890 這種加減乘除
+const cNorm=x=>String(x==null?'':x).replace(/[×xX＊]/g,'*').replace(/[÷／]/g,'/').replace(/[－—–]/g,'-').replace(/＋/g,'+').replace(/[（]/g,'(').replace(/[）]/g,')').replace(/[，,\s元]/g,'');
+const cEval=x=>{const t=cNorm(x);if(!t)return 0;let i=0;const pk=()=>t[i];
+ const fac=()=>{if(pk()==='-'){i++;return -fac()}if(pk()==='+'){i++;return fac()}if(pk()==='('){i++;const v=add();if(pk()===')')i++;return v}const m=t.slice(i).match(/^\d*\.?\d+/);if(!m)return NaN;i+=m[0].length;return +m[0]};
+ const mul=()=>{let v=fac();while(pk()==='*'||pk()==='/'){const o=t[i++],w=fac();v=o==='*'?v*w:v/w}return v};
+ const add=()=>{let v=mul();while(pk()==='+'||pk()==='-'){const o=t[i++],w=mul();v=o==='+'?v+w:v-w}return v};
+ const v=add();return i===t.length&&isFinite(v)?Math.round(v*100)/100:NaN};
+const cIsExpr=x=>/[-+*/()]/.test(cNorm(x).replace(/^[-+]/,''));
+const cPad=k=>`<div class="row" style="gap:4px;margin-top:4px">${[['+','＋'],['-','−'],['*','×'],['/','÷'],['(','('],[')',')'],['bs','⌫'],['clr','清除']].map(([v,n])=>`<button class="go q" data-a="cop" data-z1="${k}|${v}" style="flex:1;min-width:0;padding:6px 0;font-size:${v==='clr'?12:17}px">${n}</button>`).join('')}</div>`;
 const fN=(n,d)=>(+(+n).toFixed(d||0)).toLocaleString(undefined,{maximumFractionDigits:d||0});
 const pvOfAmt=a=>a*(1-S.bon.tax/100)/S.bon.bvx;
 const cIn=(k,ph,w,val)=>`<input data-ci="${k}" inputmode="decimal" placeholder="${ph}" value="${E(val!==undefined?val:(ci()[k]||''))}" style="${w?'width:'+w+';flex:none;':''}height:36px;padding:4px 8px">`;
 const cRow=(a,b,st)=>`<div class="row" style="padding:5px 0;border-top:1px solid var(--line);${st||''}"><span class="sp">${a}</span><span style="flex:none;text-align:right">${b}</span></div>`;
 const plTxt=pl=>`${pl.feeT.replace(/（.*/,'')} ${fN(pl.fee)} 元${(pl.feeT.match(/（.*）/)||[''])[0]}・千折百 ${pl.cp} 張・${pl.disc?10-pl.disc/10:''} 折最多折 ${fN(pl.cap)} 元・${pl.cpM} 個月後再送 ${pl.cp2} 張`;
-function buyCalc(){const c=ci(),b=S.bon,amt=cnum(c.amt),pl=b.pl[c.plan];let disc=0,cpU=0,fee=0,capL=0,cpL=0;
+function buyCalc(){const c=ci(),b=S.bon,amt=Math.max(0,cEval(c.amt)||0),pl=b.pl[c.plan];let disc=0,cpU=0,fee=0,capL=0,cpL=0;
  if(pl){capL=c.capL!==undefined&&c.capL!==''?cnum(c.capL):pl.cap;cpL=c.cpL!==undefined&&c.cpL!==''?cnum(c.cpL):pl.cp;disc=Math.min(Math.round(amt*pl.disc/100),capL);cpU=Math.min(cpL,Math.floor(amt/b.cpMin));fee=c.nofee?0:pl.fee}
- const sales=Math.max(0,amt-disc-cpU*b.cpOff),own=c.pv!==undefined&&c.pv!=='',pv=own?cnum(c.pv):pvOfAmt(sales);return {amt,disc,cpU,fee,sales,pv,bv:pv*b.bvx,pl,capL,cpL,own}}
-function buyRes(){const r=buyCalc(),b=S.bon,c=ci();if(!r.amt)return '<div class="sub" style="margin-top:8px">輸入商品金額就會算出來</div>';
- return `<div style="margin-top:8px">${cRow('商品原價',fN(r.amt)+' 元')}${r.pl?cRow(`${10-r.pl.disc/10} 折優惠<span class="sub" style="font-size:12px">（還可折 ${fN(r.capL)} 元）</span>`,'−'+fN(r.disc)+' 元')+cRow(`千折百 ${r.cpU} 張<span class="sub" style="font-size:12px">（滿 ${fN(b.cpMin)} 折 ${b.cpOff}，還有 ${r.cpL} 張）</span>`,'−'+fN(r.cpU*b.cpOff)+' 元'):''}
+ const sales=Math.max(0,amt-disc-cpU*b.cpOff),own=c.pv!==undefined&&c.pv!=='',pv=own?Math.max(0,cEval(c.pv)||0):pvOfAmt(sales);return {amt,disc,cpU,fee,sales,pv,bv:pv*b.bvx,pl,capL,cpL,own}}
+function buyRes(){const r=buyCalc(),b=S.bon,c=ci(),bad=k=>c[k]&&isNaN(cEval(c[k]));if(bad('amt')||bad('pv'))return '<div style="margin-top:8px;color:var(--bad)">算式好像不完整，請檢查一下</div>';if(!r.amt)return '<div class="sub" style="margin-top:8px">輸入商品金額就會算出來</div>';
+ return `<div style="margin-top:8px">${cIsExpr(c.amt)?`<div class="sub" style="font-size:13px">${E(cNorm(c.amt).replace(/\*/g,'×').replace(/\//g,'÷'))} = <b>${fN(r.amt,2)}</b></div>`:''}${cRow('商品原價',fN(r.amt,2)+' 元')}${r.pl?cRow(`${10-r.pl.disc/10} 折優惠<span class="sub" style="font-size:12px">（還可折 ${fN(r.capL)} 元）</span>`,'−'+fN(r.disc)+' 元')+cRow(`千折百 ${r.cpU} 張<span class="sub" style="font-size:12px">（滿 ${fN(b.cpMin)} 折 ${b.cpOff}，還有 ${r.cpL} 張）</span>`,'−'+fN(r.cpU*b.cpOff)+' 元'):''}
  ${cRow('<b>結帳金額（算營業額）</b>',`<b style="font-size:20px;color:var(--acc)">${fN(r.sales)} 元</b>`)}
  ${r.fee?cRow(`＋ ${E(r.pl.feeT)}<span class="sub" style="font-size:12px">（不算營業額）</span>`,'+'+fN(r.fee)+' 元')+cRow('<b>今天總共要付</b>',`<b>${fN(r.sales+r.fee)} 元</b>`):''}
  ${cRow(`這筆的分數${r.own?'（自己填的）':`<span class="sub" style="font-size:12px">（營業額 × ${100-b.tax}% ÷ ${b.bvx}）</span>`}`,`<b>${fN(r.pv,2)} PV</b>・${fN(r.bv)} BV`)}
@@ -585,8 +594,8 @@ function calcView(){const c=ci(),b=S.bon,sub=c.sub||'buy';
  const seg=`<div class="chips" style="margin-bottom:8px">${[['buy','🛒 結帳試算'],['bon','💵 獎金'],['ac','🔁 長客計劃'],['set','⚙ 規則設定']].map(([k,n])=>`<button class="chip ${sub===k?'on':''}" data-a="csub" data-z1="${k}">${n}</button>`).join('')}</div>`;
  const lb=t=>`<div class="sub" style="font-size:12px;margin:8px 0 2px">${t}</div>`;
  if(sub==='buy'){const pl=b.pl[c.plan];return seg+`<div class="card"><b>🛒 結帳試算</b>${lb('方案（長客跟新人優惠只能選一個）')}<div class="chips">${[['','一般'],['m','新辦'+b.pl.m.n],['d','新辦'+b.pl.d.n],['ac','長客計劃']].map(([k,n])=>`<button class="chip ${c.plan===k?'on':''}" data-a="cplan" data-z1="${k}">${n}</button>`).join('')}</div>${pl?`<div class="sub" style="font-size:12px;margin-top:4px">${E(plTxt(pl))}</div>`:''}
- ${lb('商品原價合計（元）')}${cIn('amt','例：3200')}${pl?`<div class="row" style="gap:8px"><div class="sp">${lb('千折百還有幾張')}${cIn('cpL',String(pl.cp))}</div><div class="sp">${lb('8 折還可以折多少元')}${cIn('capL',String(pl.cap))}</div></div><label class="row" style="gap:6px;margin-top:6px;font-size:13px"><input type="checkbox" data-cik="nofee" ${c.nofee?'checked':''} style="width:18px;height:18px;flex:none">這次不用付${E(pl.feeT.replace(/（.*/,''))}（不是新辦當天）</label>`:''}
- ${lb('商品標示的 PV（不填就依營業額自動算）')}${cIn('pv','自動計算')}<div id="calcres">${buyRes()}</div></div>`}
+ ${lb('商品原價合計（元）・可以用加減乘除，例：1700×2+890')}${cIn('amt','例：3200')}${cPad('amt')}${pl?`<div class="row" style="gap:8px"><div class="sp">${lb('千折百還有幾張')}${cIn('cpL',String(pl.cp))}</div><div class="sp">${lb('8 折還可以折多少元')}${cIn('capL',String(pl.cap))}</div></div><label class="row" style="gap:6px;margin-top:6px;font-size:13px"><input type="checkbox" data-cik="nofee" ${c.nofee?'checked':''} style="width:18px;height:18px;flex:none">這次不用付${E(pl.feeT.replace(/（.*/,''))}（不是新辦當天）</label>`:''}
+ ${lb('商品標示的 PV（不填就依營業額自動算，也可以用加減乘除）')}${cIn('pv','自動計算')}${cPad('pv')}<div id="calcres">${buyRes()}</div></div>`}
  if(sub==='bon'){const u=c.unit==='amt'?'元':'PV';return seg+`<div class="card"><div class="row"><b class="sp">💵 獎金試算</b><button class="go q" data-a="cfill" style="flex:none;font-size:12px">帶入本月業績紀錄</button></div>${lb('輸入方式')}<div class="chips">${[['pv','用 PV'],['amt','用營業額（元）']].map(([k,n])=>`<button class="chip ${(c.unit||'pv')===k?'on':''}" data-a="cunit" data-z1="${k}">${n}</button>`).join('')}</div>
  ${lb('我自己＋顧客的業績（'+u+'）')}${cIn('my','例：'+(u==='PV'?'800':'40000'))}${lb('下線（各自整條線的業績，系統會扣掉他自己領的 %）')}${(c.legs||[]).map((l,i)=>`<div class="row" style="gap:6px;margin-top:4px"><input data-cleg="${i}|n" placeholder="名字" value="${E(l.n||'')}" style="height:36px;padding:4px 8px"><input data-cleg="${i}|v" inputmode="decimal" placeholder="${u}" value="${E(l.v||'')}" style="height:36px;padding:4px 8px;width:110px;flex:none"><button class="x" data-a="clegx" data-z1="${i}" style="flex:none;font-size:16px">×</button></div>`).join('')}<button class="go q" data-a="clegadd" style="margin-top:6px">＋ 加一位下線</button><div id="calcres">${bonRes()}</div></div>`}
  if(sub==='ac'){return seg+`<div class="card"><b>🔁 長客計劃</b><div class="sub" style="font-size:12px">打產品名稱，存過的會自動帶出價格</div>${lb('產品名稱')}<input data-ci="acn" list="acdl" placeholder="例：益生菌" value="${E(c.acn||'')}" style="height:36px;padding:4px 8px"><datalist id="acdl">${b.prods.map(p=>`<option value="${E(p.n)}">`).join('')}</datalist><div class="row" style="gap:8px"><div class="sp">${lb('價格（元）')}${cIn('acp','例：1700')}</div><div class="sp">${lb('數量')}${cIn('acu','例：14')}</div><div style="width:70px;flex:none">${lb('單位')}<input data-ci="acl" placeholder="包" value="${E(c.acl||'')}" style="height:36px;padding:4px 8px"></div></div><div id="calcres">${acRes()}</div></div>
@@ -1311,6 +1320,9 @@ document.addEventListener('click',e=>{if(e.target.closest('a[href]'))return;
  else if(d.a==='stcp'){const[i1,k1]=d.z1.split('|'),o=(S.stories||[]).find(x=>x.id===+i1);if(o){const tx=o[k1]||'';try{navigator.clipboard.writeText(tx).then(()=>toast('已複製'),()=>{})}catch(x){}const t=document.createElement('textarea');t.value=tx;document.body.appendChild(t);t.select();try{document.execCommand('copy')}catch(x){}t.remove();toast('已複製')}return}
  else if(d.a==='stta'){const o=(S.stories||[]).find(x=>x.id===+d.z1),ev=v('stde'+d.z1).trim();if(!o||!ev){toast('請輸入會議名稱');return}o.talks=o.talks||[];o.talks.push({date:v('stdd'+d.z1),ev});o.talks.sort((a,b)=>(b.date||'').localeCompare(a.date||''));save();render();return}
  else if(d.a==='sttd'){const[i1,k1]=d.z1.split('|'),o=(S.stories||[]).find(x=>x.id===+i1);if(o&&o.talks)o.talks.splice(+k1,1);save();render();return}
+ else if(d.a==='cop'){const[k,o]=d.z1.split('|'),el=document.querySelector(`[data-ci="${k}"]`);if(!el)return;let a=el.selectionStart,z=el.selectionEnd;if(document.activeElement!==el||a==null){a=z=el.value.length}
+  if(o==='clr'){el.value='';a=0}else if(o==='bs'){if(a===z&&a>0){el.value=el.value.slice(0,a-1)+el.value.slice(z);a--}else{el.value=el.value.slice(0,a)+el.value.slice(z)}}else{const ch=o==='*'?'×':o==='/'?'÷':o;el.value=el.value.slice(0,a)+ch+el.value.slice(z);a+=ch.length}
+  ci()[k]=el.value;el.focus();try{el.setSelectionRange(a,a)}catch(x){}calcUpd();return}
  else if(d.a==='csub'){ci().sub=d.z1;render();return}
  else if(d.a==='cplan'){const c=ci();c.plan=d.z1;delete c.cpL;delete c.capL;c.nofee=false;render();return}
  else if(d.a==='cunit'){ci().unit=d.z1;render();return}
@@ -1454,6 +1466,7 @@ const lzAt=(x,y)=>{const el=document.elementFromPoint&&document.elementFromPoint
 document.addEventListener('pointermove',e=>{if(!LDR)return;const z=lzAt(e.clientX,e.clientY);if(z!==LDR.z){document.querySelectorAll('[data-lz]').forEach(n=>n.style.outline='');LDR.z=z;const n=z&&document.querySelector('[data-lz="'+z+'"]');if(n&&z!==String(LDR.id))n.style.outline='2px solid var(--acc)'}});
 document.addEventListener('pointerup',e=>{if(!LDR)return;const z=LDR.z||lzAt(e.clientX,e.clientY),id=LDR.id;LDR=null;document.querySelectorAll('[data-lz]').forEach(n=>n.style.outline='');if(z!==null&&moveLeader(id,+z)){save();render()}});
 document.addEventListener('pointercancel',()=>{LDR=null});
+document.addEventListener('mousedown',e=>{if(e.target.closest&&e.target.closest('[data-a=cop]'))e.preventDefault()});
 document.addEventListener('input',e=>{const el=e.target;if(!el.dataset)return;if(el.dataset.ci!==undefined){const c=ci();c[el.dataset.ci]=el.value;if(el.dataset.ci==='acn'){const p=S.bon.prods.find(x=>x.n===el.value.trim());if(p){c.acp=String(p.p);c.acu=String(p.u);c.acl=p.l;['acp','acu','acl'].forEach(k=>{const f1=document.querySelector(`[data-ci="${k}"]`);if(f1)f1.value=c[k]})}}calcUpd()}else if(el.dataset.cleg!==undefined){const[i,k]=el.dataset.cleg.split('|'),l=ci().legs[+i];if(l){l[k]=el.value;calcUpd()}}});
 document.addEventListener('input',e=>{const el=e.target;if(!el.dataset||el.dataset.nxr===undefined)return;e.stopImmediatePropagation();S.nxv=+el.value;const d=shiftD(today(),S.nxv),l=$('nxl');if(l)l.textContent=S.nxv+' 天後・'+(+d.slice(5,7))+'/'+(+d.slice(8))},true);
 let RDR=null;
