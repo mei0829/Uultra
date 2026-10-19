@@ -100,6 +100,7 @@ body{touch-action:manipulation}
 @media (prefers-reduced-motion:reduce){.jt.hit{animation:none}}
 .grp{border:1px solid var(--line);border-radius:12px;padding:2px 10px;margin:8px 0;background:var(--bg)}
 .grp .gh{display:flex;justify-content:space-between;align-items:baseline;padding:6px 2px 4px}.grp .ar:first-of-type{border-top:0}.grp+.ar{border-top:0}.card>.jt:first-child>.ar,.grp+.jt>.ar{border-top:0}
+.cpy{color:var(--acc);cursor:pointer;white-space:nowrap;border-radius:6px;padding:1px 4px;margin:0 -4px;font-weight:600}.cpy:active{background:var(--line)}
 .up{color:var(--up)}.down{color:var(--down)}
 .nw-mk{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(128px,1fr);gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:4px}
 .nw-mk>div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 10px;min-width:0;display:flex;flex-direction:column}
@@ -176,6 +177,9 @@ const A=id=>S.accts.find(a=>a.id===id),isCard=a=>!!a&&a.type==='card';
 // 子帳戶：同一家銀行的帳戶填一樣的「所屬銀行」，選單顯示成「國泰世華・數存」
 const nm=a=>a?(a.group?a.group+'・':'')+a.name+(a.cur==='USD'?'（美元）':''):'?';
 const acno=a=>{const n=String(a.no||'').replace(/\D/g,'');if(!n)return a.code?'('+a.code+')':'';return(a.code?'('+a.code+') ':'')+(HIDE?'•••••':'末五碼 '+n.slice(-5))};
+const CPI='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" style="vertical-align:-2px;margin-left:3px"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+const copyTag=(no,label)=>no?`<span class="cpy" data-a="copy" data-i="${E(no)}" title="複製完整帳號">${label}${CPI}</span>`:E(label||'');
+const tail5=no=>HIDE?'•••••':'末五碼 '+String(no||'').replace(/\D/g,'').slice(-5);
 const copyBtn=v=>v?`<button class="go q" style="padding:2px 8px;font-size:12px" data-a="copy" data-i="${E(v)}">複製</button>`:'';
 const TY={cash:'現金',bank:'銀行',card:'信用卡'},FQ=[[0,'只有一次'],[1,'每月'],[2,'每 2 個月'],[3,'每 3 個月'],[6,'每半年'],[12,'每年']];
 const fqName=f=>(FQ.find(x=>x[0]===+f)||FQ[0])[1];
@@ -309,7 +313,7 @@ function vBills(){
  const pm=k=>billPM(k);
  let h=`<h1>固定收支</h1><div class="card"><div class="row"><div class="sp"><div class="sub">每月固定支出</div><b class="num">${M(pm('out'))}</b></div><div class="sp"><div class="sub">每月定期投資</div><b class="num">${M(pm('inv'))}</b></div><div class="sp"><div class="sub">每月固定收入</div><b class="num in">${M(pm('in'))}</b></div></div><div class="sub" style="margin-top:4px">半年、一年繳一次的，會平均攤到每個月。</div></div>
  <div class="note">這裡放「固定時間會發生」的錢，分三種：<b>要繳的錢</b>（房貸、房租、保險、水電、稅…）、<b>固定收入</b>（薪水）、<b>定期投資</b>（定期定額）。每月、每 2/3 個月、每半年、每年都可以設。信用卡帳單會自動從刷卡紀錄算，不用加。</div>`;
- h+=bs.length?'<div class="card">'+bs.map(b=>{const a=A(b.acct),n=dleft(b.next),late=b.next<t0;return`<div class="li" data-a="edbill" data-i="${b.id}" style="flex-wrap:wrap"><div class="dt">${md(b.next)}<small>${late?'<span class="late">逾期</span>':n===0?'今天':n+' 天後'}</small></div><div class="sp"><div>${E(b.name)} ${b.kind==='inv'?'':isAuto(b)?`<span class="pill">銀行自動扣款</span>${b.autoRec?' <span class="pill y">自動記帳</span>':''}`:'<span class="pill">自己繳</span>'}</div><div class="sub">${b.kind==='inv'?'定期投資 '+E(b.sym||'')+' · ':''}${fqName(b.freq)} · ${E(a?nm(a):'未指定帳戶')}${b.end?' · 到 '+b.end.slice(0,4)+'/'+ +b.end.slice(5,7)+'，還有 '+occ(b,b.end).length+' 期':''}${b.note?' · '+E(b.note):''}</div>${(()=>{const p=S.payees.find(x=>x.id===b.payee);return p?`<div class="sub">匯到 ${E(p.name)} ${E(acno(p))} ${copyBtn(p.no)}</div>`:''})()}</div><div class="num ${b.kind==='in'?'in':''}">${b.kind==='in'?'+':''}${MC(b.amt,bcur(b))}</div>
+ h+=bs.length?'<div class="card">'+bs.map(b=>{const a=A(b.acct),n=dleft(b.next),late=b.next<t0;return`<div class="li" data-a="edbill" data-i="${b.id}" style="flex-wrap:wrap"><div class="dt">${md(b.next)}<small>${late?'<span class="late">逾期</span>':n===0?'今天':n+' 天後'}</small></div><div class="sp"><div>${E(b.name)} ${b.kind==='inv'?'':isAuto(b)?`<span class="pill">銀行自動扣款</span>${b.autoRec?' <span class="pill y">自動記帳</span>':''}`:'<span class="pill">自己繳</span>'}</div><div class="sub">${b.kind==='inv'?'定期投資 '+E(b.sym||'')+' · ':''}${fqName(b.freq)} · ${E(a?nm(a):'未指定帳戶')}${b.end?' · 到 '+b.end.slice(0,4)+'/'+ +b.end.slice(5,7)+'，還有 '+occ(b,b.end).length+' 期':''}${b.note?' · '+E(b.note):''}</div>${(()=>{const p=S.payees.find(x=>x.id===b.payee);return p?`<div class="sub">匯到 ${E(p.name)} ${copyTag(p.no,(p.code?'('+p.code+') ':'')+tail5(p.no))}</div>`:''})()}</div><div class="num ${b.kind==='in'?'in':''}">${b.kind==='in'?'+':''}${MC(b.amt,bcur(b))}</div>
  ${n<=3?`<div class="row" style="width:100%;justify-content:flex-end;gap:6px"><button class="go q" data-a="skipbill" data-i="${b.id}">${b.kind==='in'?'沒入帳，略過':'略過這期'}</button><button class="go q" data-a="paybill" data-i="${b.id}">${b.kind==='in'?'已入帳':b.kind==='inv'?'已扣款（記到股票）':'已繳'}（記一筆）</button></div>`:''}</div>`}).join('')+'</div>':'<div class="card sub">還沒有固定項目。點下面的常用項目快速新增。</div>';
  h+=`<h2>新增固定項目</h2><div class="chips">${PRESETS.map((p,i)=>`<button class="chip" data-a="addbill" data-i="${i}">${E(p.name)}</button>`).join('')}<button class="chip" data-a="addbill" data-i="-1">＋ 其他</button></div>`;
  return h;
@@ -354,8 +358,8 @@ function vImp(){
 }
 
 function acctLine(a,inG){
- const n=String(a.no||'').replace(/\D/g,''),det=isCard(a)?`信用卡 · ${a.close} 號結帳、${a.due} 號繳${a.last4?' · '+E(a.last4):''}`:a.type==='cash'?'':(inG?'':'銀行')+(n?(inG?'':' · ')+(HIDE?'•••••':'末五碼 '+n.slice(-5)):'')+(a.cur==='USD'?' · 美元':'');
- return`<div class="ar" data-a="edacct" data-i="${a.id}"><div class="sp"><div>${E(a.name)}</div>${det?`<div class="sub">${det}</div>`:''}</div>${a.no?copyBtn(a.no):''}<div class="num">${isCard(a)?'<span class="sub">未繳</span> '+M(cardInfo(a).owe):MA(a)}</div></div>`;
+ const n=String(a.no||'').replace(/\D/g,''),det=isCard(a)?`信用卡 · ${a.close} 號結帳、${a.due} 號繳${a.last4?' · '+E(a.last4):''}`:a.type==='cash'?'':(inG?'':'銀行')+(n?(inG?'':' · ')+copyTag(a.no,tail5(a.no)):'')+(a.cur==='USD'?' · 美元':'');
+ return`<div class="ar" data-a="edacct" data-i="${a.id}"><div class="sp"><div>${E(a.name)}</div>${det?`<div class="sub">${det}</div>`:''}</div><div class="num">${isCard(a)?'<span class="sub">未繳</span> '+M(cardInfo(a).owe):MA(a)}</div></div>`;
 }
 function acctGroups(){const gs=[],seen={};S.accts.forEach(a=>{const g=a.type!=='cash'&&a.group;if(!g)gs.push([null,[a]]);else if(seen[g])seen[g].push(a);else{seen[g]=[a];gs.push([g,seen[g]])}});return gs}
 // 帳戶多的時候，上面一排銀行按鈕，點了直接跳過去
@@ -376,7 +380,7 @@ function vSet(){
  const la=livingAuto();
  let h=`<h1>設定</h1><h2>風格</h2><div class="card">${skinPicker()}</div><h2>帳戶</h2><div class="jbox">${acctJump()}<div class="card">${acctList()}
  <div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap"><button class="go q" data-a="addacct">＋ 新增帳戶／信用卡</button><button class="go q" data-a="start">開始記帳（填今天的餘額）</button></div>${S.started?`<div class="sub" style="margin-top:6px">${md(S.started)} 開始記帳</div>`:''}</div></div>
- <h2>常用匯款帳號（房東、家人、繳費帳戶…）</h2><div class="card">${S.payees.length?S.payees.map(p=>`<div class="li" data-a="edpayee" data-i="${p.id}"><div class="ic">匯</div><div class="sp"><div>${E(p.name)}</div><div class="sub">${E(acno(p)||'沒填帳號')}${p.bank?' · '+E(p.bank):''}${p.note?' · '+E(p.note):''}</div></div>${copyBtn(p.no)}</div>`).join(''):'<div class="sub">還沒有。可以把要匯款的對象存起來，要轉帳時按「複製」就能貼到網銀。</div>'}
+ <h2>常用匯款帳號（房東、家人、繳費帳戶…）</h2><div class="card">${S.payees.length?S.payees.map(p=>`<div class="li" data-a="edpayee" data-i="${p.id}"><div class="ic">匯</div><div class="sp"><div>${E(p.name)}</div><div class="sub">${p.no?(p.code?'('+E(p.code)+') ':'')+copyTag(p.no,tail5(p.no)):'沒填帳號'}${p.bank?' · '+E(p.bank):''}${p.note?' · '+E(p.note):''}</div></div><span class="sub">›</span></div>`).join(''):'<div class="sub">還沒有。可以把要匯款的對象存起來，要轉帳時按「複製」就能貼到網銀。</div>'}
  <button class="go q" style="margin-top:8px" data-a="addpayee">＋ 新增匯款帳號</button></div>
  <h2>預留現金的估算</h2><div class="card"><div class="grid">
  <label class="fl"><span>每月日常花費（空白＝自動，目前 ${M(la)}）</span><input inputmode="numeric" data-m="living" data-s="1" data-n="1" value="${S.living==null?'':E(S.living)}" placeholder="${Math.round(la)}"></label>
@@ -575,7 +579,7 @@ const HELP=[
  ['perk','刷卡優惠：用哪張卡最划算',['perk'],`打要去哪裡刷（例：中油、夢時代），按「幫我比較」，AI 會上網查現在的優惠，告訴你用哪張卡、CUBE 要切哪個權益。<br>在「我的卡」幫每張卡填<b>官方卡名</b>，查得比較準。每天第一次打開會自動更新各卡重點。結果僅供參考，刷大筆前到銀行 App 確認。`],
  ['stock','股票（台股、美股）',['stock'],`記「買進／賣出／領股利」，網站算持股、賺賠。可以「<b>截圖匯入持股</b>」。<br>每天第一次打開會自動更新股價和美元匯率，抓不到時點「現價」自己填。選了「錢從哪個帳戶進出」，銀行餘額會一起變。`],
  ['budget','預算、圖表、月曆',['budget','chart','cal'],`<b>預算</b>：每個分類一個月最多花多少，用到 80% 變黃、超過變紅。<br><b>圖表</b>：每月花多少、錢花在哪。<br><b>月曆</b>：每天花多少，有小圓點的日子要繳錢。`],
- ['acct','帳戶、子帳戶、帳號',['set'],`「設定 → 帳戶」：銀行選下拉選單會自動帶銀行代碼；同一家銀行的子帳戶會排在一起，信用卡也可以選發卡銀行。<br>帳號只顯示末五碼，按「<b>複製</b>」會複製完整帳號。也可以存「常用匯款帳號」。`],
+ ['acct','帳戶、子帳戶、帳號',['set'],`「設定 → 帳戶」：銀行選下拉選單會自動帶銀行代碼；同一家銀行的子帳戶會排在一起，信用卡也可以選發卡銀行。<br>帳號只顯示末五碼，<b>點一下藍色的末五碼</b>就會複製完整帳號。也可以存「常用匯款帳號」。`],
  ['privacy','隱藏金額、備份、同步',['set','home'],`<b>在畫面空白的地方快速點兩下</b>：所有金額會變成 ••••（朋友在旁邊時用），左下角會出現「已隱藏」；再點兩下就顯示。<br>按鈕、輸入框、可以點的列上點兩下不算，請點在空白處或標題上。關掉網站再打開還是會維持隱藏。<br>資料會自動同步到雲端，換手機登入同一個帳號就會回來。「設定」可以下載備份檔。`],
 ];
 function gsearch(q){
@@ -590,13 +594,13 @@ function gsearch(q){
  const pl=S.plan.items.filter(x=>has(x.name));
  const hp=HELP.filter(h=>has(h[1])||has(plain(h[3])));
  const sec=(t,n,body)=>n?`<h2 style="margin-top:14px">${t}（${n}）</h2><div class="card" style="padding:6px 12px">${body}</div>`:'';
- const acLine=a=>{const I=isCard(a)&&cardInfo(a),cl=isCard(a)&&closeOf(a,t0);return`<div class="ar" data-a="${isCard(a)?'card':'edacct'}" data-i="${a.id}"><div class="sp"><div><b>${E(nm(a))}</b> <span class="pill">${TY[a.type]}</span></div><div class="sub">${isCard(a)?`本期 ${md(cl)} 結帳、${md(dueOf(a,cl))} 繳款${a.official?' · '+E(a.official):''}${I.billed.length?' · 已出帳待繳 '+M(I.billed.reduce((s,x)=>s+x.left,0)):''}`:[bankOf(a)&&bankOf(a)+'（'+a.code+'）',a.no&&(HIDE?'•••••':'末五碼 '+String(a.no).replace(/\D/g,'').slice(-5))].filter(Boolean).join(' · ')}</div></div>${a.no?copyBtn(a.no):''}<b class="num">${isCard(a)?'<span class="sub">未繳</span> '+M(I.owe):MA(a)}</b></div>`};
+ const acLine=a=>{const I=isCard(a)&&cardInfo(a),cl=isCard(a)&&closeOf(a,t0);return`<div class="ar" data-a="${isCard(a)?'card':'edacct'}" data-i="${a.id}"><div class="sp"><div><b>${E(nm(a))}</b> <span class="pill">${TY[a.type]}</span></div><div class="sub">${isCard(a)?`本期 ${md(cl)} 結帳、${md(dueOf(a,cl))} 繳款${a.official?' · '+E(a.official):''}${I.billed.length?' · 已出帳待繳 '+M(I.billed.reduce((s,x)=>s+x.left,0)):''}`:[bankOf(a)&&bankOf(a)+'（'+a.code+'）',a.no&&copyTag(a.no,tail5(a.no))].filter(Boolean).join(' · ')}</div></div><b class="num">${isCard(a)?'<span class="sub">未繳</span> '+M(I.owe):MA(a)}</b></div>`};
  const out=tx.filter(t=>t.type==='out').reduce((s,t)=>s+t.amt,0),inc=tx.filter(t=>t.type==='in').reduce((s,t)=>s+t.amt,0);
  let h='';
  h+=sec('帳戶',ac.length,ac.map(acLine).join('')+(ac.filter(a=>!isCard(a)).length>1?`<div class="row" style="padding:6px 2px;border-top:1px solid var(--line)"><span class="sp sub">存款合計</span><b class="num">${M(ac.filter(a=>!isCard(a)).reduce((s,a)=>s+conv(bal(a),a.cur,'TWD'),0))}</b></div>`:''));
  h+=sec('記帳紀錄',tx.length,`<div class="sub" style="padding:4px 2px">支出合計 ${M(out)}${inc?'、收入合計 '+M(inc):''}</div>`+tx.slice(0,20).map(txLine).join('')+(tx.length>20?`<div class="sub" style="padding:6px 2px">還有 ${tx.length-20} 筆，到「記帳」頁用搜尋或帳戶篩選看全部</div>`:''));
  h+=sec('固定收支',bl.length,bl.map(b=>`<div class="ar" data-a="edbill" data-i="${b.id}"><div class="sp"><div>${E(b.name)}</div><div class="sub">${fqName(b.freq)} · 下次 ${md(b.next)} · ${E(nm(A(b.acct)))}</div></div><b class="num">${MC(b.amt,bcur(b))}</b></div>`).join(''));
- h+=sec('常用匯款帳號',py.length,py.map(p=>`<div class="ar" data-a="edpayee" data-i="${p.id}"><div class="sp"><div>${E(p.name)}</div><div class="sub">${E(acno(p))}${p.bank?' · '+E(p.bank):''}</div></div>${copyBtn(p.no)}</div>`).join(''));
+ h+=sec('常用匯款帳號',py.length,py.map(p=>`<div class="ar" data-a="edpayee" data-i="${p.id}"><div class="sp"><div>${E(p.name)}</div><div class="sub">${p.no?(p.code?'('+E(p.code)+') ':'')+copyTag(p.no,tail5(p.no)):''}${p.bank?' · '+E(p.bank):''}</div></div></div>`).join(''));
  h+=sec('股票',hs.length,hs.map(x=>`<div class="ar" data-a="tab" data-i="stock"><div class="sp"><div><b>${E(x.sym)}</b> ${E(x.name)}</div><div class="sub">${+x.sh.toFixed(4)} 股</div></div><b class="num">${MC(x.val,x.cur)}</b></div>`).join(''));
  h+=sec('分帳戶',pl.length,pl.map(x=>`<div class="ar" data-a="tab" data-i="plan"><div class="sp">${E(x.name)}</div><b class="num">${M(pa(x))}</b></div>`).join(''));
  h+=sec('使用說明',hp.length,hp.map(x=>`<div class="ar" data-a="hpq" data-i="${x[0]}"><div class="sp">${E(x[1])}</div><span class="sub">›</span></div>`).join(''));
@@ -812,7 +816,7 @@ function sheetPayee(o){
  return`<div class="row"><b class="sp" style="font-size:17px">${o.id?'編輯匯款帳號':'新增匯款帳號'}</b><button class="x" data-a="close">×</button></div>
  <div class="grid"><label class="fl w"><span>對象</span><input value="${E(o.name)}" data-m="sheet.o.name" placeholder="例：房東王先生"></label>
  ${bankPick(o,'bank','銀行','選擇銀行')}<label class="fl"><span>銀行代碼</span><input inputmode="numeric" value="${E(o.code)}" data-m="sheet.o.code" placeholder="例：700"></label>
- <label class="fl w"><span>帳號</span><input inputmode="numeric" value="${E(o.no)}" data-m="sheet.o.no"></label>
+ <label class="fl w"><span>帳號 ${o.no?copyTag(o.no,'複製'):''}</span><input inputmode="numeric" value="${E(o.no)}" data-m="sheet.o.no"></label>
  <label class="fl w"><span>備註</span><input value="${E(o.note)}" data-m="sheet.o.note" placeholder="例：每月 5 號前匯房租"></label></div>
  <div class="row" style="margin-top:14px;gap:8px">${o.id?'<button class="go r" data-a="delpayee">刪除</button>':''}<span class="sp"></span><button class="go" data-a="savepayee">儲存</button></div>`;
 }
@@ -829,7 +833,7 @@ function sheetAcct(o){
  <div class="chips" style="margin:8px 0">${Object.keys(TY).map(k=>`<button class="chip ${o.type===k?'on':''}" data-a="at" data-i="${k}">${TY[k]}</button>`).join('')}</div>
  <div class="grid"><label class="fl w"><span>名稱</span><input value="${E(o.name)}" data-m="sheet.o.name" placeholder="${c?'例：國泰 CUBE 卡':o.type==='bank'?'例：活存、數存、薪轉':'例：錢包'}"></label>
  ${o.type==='bank'?`<div class="fl w"><span>幣別</span><div class="chips">${[['TWD','台幣'],['USD','美元（外幣帳戶）']].map(([k,n])=>`<button class="chip ${(o.cur||'TWD')===k?'on':''}" data-a="acur" data-i="${k}">${n}</button>`).join('')}</div></div>${bankPick(o,'group','哪一家銀行（同一家的子帳戶會排在一起）','不指定')}
- <label class="fl"><span>銀行代碼</span><input inputmode="numeric" value="${E(o.code||'')}" data-m="sheet.o.code" placeholder="例：013"></label><label class="fl"><span>帳號</span><input inputmode="numeric" value="${E(o.no||'')}" data-m="sheet.o.no" placeholder="匯款用的帳號"></label>`:''}
+ <label class="fl"><span>銀行代碼</span><input inputmode="numeric" value="${E(o.code||'')}" data-m="sheet.o.code" placeholder="例：013"></label><label class="fl"><span>帳號 ${o.no?copyTag(o.no,'複製'):''}</span><input inputmode="numeric" value="${E(o.no||'')}" data-m="sheet.o.no" placeholder="匯款用的帳號"></label>`:''}
  ${c?bankPick(o,'group','發卡銀行（選填；會跟那家銀行的帳戶排在一起）','不指定'):''}
  ${c?`<label class="fl w"><span>官方卡名（選填；查刷卡優惠用，例：國泰世華 CUBE 卡）</span><input value="${E(o.official||'')}" data-m="sheet.o.official" list="cardlist" placeholder="上面的名稱可以取短一點，這裡填完整的">${cardDL()}</label>`:''}
  ${c?`<label class="fl w"><span>卡號末四碼（選填，方便辨認，不要填完整卡號）</span><input inputmode="numeric" maxlength="4" value="${E(o.last4||'')}" data-m="sheet.o.last4"></label>`:''}
