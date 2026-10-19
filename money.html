@@ -598,7 +598,7 @@ const HELP=[
  ['add','記一筆（花錢、收入、轉帳）',['tx','home','cal'],`按右下角「<b>＋</b>」：<br>・<b>支出</b>：打金額、選帳戶和分類。說明裡有「全家」「中油」這類字會自動選分類。<br>・<b>收入</b>：薪水選「收入」，帳戶選銀行（不能選信用卡），日期是入帳日。<br>・<b>轉帳／繳卡費</b>：自己帳戶之間搬錢、繳信用卡費都用這個，<b>不算收入支出</b>。`],
  ['card','信用卡：刷卡到繳清的 4 個階段',['card','tx','home'],`刷卡時用「刷卡那天」記，網站會標出：<br><b>… 未入帳</b> 銀行還沒收到 → <b>○ 未出帳</b> 等結帳日 → <b>● 已出帳</b> 要繳 → <b>✓ 已繳清</b><br>匯入銀行明細時會自動跟你記的那筆配對、補上入帳日，不會重複。繳卡費時在總覽點那張卡 →「<b>記錄繳卡費</b>」。`],
  ['cycle','結帳日、繳款日某個月不一樣',['card','set'],`平常照「每月幾號」自動算。銀行某一期因為假日改日期時：<br>總覽點那張卡 →「<b>接下來的日期</b>」→ 按「<b>修改</b>」，照帳單上的日期填，<b>只會改那一期</b>。<br>建議每次收到帳單時看一眼，跟網站一樣就不用管。銀行永久改日期的話，到「設定 → 帳戶」改每月固定日。`],
- ['fund','年繳費怎麼預存、怎麼不會誤花',['bills','home'],`年繳、半年繳的錢（保險、牌照稅、燃料費…）建議<b>每個月先存一點</b>：<br>1. 設定 → 帳戶 → 新增一個專門的帳戶（例如網銀子帳戶「國泰 預存」），勾「<b>📦 這是預存帳戶</b>」。<br>2. 固定收支 → 編輯那筆年繳費 → 「📦 每個月先存一點」選這個帳戶。會自動多一個「預存・保險費」每月提醒（金額 ÷ 月數）。<br>3. 進度條會顯示「已存多少 / 要繳多少」，繳完後從 0 重新開始存。<br>4. 繳費時「從哪個帳戶扣」選預存帳戶。<br><b>怕誤以為有錢花？</b>總覽會顯示「<b>💡 真的可以花的錢</b>」＝現金＋銀行 − 預存 − 卡費，預存帳戶也會單獨列在「📦 預存（不能花）」。`],
+ ['fund','年繳費怎麼預存、怎麼不會誤花',['bills','home'],`年繳、半年繳的錢（保險、牌照稅、燃料費…）建議<b>每個月先存一點</b>：<br>1. 設定 → 帳戶 → 新增一個專門的帳戶（例如網銀子帳戶「國泰 預存」），勾「<b>📦 這是預存帳戶</b>」。<br>2. 固定收支 → 編輯那筆年繳費 → 「📦 每個月先存一點」選這個帳戶。會自動多一個「預存・保險費」每月提醒（金額 ÷ 月數）。<br>3. 進度條會顯示「已存多少 / 要繳多少」，繳完後從 0 重新開始存。<br>4. 繳費時「從哪個帳戶扣」選預存帳戶。<br><b>怕誤以為有錢花？</b>總覽會顯示「<b>💡 真的可以花的錢</b>」＝現金＋銀行 − 預存 − 卡費，預存帳戶也會單獨列出來。<br>預存的錢因為之後要繳出去，預設<b>不算進總資產</b>；想算進去的話，在總覽那行點「改成要算」。`],
  ['shop','在哪裡買（店家、地點）',['tx','chart'],`記支出時有「<b>在哪裡買</b>」：點下面的常用店家，或按「更多店家」看分類清單；也可以打字搜尋，清單沒有的就直接輸入，例如「阿嬤麵攤」。<br>說明裡有店名（例如「抹茶吐司/全家」）會自動帶入。你用過的地方會排到最前面。<br>記帳頁的搜尋可以搜店家；圖表頁會列出「這個月最常花錢的地方」。`],
  ['save','強迫儲蓄・存錢進度',['bills','home','plan'],`<b>1. 先有一個存錢帳戶</b>：設定 → 帳戶 → 新增，例如「國泰 存錢」（數位帳戶或子帳戶都可以），之後只存不花。<br><b>2. 設定每月存多少</b>：固定收支 → 新增「<b>強迫儲蓄</b>」→ 選「從哪個帳戶轉出」（薪水帳戶）、「存到哪個帳戶」、每次多少、目標金額（選填）。<br><b>3. 怎麼存</b>：最好跟銀行設「<b>約定自動轉帳</b>」，薪水入帳隔天自動轉走（先存再花）；選「銀行自動轉帳」並勾「自動幫我記一筆」，網站會自己記。自己轉的，轉完按「<b>已存（記一筆）</b>」。<br><b>4. 看進度</b>：總覽的「<b>存錢進度</b>」和固定收支都有進度條，顯示存了多少、還差多少、大約幾個月達成。<br>存錢記成「轉帳」，不算花費，不會讓支出變多。`],
  ['bills','固定收支（房貸、帳單、薪水、定期定額）',['bills'],`放「固定時間會發生的錢」，分四種：<b>要繳的錢</b>、<b>固定收入</b>、<b>定期投資</b>、<b>存錢</b>。<br>可以設每月、每 2/3 個月、每半年、每年；房貸、分期可以填「最後一期」。<br>每一項要選「<b>怎麼繳</b>」：<br>・<b>自己繳</b>（轉帳、現金、超商）：到期前 3 天提醒你，繳完按「<b>已繳（記一筆）</b>」才會記帳。<br>・<b>銀行自動扣款</b>：可以勾「<b>自動幫我記一筆</b>」，到扣款日網站自己記，不用按。<br>已經從銀行明細匯入過的，按「略過這期」就不會重複。定期定額按「已扣款」會自動記成股票買進。`],
@@ -1032,16 +1032,17 @@ function acctBrief(){
  ord.forEach(k=>{const as=gs[k].slice().sort((x,y)=>isCard(x)-isCard(y)||Math.abs(v(y))-Math.abs(v(x))),show=U.az?as:as.filter(a=>!zero(a));nz+=as.length-as.filter(a=>!zero(a)).length;if(!show.length)return;
   const own=show.filter(a=>!isCard(a)).reduce((t,a)=>t+v(a),0),owe=show.filter(isCard).reduce((t,a)=>t-v(a),0),one=show.length===1&&!(show[0].group&&show[0].type!=='cash');
   const item=a=>`<span class="ai" data-a="edacct" data-i="${a.id}">${E(k==='\u0000x'||k==='\u0000h'?nm(a):a.name+(a.cur==='USD'?'（美元）':''))} <b class="num ${isCard(a)&&!zero(a)?'neg':''}">${isCard(a)?(zero(a)?'已繳清':'未繳 '+M(-v(a))):MA(a)}</b></span>`;
-  const r={w:Math.abs(own)+owe,h:`<div class="ag"><div class="row"><b class="sp">${E(k==='\u0000x'?'🔒 沒算進總資產':k==='\u0000h'?'📦 預存（存著要繳的，不能花）':one?show[0].name:k)}</b>${own||!owe?`<b class="num ${own<-0.5?'neg':''}">${M(own)}</b>`:''}</div>${one&&k!=='\u0000x'&&k!=='\u0000h'&&!isCard(show[0])&&!show[0].cur?'':`<div class="ais">${show.map(item).join('')}</div>`}</div>`};
+  const r={w:Math.abs(own)+owe,h:`<div class="ag"><div class="row"><b class="sp">${E(k==='\u0000x'?'🔒 沒算進總資產':k==='\u0000h'?S.holdIn?'📦 預存（存著要繳的，不能花）':'📦 預存（要繳出去，沒算進總資產）':one?show[0].name:k)}</b>${own||!owe?`<b class="num ${own<-0.5?'neg':''}">${M(own)}</b>`:''}</div>${one&&k!=='\u0000x'&&k!=='\u0000h'&&!isCard(show[0])&&!show[0].cur?'':`<div class="ais">${show.map(item).join('')}</div>`}</div>`};
   (k==='\u0000x'?ex:k==='\u0000h'?(ex.unshift(r),[]):rows).push(r)});
  rows.sort((x,y)=>y.w-x.w);
  return`<div class="agl">${rows.concat(ex).map(r=>r.h).join('')}</div>${nz?`<button class="lnk" data-a="az">${U.az?'收起 $0 的帳戶 ▴':'還有 '+nz+' 個帳戶是 $0，點我顯示 ▾'}</button>`:''}`;
 }
 function assetCard(liq){
  const hs=holdings().filter(h=>h.sh>0),stk=hs.reduce((s,h)=>s+conv(h.val,h.cur,'TWD'),0),owe=S.accts.filter(isCard).reduce((s,c)=>s+cardInfo(c).owe,0),nop=hs.filter(h=>h.px==null).length;
- return`<div class="card"><div class="sub">我的總資產（已扣掉還沒繳的卡費）</div><div class="big">${M(liq+stk-owe)}</div>
+ const hd=holdAmt(),hin=!!S.holdIn,net=liq+stk-owe-(hin?0:hd);
+ return`<div class="card"><div class="sub">我的總資產（已扣掉還沒繳的卡費${hd&&!hin?'、📦 要繳出去的預存':''}）</div><div class="big">${M(net)}</div>
  <div class="tiles"><div><span class="sub">現金＋銀行</span><b>${M(liq)}</b></div><div><span class="sub">股票市值</span><b>${M(stk)}</b></div><div><span class="sub">卡費未繳</span><b>${owe?'−'+M(owe):M(0)}</b></div></div>
- ${(()=>{const hd=holdAmt(),sp=liq-hd-owe;return hd?`<div class="note" style="margin-top:8px">💡 <b>真的可以花的錢：<span class="num ${sp<0?'neg':''}">${M(sp)}</span></b><br><span class="sub">現金＋銀行 ${M(liq)} − 📦 預存（要繳的） ${M(hd)}${owe?' − 卡費 '+M(owe):''}</span></div>`:''})()}
+ ${(()=>{const sp=liq-hd-owe;return hd?`<div class="note" style="margin-top:8px">💡 <b>真的可以花的錢：<span class="num ${sp<0?'neg':''}">${M(sp)}</span></b><br><span class="sub">現金＋銀行 ${M(liq)} − 📦 預存（要繳的） ${M(hd)}${owe?' − 卡費 '+M(owe):''}</span><br><span class="sub">📦 預存 ${M(hd)} ${hin?'有算進總資產':'要繳出去，<b>沒算進總資產</b>'}・<a href="#" data-a="holdin">${hin?'改成不算':'改成要算'}</a></span></div>`:''})()}
  ${acctBrief()}
  ${nop?`<div class="sub" style="margin-top:6px">有 ${nop} 檔股票還沒有股價，市值先用成本算。</div>`:''}
  ${S.accts.filter(a=>!isCard(a)&&bal(a)<-0.5).map(a=>`<div class="note" style="border-color:var(--bad)">⚠︎ <b>${E(a.name)}</b> 顯示 ${MA(a)}，這通常不是真的欠錢，而是還沒填這個帳戶「現在實際有多少錢」，網站從 0 開始算，扣掉繳出去的錢就變負的。按下面「更新銀行餘額」填網銀 App 上看到的數字就會正確。</div>`).join('')}
@@ -1281,6 +1282,7 @@ const ACT={
  ty:i=>{const o=U.sheet.o;o.type=i;if(i==='in'&&isCard(A(o.acct)))o.acct=firstBank();if(!o.catSet||!S.cats[i==='in'?'in':'out'].includes(o.cat))o.cat=guess(o.note,i),o.catSet=0;if(i==='xfer'&&(!o.to||o.to===o.acct))o.to=(S.accts.find(a=>a.id!==o.acct&&isCard(a))||S.accts.find(a=>a.id!==o.acct)||{}).id;render()},
  shop:i=>{const o=U.sheet.o;o.shop=o.shop===i?'':i;o.shopSet=!!o.shop;const si=$('fshop');if(si)si.value=o.shop;document.querySelectorAll('[data-a="shop"]').forEach(b=>b.classList.toggle('on',b.dataset.i===o.shop));
   if(!o.catSet){const g=guess(o.note+' '+o.shop,o.type);if(g&&g!==o.cat){o.cat=g;document.querySelectorAll('[data-a="cat"]').forEach(b=>b.classList.toggle('on',b.dataset.i===g))}}},
+ holdin:()=>{S.holdIn=!S.holdIn;save();render();toast(S.holdIn?'預存的錢現在算進總資產':'預存的錢不算進總資產了')},
  az:()=>{U.az=!U.az;render()},
  shopall:()=>{U.shopAll=!U.shopAll;render()},
  cat:i=>{const o=U.sheet.o;o.cat=i;o.catSet=1;render()},
