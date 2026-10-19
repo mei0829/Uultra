@@ -751,9 +751,9 @@ function vStock(){
  const hs=holdings(),on=hs.filter(h=>h.sh>0),off=hs.filter(h=>h.sh<=0);
  const T=(h,k)=>conv(h[k],h.cur,'TWD'),sum=(xs,k)=>xs.reduce((s,h)=>s+T(h,k),0);
  const val=sum(on,'val'),cost=sum(on,'cost'),un=sum(on,'unreal'),re=sum(hs,'real'),dv=sum(hs,'div'),hasUS=hs.some(h=>h.cur==='USD')||S.accts.some(a=>a.cur==='USD');
- let h=`<h1>股票</h1><div class="card"><div class="sub">目前市值</div><div class="big">${M(val)}</div><div class="sub">投入成本 ${M(cost)}</div>
+ let h=`<h1>股票</h1>${stkSeg()}<div class="card"><div class="sub">目前市值</div><div class="big">${M(val)}</div><div class="sub">投入成本 ${M(cost)}</div>
  <div class="tiles"><div><span class="sub">還沒賣的賺賠</span><b>${gain(un)}</b></div><div><span class="sub">已經賣掉賺賠</span><b>${gain(re)}</b></div><div><span class="sub">領到的股利</span><b class="num">${M(dv)}</b></div></div>
- <div class="msg">全部加起來：${gain(un+re+dv)}</div><div class="sub" style="margin-top:4px">紅色＝賺、綠色＝賠（台股習慣）。每天第一次打開會自動更新股價（台股抓收盤價、美股抓最新價）和美元匯率，抓不到的點「現價」手動改。${hasUS?'美股都用目前匯率換成台幣加總。':''}</div></div>
+ <div class="msg">全部加起來：${gain(un+re+dv)}</div><div class="note" data-t="顏色、股價怎麼更新？">紅色＝賺、綠色＝賠（台股習慣）。每天第一次打開會自動更新股價（台股抓收盤價、美股抓最新價）和美元匯率，抓不到的點「現價」手動改。${hasUS?'美股都用目前匯率換成台幣加總。':''}</div></div>
  <div class="card"><div class="row"><span class="sp">美元匯率 1 USD ＝</span><input inputmode="decimal" style="width:92px;text-align:right" value="${E((S.fx||{}).USD||32)}" data-m="fx.USD" data-fxm="1"><span>TWD</span></div><div class="sub" style="margin-top:4px">${S.fx&&S.fx.d?md(S.fx.d)+(S.fx.auto?' 自動更新':' 手動填的'):'還沒更新過，先用 32'}・可以自己改</div></div>
  <button class="go" style="width:100%;margin-bottom:8px" data-a="addtrade">＋ 記一筆交易（買、賣、股利）</button>
  <div class="row" style="gap:8px;margin-bottom:10px"><button class="go g sp" data-a="snaphold">截圖匯入持股</button>${on.length?'<button class="go g sp" data-a="pxnow">更新股價</button>':''}</div>`;
@@ -768,7 +768,7 @@ function vStock(){
  const ms={};SEV.forEach(e=>{const m=e.d.slice(0,7),x=ms[m]=ms[m]||{div:0,real:0};x.div+=conv(e.div,e.cur,'TWD');x.real+=conv(e.real,e.cur,'TWD')});
  const mk=Object.keys(ms).sort().reverse().slice(0,24),yr=today().slice(0,4),Y=Object.keys(ms).filter(m=>m.startsWith(yr)).reduce((a,m)=>a+ms[m].div+ms[m].real,0);
  if(mk.length)h+=`<h2>每月股票收益（今年合計 ${M(Y)}）</h2><div class="card"><table class="pv"><tr><th>月份</th><th style="text-align:right">股利</th><th style="text-align:right">賣出賺賠</th><th style="text-align:right">合計</th></tr>${mk.map(m=>`<tr><td>${m.slice(0,4)}/${+m.slice(5)}</td><td class="num" style="text-align:right">${M(ms[m].div)}</td><td style="text-align:right">${gain(ms[m].real)}</td><td style="text-align:right">${gain(ms[m].div+ms[m].real)}</td></tr>`).join('')}</table><div class="sub" style="margin-top:6px">只算已經落袋的錢（領到的股利、賣掉時的賺賠）；還沒賣的漲跌看上面的「還沒賣的賺賠」。</div></div>`;
- h+=`<h2>手續費設定（台股）</h2><div class="card"><div class="grid"><label class="fl"><span>手續費折扣（6 折填 0.6）</span><input inputmode="decimal" data-m="fee.disc" data-s="1" value="${E(S.fee.disc)}"></label><label class="fl"><span>最低手續費</span><input inputmode="numeric" data-m="fee.min" data-s="1" value="${E(S.fee.min)}"></label></div><div class="sub" style="margin-top:6px">手續費＝成交金額 × 0.1425% × 折扣；賣出時另扣證交稅 0.3%（00 開頭的 ETF 是 0.1%）。記交易時會自動算，也可以手動改。</div></div>`;
+ h+=`<h2>手續費設定（台股）</h2><div class="card"><div class="grid"><label class="fl"><span>手續費折扣（6 折填 0.6）</span><input inputmode="decimal" data-m="fee.disc" data-s="1" value="${E(S.fee.disc)}"></label><label class="fl"><span>最低手續費</span><input inputmode="numeric" data-m="fee.min" data-s="1" value="${E(S.fee.min)}"></label></div><div class="note" data-t="手續費怎麼算？">手續費＝成交金額 × 0.1425% × 折扣；賣出時另扣證交稅 0.3%（00 開頭的 ETF 是 0.1%）。記交易時會自動算，也可以手動改。</div></div>`;
  return h;
 }
 function sheetTrade(o){
@@ -796,7 +796,7 @@ function vCalc(){
  const pts=[];for(let y=0;y<=Y;y++){const a=fv(y*12),b=P+C*y*12;pts.push({x:y,a,b,tip:`<b>第 ${y} 年</b><br>總共 ${M(a)}<br>自己投入 ${M(b)}<br>多賺的 ${M(a-b)}`})}
  const fin=fv(n),inv=P+C*n,g=r?Math.pow(1+r,n):1,need=r?(G-P*g)*r/(g-1):(G-P)/n;
  const inp=(k,l,ph)=>`<label class="fl"><span>${l}</span><input inputmode="decimal" data-m="calc.${k}" data-s="1" data-r="1" value="${E(c[k])}" placeholder="${ph}"></label>`;
- let h=`<h1>複利計算</h1><div class="card"><div class="grid">${inp('p','一開始放多少錢','100000')}${inp('c','每個月再存多少','5000')}${inp('r','一年賺幾 %','6')}${inp('y','存幾年（1～60）','20')}</div>
+ let h=`<h1>股票</h1>${stkSeg()}<div class="card"><div class="grid">${inp('p','一開始放多少錢','100000')}${inp('c','每個月再存多少','5000')}${inp('r','一年賺幾 %','6')}${inp('y','存幾年（1～60）','20')}</div>
  <div class="sub" style="margin-top:6px">參考：銀行定存一年大約 1～2%；股票長期平均比較高但會上下波動，不保證。</div></div>
  <div class="card"><div class="sub">${Y} 年後大約會有</div><div class="big">${M(fin)}</div>
  <div class="tiles"><div><span class="sub">自己投入</span><b>${M(inv)}</b></div><div><span class="sub">多賺的</span><b>${M(fin-inv)}</b></div><div><span class="sub">變成幾倍</span><b>${inv?(fin/inv).toFixed(2):'—'} 倍</b></div></div>
@@ -890,8 +890,11 @@ function sheetAcct(o){
  <div class="row" style="margin-top:14px;gap:8px">${o.id?'<button class="go r" data-a="delacct">刪除</button>':''}<span class="sp"></span><button class="go" data-a="saveacct">儲存</button></div>`;
 }
 
-const TABS=[['home','◎','總覽'],['tx','✎','記帳'],['cal','▦','月曆'],['bills','◷','固定收支'],['more','⋯','更多']];
-const MORE=[['perk','✦','刷卡優惠','在哪裡刷用哪張卡、CUBE 要切哪個權益'],['plan','◫','分帳戶','薪水進來先分好：固定支出、生活費、存錢、投資'],['budget','◔','預算','每個分類一個月能花多少，快超過會提醒'],['chart','▥','圖表','每個月花多少、錢都花在哪'],['stock','↗','股票','持股、賺賠、股利一次看'],['news','▤','時事與股市','今天股價漲跌、國內外新聞、熱門話題'],['calc','％','複利計算','每月存一點，以後會變多少'],['imp','⇣','匯入明細','信用卡、銀行、電子發票、截圖'],['set','⚙︎','設定與風格','帳戶、顏色、深色模式、備份'],['guide','?','新手教學','從頭一步一步開始']];
+// 股票分頁上方的切換：持股／股市新聞／複利計算
+const STK=[['stock','我的持股'],['news','股價與新聞'],['calc','複利計算']];
+const stkSeg=()=>`<div class="chips" style="margin:0 0 12px">${STK.map(([k,n])=>`<button class="chip ${U.tab===k?'on':''}" data-a="tab" data-i="${k}">${n}</button>`).join('')}</div>`;
+const TABS=[['home','◎','總覽'],['tx','✎','記帳'],['cal','▦','月曆'],['bills','◷','固定收支'],['stock','↗','股票'],['more','⋯','更多']];
+const MORE=[['perk','✦','刷卡優惠','在哪裡刷用哪張卡、CUBE 要切哪個權益'],['plan','◫','分帳戶','薪水進來先分好：固定支出、生活費、存錢、投資'],['budget','◔','預算','每個分類一個月能花多少，快超過會提醒'],['chart','▥','圖表','每個月花多少、錢都花在哪'],['imp','⇣','匯入明細','信用卡、銀行、電子發票、截圖'],['set','⚙︎','設定與風格','帳戶、顏色、深色模式、備份'],['guide','?','新手教學','從頭一步一步開始']];
 let RD=0,RD2=0,KF=0;
 function render(){
  // 換掉畫面時，正在輸入的欄位失焦會觸發 change；那次重畫延後到這次畫完再做
@@ -906,7 +909,7 @@ function renderNow(){
  const y=window.scrollY,V={perk:vPerk,plan:vPlan,card:vCard,home:vHome,tx:vTx,cal:vCal,bills:vBills,more:vMore,budget:vBudget,chart:vChart,stock:vStock,news:vNews,calc:vCalc,imp:vImp,set:vSet,guide:vGuide},sub=MORE.some(m=>m[0]===U.tab),ae=KF&&document.activeElement,am=ae&&ae.dataset&&ae.dataset.m,cp=am&&ae.selectionStart;KF=0;
  CI={};$('tip').style.display='none';$('eye').textContent='•••• 已隱藏・點兩下顯示';$('eye').classList.toggle('on',HIDE);$('eye').setAttribute('aria-label',HIDE?'顯示金額':'隱藏金額');
  $('app').innerHTML=(sub?'<button class="back" data-a="tab" data-i="more">‹ 更多</button>':'')+V[U.tab]();
- $('nav').innerHTML=TABS.map(([k,i,n])=>`<button class="${U.tab===k||(k==='more'&&sub)?'on':''}" data-a="tab" data-i="${k}"><b>${i}</b>${n}</button>`).join('');
+ $('nav').innerHTML=TABS.map(([k,i,n])=>`<button class="${U.tab===k||(k==='more'&&sub)||(k==='stock'&&STK.some(x=>x[0]===U.tab))?'on':''}" data-a="tab" data-i="${k}"><b>${i}</b>${n}</button>`).join('');
  const sh=U.sheet,SH={help:sheetHelp,cyc:sheetCyc,pcard:sheetPCard,pitem:sheetPItem,payee:sheetPayee,start:sheetStart,tx:sheetTx,bill:sheetBill,acct:sheetAcct,trade:sheetTrade,recon:sheetRecon,hold:sheetHold};$('sheet').innerHTML=sh?`<div class="sheet" data-a="bg"><div>${SH[sh.k](sh.o)}</div></div>`:'';
  calmNotes();window.scrollTo(0,y);
  document.querySelectorAll('[data-entry]').forEach(el=>{const k=el.dataset.entry,P=S.perk||{},r=k==='sum'?P.sum&&P.sum.r:(P.cache[pkKey(P.q,P.amt)]||{}).r,html=r&&r._entry;if(html){try{el.attachShadow({mode:'open'}).innerHTML=html}catch(e){}}});
@@ -1187,7 +1190,7 @@ function nwSpark(a,up){
 }
 function nwStocks(){
  const rs=nwRows();
- if(!rs.length)return`<div class="card sub">還沒有持股。到「更多 → 股票」記錄買進，這裡就會顯示每天的漲跌；也可以先在下面加自選股。${nwAddForm()}</div>`;
+ if(!rs.length)return`<div class="card sub">還沒有持股。到下面的「股票」分頁記錄買進，這裡就會顯示每天的漲跌；也可以先在下面加自選股。${nwAddForm()}</div>`;
  const own=rs.filter(r=>!r.watch);let val=0,day=0,cost=0,okd=0,up=0,dn=0;
  const tw=(v,c)=>c==='USD'?v*nwFx():v;
  own.forEach(r=>{const q=NW.q[r.sym];if(!q)return;val+=tw(r.sh*q.p,r.cur);cost+=tw(r.cost,r.cur);if(q.prev){day+=tw(r.sh*(q.p-q.prev),r.cur);okd++;if(q.p>q.prev)up++;else if(q.p<q.prev)dn++}});
@@ -1225,7 +1228,7 @@ function nwList(){
 function vNews(){
  nwLoad(false);
  const n=NW.n,ms=n&&n.markets||[],t=n&&n.trends||{};
- let h=`<h1>時事與股市</h1><div class="sub" style="margin:-8px 2px 8px">${n?(Date.now()/1000-n.updated>3*3600?'⚠︎ ':'')+'新聞更新於 '+md(iso(new Date(n.updated*1000)))+' '+nwHM(new Date(n.updated*1000)):'載入中…'} <button class="go q" style="padding:2px 8px;font-size:12px;margin-left:4px" data-a="nwreload">重新整理</button></div>`;
+ let h=`<h1>股票</h1>${stkSeg()}<div class="sub" style="margin:-8px 2px 8px">${n?(Date.now()/1000-n.updated>3*3600?'⚠︎ ':'')+'新聞更新於 '+md(iso(new Date(n.updated*1000)))+' '+nwHM(new Date(n.updated*1000)):'載入中…'} <button class="go q" style="padding:2px 8px;font-size:12px;margin-left:4px" data-a="nwreload">重新整理</button></div>`;
  if(ms.length)h+=`<h2>大盤</h2><div class="nw-mk">${ms.map(m=>{const d=m.p-(m.prev||m.p),fx=m.sym==='TWD=X',f={minimumFractionDigits:fx?3:2,maximumFractionDigits:fx?3:2};
   return`<div><span class="sub">${E(m.name)}</span><b>${m.p.toLocaleString('en-US',f)}</b><span class="num ${nwCls(d)}" style="font-size:12px">${nwSg(d)}${Math.abs(d).toLocaleString('en-US',f)}　${nwPct(m.prev?m.p/m.prev-1:null)}</span>${nwSpark(m.spark,m.spark&&m.spark.length>1?m.spark[m.spark.length-1]>=m.spark[0]:d>=0)}</div>`}).join('')}</div>`;
  h+=`<h2>我的股票</h2>`+nwStocks();
