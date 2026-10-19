@@ -62,6 +62,7 @@ button.go:disabled{opacity:.5}
 .fs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px}.fs .chip{flex:none}
 .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}.grid .w{grid-column:1/3}
 .fl{display:block}.fl span{display:block;font-size:12px;color:var(--sub);margin-bottom:2px}
+.agl{margin-top:10px;border-top:1px solid var(--line)}.ag{padding:8px 0;border-bottom:1px solid var(--line)}.ais{display:flex;flex-wrap:wrap;gap:2px 14px;margin-top:2px}.ai{font-size:13px;color:var(--sub);cursor:pointer}.ai b{font-weight:500;color:var(--ink)}.ai b.neg{color:var(--bad)}.lnk{background:none;border:0;color:var(--acc);font-size:13px;padding:8px 0 0;cursor:pointer}
 .pill{font-size:12px;padding:1px 8px;border-radius:10px;border:1px solid var(--line);color:var(--sub);white-space:nowrap}
 .pill.y{background:var(--acc);color:var(--on);border-color:transparent}
 .tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:10px 0}
@@ -1014,11 +1015,24 @@ const aiErr=e=>{const c=e&&e.code;return c==='quota_min'?'AI 一分鐘內用太�
 async function askAI(prompt,file,search){const sm=window.claude&&await claude.use('sample');if(!sm)throw{code:'none'};return sm.json(prompt,Object.assign(file?{images:file}:{},search?{search:true}:{}))}
 
 // ── 總資產、對帳、截圖辨識、股價 ──
+// 總覽的帳戶清單：依銀行分組、金額大的在前，$0 的先收起來
+function acctBrief(){
+ const v=a=>isCard(a)?-cardInfo(a).owe:conv(bal(a),a.cur,'TWD'),zero=a=>Math.abs(v(a))<0.5;
+ const gs={},ord=[];S.accts.forEach(a=>{const k=a.excl?'\u0000x':a.type!=='cash'&&a.group||'\u0000'+a.id;if(!gs[k]){gs[k]=[];ord.push(k)}gs[k].push(a)});
+ const rows=[],ex=[];let nz=0;
+ ord.forEach(k=>{const as=gs[k].slice().sort((x,y)=>isCard(x)-isCard(y)||Math.abs(v(y))-Math.abs(v(x))),show=U.az?as:as.filter(a=>!zero(a));nz+=as.length-as.filter(a=>!zero(a)).length;if(!show.length)return;
+  const own=show.filter(a=>!isCard(a)).reduce((t,a)=>t+v(a),0),owe=show.filter(isCard).reduce((t,a)=>t-v(a),0),one=show.length===1&&!(show[0].group&&show[0].type!=='cash');
+  const item=a=>`<span class="ai" data-a="edacct" data-i="${a.id}">${E(k==='\u0000x'?nm(a):a.name+(a.cur==='USD'?'（美元）':''))} <b class="num ${isCard(a)&&!zero(a)?'neg':''}">${isCard(a)?(zero(a)?'已繳清':'未繳 '+M(-v(a))):MA(a)}</b></span>`;
+  const r={w:Math.abs(own)+owe,h:`<div class="ag"><div class="row"><b class="sp">${E(k==='\u0000x'?'🔒 沒算進總資產':one?show[0].name:k)}</b>${own||!owe?`<b class="num ${own<-0.5?'neg':''}">${M(own)}</b>`:''}</div>${one&&k!=='\u0000x'&&!isCard(show[0])&&!show[0].cur?'':`<div class="ais">${show.map(item).join('')}</div>`}</div>`};
+  (k==='\u0000x'?ex:rows).push(r)});
+ rows.sort((x,y)=>y.w-x.w);
+ return`<div class="agl">${rows.concat(ex).map(r=>r.h).join('')}</div>${nz?`<button class="lnk" data-a="az">${U.az?'收起 $0 的帳戶 ▴':'還有 '+nz+' 個帳戶是 $0，點我顯示 ▾'}</button>`:''}`;
+}
 function assetCard(liq){
  const hs=holdings().filter(h=>h.sh>0),stk=hs.reduce((s,h)=>s+conv(h.val,h.cur,'TWD'),0),owe=S.accts.filter(isCard).reduce((s,c)=>s+cardInfo(c).owe,0),nop=hs.filter(h=>h.px==null).length;
  return`<div class="card"><div class="sub">我的總資產（已扣掉還沒繳的卡費）</div><div class="big">${M(liq+stk-owe)}</div>
  <div class="tiles"><div><span class="sub">現金＋銀行</span><b>${M(liq)}</b></div><div><span class="sub">股票市值</span><b>${M(stk)}</b></div><div><span class="sub">卡費未繳</span><b>${owe?'−'+M(owe):M(0)}</b></div></div>
- <div class="chips">${S.accts.map(a=>`<span class="pill">${a.excl?'🔒 ':''}${E(nm(a))} ${isCard(a)?'未繳 '+M(cardInfo(a).owe):MA(a)}</span>`).join('')}</div>${exAccts().length?`<div class="sub" style="margin-top:6px">🔒 沒算進總資產：${exAccts().map(a=>E(nm(a))+' '+MA(a)).join('、')}（合計 ${M(exAccts().reduce((s2,a)=>s2+conv(bal(a),a.cur,'TWD'),0))}）</div>`:''}
+ ${acctBrief()}
  ${nop?`<div class="sub" style="margin-top:6px">有 ${nop} 檔股票還沒有股價，市值先用成本算。</div>`:''}
  ${S.accts.filter(a=>!isCard(a)&&bal(a)<-0.5).map(a=>`<div class="note" style="border-color:var(--bad)">⚠︎ <b>${E(a.name)}</b> 顯示 ${MA(a)}，這通常不是真的欠錢，而是還沒填這個帳戶「現在實際有多少錢」，網站從 0 開始算，扣掉繳出去的錢就變負的。按下面「更新銀行餘額」填網銀 App 上看到的數字就會正確。</div>`).join('')}
  <div class="row" style="gap:6px;margin-top:8px"><button class="go q" data-a="recon">更新銀行餘額</button>${hs.length?`<button class="go q" data-a="pxnow">更新股價</button>`:''}</div></div>`;
@@ -1257,6 +1271,7 @@ const ACT={
  ty:i=>{const o=U.sheet.o;o.type=i;if(i==='in'&&isCard(A(o.acct)))o.acct=firstBank();if(!o.catSet||!S.cats[i==='in'?'in':'out'].includes(o.cat))o.cat=guess(o.note,i),o.catSet=0;if(i==='xfer'&&(!o.to||o.to===o.acct))o.to=(S.accts.find(a=>a.id!==o.acct&&isCard(a))||S.accts.find(a=>a.id!==o.acct)||{}).id;render()},
  shop:i=>{const o=U.sheet.o;o.shop=o.shop===i?'':i;o.shopSet=!!o.shop;const si=$('fshop');if(si)si.value=o.shop;document.querySelectorAll('[data-a="shop"]').forEach(b=>b.classList.toggle('on',b.dataset.i===o.shop));
   if(!o.catSet){const g=guess(o.note+' '+o.shop,o.type);if(g&&g!==o.cat){o.cat=g;document.querySelectorAll('[data-a="cat"]').forEach(b=>b.classList.toggle('on',b.dataset.i===g))}}},
+ az:()=>{U.az=!U.az;render()},
  shopall:()=>{U.shopAll=!U.shopAll;render()},
  cat:i=>{const o=U.sheet.o;o.cat=i;o.catSet=1;render()},
  rule:()=>{const o=U.sheet.o,k=o.note.trim().slice(0,12);S.rules=S.rules.filter(r=>r.k!==k);S.rules.unshift({k,c:o.cat});save();render();toast('已新增規則：'+k+' → '+o.cat)},
