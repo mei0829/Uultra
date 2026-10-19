@@ -315,8 +315,10 @@ function vBills(){
  const pm=k=>billPM(k);
  let h=`<h1>固定收支</h1><div class="card"><div class="row"><div class="sp"><div class="sub">每月固定支出</div><b class="num">${M(pm('out'))}</b></div><div class="sp"><div class="sub">每月定期投資</div><b class="num">${M(pm('inv'))}</b></div><div class="sp"><div class="sub">每月固定收入</div><b class="num in">${M(pm('in'))}</b></div></div><div class="sub" style="margin-top:4px">半年、一年繳一次的，會平均攤到每個月。</div></div>
  <div class="note">這裡放「固定時間會發生」的錢，分三種：<b>要繳的錢</b>（房貸、房租、保險、水電、稅…）、<b>固定收入</b>（薪水）、<b>定期投資</b>（定期定額）。每月、每 2/3 個月、每半年、每年都可以設。信用卡帳單會自動從刷卡紀錄算，不用加。</div>`;
- h+=bs.length?'<div class="card">'+bs.map(b=>{const a=A(b.acct),n=dleft(b.next),late=b.next<t0;return`<div class="li" data-a="edbill" data-i="${b.id}" style="flex-wrap:wrap"><div class="dt">${md(b.next)}<small>${late?'<span class="late">逾期</span>':n===0?'今天':n+' 天後'}</small></div><div class="sp"><div>${E(b.name)} ${b.kind==='inv'?'':isAuto(b)?`<span class="pill">銀行自動扣款</span>${b.autoRec?' <span class="pill y">自動記帳</span>':''}`:'<span class="pill">自己繳</span>'}</div><div class="sub">${b.kind==='inv'?'定期投資 '+E(b.sym||'')+' · ':''}${fqName(b.freq)} · ${E(a?nm(a):'未指定帳戶')}${b.end?' · 到 '+b.end.slice(0,4)+'/'+ +b.end.slice(5,7)+'，還有 '+occ(b,b.end).length+' 期':''}${b.note?' · '+E(b.note):''}</div>${(()=>{const p=S.payees.find(x=>x.id===b.payee);return p?`<div class="sub">匯到 ${E(p.name)} ${copyTag(p.no,(p.code?'('+p.code+') ':'')+tail5(p.no))}</div>`:''})()}</div><div class="num ${b.kind==='in'?'in':''}">${b.kind==='in'?'+':''}${MC(b.amt,bcur(b))}</div>
- ${n<=3?`<div class="row" style="width:100%;justify-content:flex-end;gap:6px"><button class="go q" data-a="skipbill" data-i="${b.id}">${b.kind==='in'?'沒入帳，略過':'略過這期'}</button><button class="go q" data-a="paybill" data-i="${b.id}">${b.kind==='in'?'已入帳':b.kind==='inv'?'已扣款（記到股票）':'已繳'}（記一筆）</button></div>`:''}</div>`}).join('')+'</div>':'<div class="card sub">還沒有固定項目。點下面的常用項目快速新增。</div>';
+ h+=bs.length?'<div class="card">'+bs.map(b=>{const a=A(b.acct),n=dleft(b.next),late=b.next<t0;return`<div class="li" data-a="edbill" data-i="${b.id}" style="flex-wrap:wrap"><div class="dt">${md(b.next)}<small>${late?'<span class="late">逾期</span>':n===0?'今天':n+' 天後'}</small></div><div class="sp"><div>${E(b.name)} ${b.kind==='inv'?'':isAuto(b)?`<span class="pill">${isCard(a)?'信用卡自動扣款':'銀行自動扣款'}</span>${b.autoRec?' <span class="pill y">自動記帳</span>':''}`:'<span class="pill">自己繳</span>'}</div><div class="sub">${b.kind==='inv'?'定期投資 '+E(b.sym||'')+' · ':''}${fqName(b.freq)} · ${E(a?nm(a):'未指定帳戶')}${b.end?' · 到 '+b.end.slice(0,4)+'/'+ +b.end.slice(5,7)+'，還有 '+occ(b,b.end).length+' 期':''}${b.note?' · '+E(b.note):''}</div>${(()=>{const p=S.payees.find(x=>x.id===b.payee);return p?`<div class="sub">匯到 ${E(p.name)} ${copyTag(p.no,(p.code?'('+p.code+') ':'')+tail5(p.no))}</div>`:''})()}</div><div class="num ${b.kind==='in'?'in':''}">${b.kind==='in'?'+':''}${MC(b.amt,bcur(b))}</div>
+ ${isCard(a)&&b.kind==='out'?`<div class="sub" style="width:100%;padding-left:52px">💳 刷 ${E(a.name)}，會算進那張卡的帳單，收到帳單時「記錄繳卡費」就好，不用再記這筆</div>`:''}
+ ${n<=3&&isAuto(b)&&b.autoRec&&b.kind!=='inv'?`<div class="row" style="width:100%;justify-content:flex-end;gap:6px"><span class="sub sp" style="text-align:right">${n<=0?'今天會自動記一筆':'到 '+md(b.next)+' 會自動記一筆'}</span><button class="go q" data-a="skipbill" data-i="${b.id}">略過這期</button></div>`:''}
+ ${n<=3&&!(isAuto(b)&&b.autoRec&&b.kind!=='inv')?`<div class="row" style="width:100%;justify-content:flex-end;gap:6px"><button class="go q" data-a="skipbill" data-i="${b.id}">${b.kind==='in'?'沒入帳，略過':'略過這期'}</button><button class="go q" data-a="paybill" data-i="${b.id}">${b.kind==='in'?'已入帳':b.kind==='inv'?'已扣款（記到股票）':'已繳'}（記一筆）</button></div>`:''}</div>`}).join('')+'</div>':'<div class="card sub">還沒有固定項目。點下面的常用項目快速新增。</div>';
  h+=`<h2>新增固定項目</h2><div class="chips">${PRESETS.map((p,i)=>`<button class="chip" data-a="addbill" data-i="${i}">${E(p.name)}</button>`).join('')}<button class="chip" data-a="addbill" data-i="-1">＋ 其他</button></div>`;
  return h;
 }
@@ -807,7 +809,8 @@ function sheetBill(o){
  ${+o.freq?`<label class="fl w"><span>最後一期是哪天（選填；房貸、分期填最後一期，沒有就空著）</span><input type="date" value="${o.end||''}" data-m="sheet.o.end"></label>`:''}
  ${inv?'':`<label class="fl"><span>分類</span><select data-m="sheet.o.cat">${cs.map(c=>`<option ${c===o.cat?'selected':''}>${E(c)}</option>`).join('')}</select></label>
  <span></span>
- <div class="fl w"><span>${inc?'怎麼入帳':'怎麼繳'}</span><div class="chips">${[[0,inc?'我自己存／轉進來':'我自己繳（轉帳、現金、超商）'],[1,inc?'公司自動匯入':'銀行自動扣款']].map(([v,n])=>`<button class="chip ${!!o.auto===!!v?'on':''}" data-a="bauto" data-i="${v}">${n}</button>`).join('')}</div></div>
+ <div class="fl w"><span>${inc?'怎麼入帳':'怎麼繳'}</span><div class="chips">${[[0,inc?'我自己存／轉進來':'我自己繳（轉帳、現金、超商）'],[1,inc?'公司自動匯入':'自動扣款（銀行或信用卡）']].map(([v,n])=>`<button class="chip ${!!o.auto===!!v?'on':''}" data-a="bauto" data-i="${v}">${n}</button>`).join('')}</div></div>
+ ${o.auto&&isCard(A(o.acct))?'<div class="note w">刷卡分期／信用卡自動扣款：扣款那天會記成這張卡的一筆刷卡，算進那期帳單。收到帳單時只要「記錄繳卡費」，不用再記一次。</div>':''}
  ${o.auto?`<label class="row fl w"><input type="checkbox" data-m="sheet.o.autoRec" ${o.autoRec?'checked':''}><span>到${inc?'入帳':'扣款'}日<b>自動幫我記一筆</b>（不用再按「已繳」）</span></label>${(A(o.acct)||{}).type==='cash'?'<div class="sub w" style="color:var(--bad)">現金沒辦法自動扣款，請把「從哪個帳戶扣」改成銀行或信用卡。</div>':''}`:`<div class="sub w">到期前 3 天會在這頁提醒你。繳完按「<b>已繳（記一筆）</b>」就會記帳。</div>`}`}
  ${K==='out'?`<label class="fl w"><span>匯款到（選填）</span><select data-m="sheet.o.payee"><option value="">不用匯款</option>${S.payees.map(p=>`<option value="${p.id}" ${o.payee===p.id?'selected':''}>${E(p.name)} ${E(acno(p))}</option>`).join('')}</select></label>`:''}
  <label class="fl w"><span>備註</span><input value="${E(o.note)}" data-m="sheet.o.note"></label></div>
@@ -1208,7 +1211,7 @@ function payBill(b,skip){
 }
 const ACT={
  jump:i=>{const el=$(i);if(!el)return;const bar=document.querySelector('.jump'),off=(bar?bar.offsetHeight:0)+16;window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY-off,behavior:'smooth'});el.classList.remove('hit');void el.offsetWidth;el.classList.add('hit')},
- tab:i=>{U.tab=i;U.sheet=null;render();window.scrollTo(0,0);if(i==='home'||i==='stock')autoPx()},
+ tab:i=>{U.tab=i;U.sheet=null;render();window.scrollTo(0,0);if(i==='home'||i==='stock')autoPx();if((i==='home'||i==='bills')&&CL.col)autoBills()},
  nwcat:i=>{NW.cat=i;NW.lim=40;nwSave();render()},
  nwreg:i=>{NW.reg=i;NW.lim=40;nwSave();render()},
  nwmore:()=>{NW.lim+=40;$('nwl').innerHTML=nwList()},
@@ -1247,7 +1250,7 @@ const ACT={
   if(o.end&&o.end<o.next)return toast('最後一期不能早於下次扣款日');if(o.kind==='inv'&&!String(o.sym||'').trim())return toast('請輸入要買的股票代號');
   const b={id:o.id||nid(),name:o.name.trim(),kind:o.kind,amt,freq:+o.freq,next:o.next,day:+o.next.slice(8,10),end:+o.freq?o.end||'':'',acct:o.acct,cat:o.kind==='inv'?'':o.cat,auto:!!o.auto,autoRec:!!(o.auto&&o.autoRec),note:(o.note||'').trim(),payee:o.kind==='out'&&o.payee||''};
   if(o.kind==='inv'){b.sym=String(o.sym).trim().toUpperCase();b.sname=String(o.sname||'').trim();if(o.cur==='USD')b.cur='USD'}
-  const k=S.bills.findIndex(x=>x.id===b.id);if(k>=0)S.bills[k]=b;else S.bills.push(b);U.sheet=null;save();render()},
+  const k=S.bills.findIndex(x=>x.id===b.id);if(k>=0)S.bills[k]=b;else S.bills.push(b);U.sheet=null;save();render();if(CL.col)autoBills()},
  delbill:()=>{if(!confirm('刪除這個固定項目？（已記錄的支出不會被刪）'))return;S.bills=S.bills.filter(x=>x.id!==U.sheet.o.id);U.sheet=null;save();render()},
  paybill:i=>{const b=S.bills.find(x=>x.id===i);if(b)payBill(b,false)},
  skipbill:i=>{const b=S.bills.find(x=>x.id===i);if(b)payBill(b,true)},
