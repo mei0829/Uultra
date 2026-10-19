@@ -190,7 +190,9 @@ function guess(s,kind){s=String(s||'').toUpperCase();const ok=S.cats[kind==='in'
 function bal(a){let v=+a.init||0;for(const t of S.tx){if(t.acct===a.id)v+=t.type==='in'?t.amt:-t.amt;if(t.type==='xfer'&&t.to===a.id)v+=t.amt}for(const t of S.trades)if(t.acct===a.id)v+=conv(tradeCash(t),t.cur,a.cur);return v}
 // 股票交易對連動帳戶的影響：買進付錢、賣出和股利收錢
 const tradeCash=t=>t.type==='buy'?-(t.sh*t.px+(+t.fee||0)):t.type==='sell'?t.sh*t.px-(+t.fee||0)-(+t.tax||0):+t.amt||0;
-const liquid=()=>S.accts.filter(a=>!isCard(a)).reduce((s,a)=>s+conv(bal(a),a.cur,'TWD'),0);
+// 🔒 不算進總資產的帳戶（例如爸媽的錢）：不算進總資產和可用的錢
+const exAccts=()=>S.accts.filter(a=>!isCard(a)&&a.excl);
+const liquid=()=>S.accts.filter(a=>!isCard(a)&&!a.excl).reduce((s,a)=>s+conv(bal(a),a.cur,'TWD'),0);
 // 某天刷卡會在哪天結帳、哪天要繳
 // 某個月的結帳日（有修改過就用修改後的）
 const cyc=(c,y,m)=>{const x=new Date(y,m,1),key=iso(x).slice(0,7),o=(c.ov||{})[key]||{};return{key,close:o.close||ymd(x.getFullYear(),x.getMonth(),+c.close||1),due:o.due}};
@@ -359,14 +361,14 @@ function vImp(){
 
 function acctLine(a,inG){
  const n=String(a.no||'').replace(/\D/g,''),det=isCard(a)?`信用卡 · ${a.close} 號結帳、${a.due} 號繳${a.last4?' · '+E(a.last4):''}`:a.type==='cash'?'':(inG?'':'銀行')+(n?(inG?'':' · ')+copyTag(a.no,tail5(a.no)):'')+(a.cur==='USD'?' · 美元':'');
- return`<div class="ar" data-a="edacct" data-i="${a.id}"><div class="sp"><div>${E(a.name)}</div>${det?`<div class="sub">${det}</div>`:''}</div><div class="num">${isCard(a)?'<span class="sub">未繳</span> '+M(cardInfo(a).owe):MA(a)}</div></div>`;
+ return`<div class="ar" data-a="edacct" data-i="${a.id}"><div class="sp"><div>${E(a.name)}</div>${det?`<div class="sub">${det}</div>`:''}</div><div class="num">${isCard(a)?'<span class="sub">未繳</span> '+M(cardInfo(a).owe):(a.excl?'<span class="sub">🔒 不計入</span> ':'')+MA(a)}</div></div>`;
 }
 function acctGroups(){const gs=[],seen={};S.accts.forEach(a=>{const g=a.type!=='cash'&&a.group;if(!g)gs.push([null,[a]]);else if(seen[g])seen[g].push(a);else{seen[g]=[a];gs.push([g,seen[g]])}});return gs}
 // 帳戶多的時候，上面一排銀行按鈕，點了直接跳過去
 function acctJump(){const gs=acctGroups();if(gs.length<4)return'';
  return`<div class="jump chips" role="navigation" aria-label="跳到帳戶">${gs.map(([g,as],i)=>`<button class="chip" data-a="jump" data-i="ag${i}">${E(g||as[0].name)}</button>`).join('')}</div>`}
 function acctList(){
- return acctGroups().map(([g,as],i)=>{if(!g)return`<div id="ag${i}" class="jt">${acctLine(as[0])}</div>`;as=as.filter(a=>!isCard(a)).concat(as.filter(isCard));const dep=as.filter(a=>!isCard(a)).reduce((s,a)=>s+conv(bal(a),a.cur,'TWD'),0),owe=as.filter(isCard).reduce((s,a)=>s+cardInfo(a).owe,0);
+ return acctGroups().map(([g,as],i)=>{if(!g)return`<div id="ag${i}" class="jt">${acctLine(as[0])}</div>`;as=as.filter(a=>!isCard(a)).concat(as.filter(isCard));const dep=as.filter(a=>!isCard(a)&&!a.excl).reduce((s,a)=>s+conv(bal(a),a.cur,'TWD'),0),owe=as.filter(isCard).reduce((s,a)=>s+cardInfo(a).owe,0);
   return`<div class="grp jt" id="ag${i}"><div class="gh"><b>${E(g)}</b><span class="sub">${as.some(a=>!isCard(a))?M(dep):''}${owe?' · 卡費 '+M(owe):''}</span></div>${as.map(a=>acctLine(a,1)).join('')}</div>`}).join('');
 }
 // 已有的規則：依分類收在一起、字小一點，可以搜尋
@@ -594,10 +596,10 @@ function gsearch(q){
  const pl=S.plan.items.filter(x=>has(x.name));
  const hp=HELP.filter(h=>has(h[1])||has(plain(h[3])));
  const sec=(t,n,body)=>n?`<h2 style="margin-top:14px">${t}（${n}）</h2><div class="card" style="padding:6px 12px">${body}</div>`:'';
- const acLine=a=>{const I=isCard(a)&&cardInfo(a),cl=isCard(a)&&closeOf(a,t0);return`<div class="ar" data-a="${isCard(a)?'card':'edacct'}" data-i="${a.id}"><div class="sp"><div><b>${E(nm(a))}</b> <span class="pill">${TY[a.type]}</span></div><div class="sub">${isCard(a)?`本期 ${md(cl)} 結帳、${md(dueOf(a,cl))} 繳款${a.official?' · '+E(a.official):''}${I.billed.length?' · 已出帳待繳 '+M(I.billed.reduce((s,x)=>s+x.left,0)):''}`:[bankOf(a)&&bankOf(a)+'（'+a.code+'）',a.no&&copyTag(a.no,tail5(a.no))].filter(Boolean).join(' · ')}</div></div><b class="num">${isCard(a)?'<span class="sub">未繳</span> '+M(I.owe):MA(a)}</b></div>`};
+ const acLine=a=>{const I=isCard(a)&&cardInfo(a),cl=isCard(a)&&closeOf(a,t0);return`<div class="ar" data-a="${isCard(a)?'card':'edacct'}" data-i="${a.id}"><div class="sp"><div><b>${E(nm(a))}</b> <span class="pill">${TY[a.type]}</span></div><div class="sub">${isCard(a)?`本期 ${md(cl)} 結帳、${md(dueOf(a,cl))} 繳款${a.official?' · '+E(a.official):''}${I.billed.length?' · 已出帳待繳 '+M(I.billed.reduce((s,x)=>s+x.left,0)):''}`:[bankOf(a)&&bankOf(a)+'（'+a.code+'）',a.no&&copyTag(a.no,tail5(a.no))].filter(Boolean).join(' · ')}</div></div><b class="num">${isCard(a)?'<span class="sub">未繳</span> '+M(I.owe):(a.excl?'<span class="sub">🔒 不計入</span> ':'')+MA(a)}</b></div>`};
  const out=tx.filter(t=>t.type==='out').reduce((s,t)=>s+t.amt,0),inc=tx.filter(t=>t.type==='in').reduce((s,t)=>s+t.amt,0);
  let h='';
- h+=sec('帳戶',ac.length,ac.map(acLine).join('')+(ac.filter(a=>!isCard(a)).length>1?`<div class="row" style="padding:6px 2px;border-top:1px solid var(--line)"><span class="sp sub">存款合計</span><b class="num">${M(ac.filter(a=>!isCard(a)).reduce((s,a)=>s+conv(bal(a),a.cur,'TWD'),0))}</b></div>`:''));
+ h+=sec('帳戶',ac.length,ac.map(acLine).join('')+(ac.filter(a=>!isCard(a)).length>1?`<div class="row" style="padding:6px 2px;border-top:1px solid var(--line)"><span class="sp sub">存款合計${exAccts().length?'（不含 🔒）':''}</span><b class="num">${M(ac.filter(a=>!isCard(a)&&!a.excl).reduce((s,a)=>s+conv(bal(a),a.cur,'TWD'),0))}</b></div>`:''));
  h+=sec('記帳紀錄',tx.length,`<div class="sub" style="padding:4px 2px">支出合計 ${M(out)}${inc?'、收入合計 '+M(inc):''}</div>`+tx.slice(0,20).map(txLine).join('')+(tx.length>20?`<div class="sub" style="padding:6px 2px">還有 ${tx.length-20} 筆，到「記帳」頁用搜尋或帳戶篩選看全部</div>`:''));
  h+=sec('固定收支',bl.length,bl.map(b=>`<div class="ar" data-a="edbill" data-i="${b.id}"><div class="sp"><div>${E(b.name)}</div><div class="sub">${fqName(b.freq)} · 下次 ${md(b.next)} · ${E(nm(A(b.acct)))}</div></div><b class="num">${MC(b.amt,bcur(b))}</b></div>`).join(''));
  h+=sec('常用匯款帳號',py.length,py.map(p=>`<div class="ar" data-a="edpayee" data-i="${p.id}"><div class="sp"><div>${E(p.name)}</div><div class="sub">${p.no?(p.code?'('+E(p.code)+') ':'')+copyTag(p.no,tail5(p.no)):''}${p.bank?' · '+E(p.bank):''}</div></div></div>`).join(''));
@@ -840,7 +842,8 @@ function sheetAcct(o){
  ${c?`<label class="fl"><span>每月幾號結帳</span><input inputmode="numeric" value="${E(o.close)}" data-m="sheet.o.close"></label>
  <label class="fl"><span>每月幾號前要繳</span><input inputmode="numeric" value="${E(o.due)}" data-m="sheet.o.due"></label>
  <label class="fl w"><span>已出帳還沒繳的金額（之後會匯入這期明細的話填 0，避免重複）</span><input inputmode="decimal" value="${E(o.init)}" data-m="sheet.o.init"></label>`
- :`<label class="fl w"><span>現在實際有多少錢${o.cur==='USD'?'（美元）':''}${o.id?'（改這裡就是對帳）':''}</span><div class="row" style="gap:6px"><input inputmode="decimal" value="${E(o.now)}" data-m="sheet.o.now"><button class="go q" data-a="snapacct">截圖辨識</button></div></label>`}</div>
+ :`<label class="fl w"><span>現在實際有多少錢${o.cur==='USD'?'（美元）':''}${o.id?'（改這裡就是對帳）':''}</span><div class="row" style="gap:6px"><input inputmode="decimal" value="${E(o.now)}" data-m="sheet.o.now"><button class="go q" data-a="snapacct">截圖辨識</button></div></label>
+ <label class="fl w" style="display:flex;gap:8px;align-items:center;margin-top:4px"><input type="checkbox" data-m="sheet.o.excl" data-r="1" ${o.excl?'checked':''} style="width:20px;height:20px;flex:none"><span style="font-size:14px;color:inherit">🔒 不算進總資產（例如爸媽的錢、不能動用的錢）</span></label>`}</div>
  ${c?'<div class="sub" style="margin-top:6px">結帳日、繳款日印在信用卡帳單上。某個月因為假日不一樣的話，不用改這裡：到總覽點這張卡 →「接下來的日期」→ 修改那一期就好。</div>':''}
  <div class="row" style="margin-top:14px;gap:8px">${o.id?'<button class="go r" data-a="delacct">刪除</button>':''}<span class="sp"></span><button class="go" data-a="saveacct">儲存</button></div>`;
 }
@@ -989,7 +992,7 @@ function assetCard(liq){
  const hs=holdings().filter(h=>h.sh>0),stk=hs.reduce((s,h)=>s+conv(h.val,h.cur,'TWD'),0),owe=S.accts.filter(isCard).reduce((s,c)=>s+cardInfo(c).owe,0),nop=hs.filter(h=>h.px==null).length;
  return`<div class="card"><div class="sub">我的總資產（已扣掉還沒繳的卡費）</div><div class="big">${M(liq+stk-owe)}</div>
  <div class="tiles"><div><span class="sub">現金＋銀行</span><b>${M(liq)}</b></div><div><span class="sub">股票市值</span><b>${M(stk)}</b></div><div><span class="sub">卡費未繳</span><b>${owe?'−'+M(owe):M(0)}</b></div></div>
- <div class="chips">${S.accts.map(a=>`<span class="pill">${E(nm(a))} ${isCard(a)?'未繳 '+M(cardInfo(a).owe):MA(a)}</span>`).join('')}</div>
+ <div class="chips">${S.accts.map(a=>`<span class="pill">${a.excl?'🔒 ':''}${E(nm(a))} ${isCard(a)?'未繳 '+M(cardInfo(a).owe):MA(a)}</span>`).join('')}</div>${exAccts().length?`<div class="sub" style="margin-top:6px">🔒 沒算進總資產：${exAccts().map(a=>E(nm(a))+' '+MA(a)).join('、')}（合計 ${M(exAccts().reduce((s2,a)=>s2+conv(bal(a),a.cur,'TWD'),0))}）</div>`:''}
  ${nop?`<div class="sub" style="margin-top:6px">有 ${nop} 檔股票還沒有股價，市值先用成本算。</div>`:''}
  ${S.accts.filter(a=>!isCard(a)&&bal(a)<-0.5).map(a=>`<div class="note" style="border-color:var(--bad)">⚠︎ <b>${E(a.name)}</b> 顯示 ${MA(a)}，這通常不是真的欠錢，而是還沒填這個帳戶「現在實際有多少錢」，網站從 0 開始算，扣掉繳出去的錢就變負的。按下面「更新銀行餘額」填網銀 App 上看到的數字就會正確。</div>`).join('')}
  <div class="row" style="gap:6px;margin-top:8px"><button class="go q" data-a="recon">更新銀行餘額</button>${hs.length?`<button class="go q" data-a="pxnow">更新股價</button>`:''}</div></div>`;
@@ -1255,7 +1258,7 @@ const ACT={
  saveacct:()=>{const o=U.sheet.o;if(!o.name.trim())return toast('請輸入名稱');
   const old=o.id&&A(o.id),a=old||{id:nid()};
   if(old&&old.type!==o.type&&(isCard(old)||o.type==='card')&&S.tx.some(t=>t.acct===old.id||t.to===old.id))return toast('已經有紀錄的帳戶不能在信用卡和現金／銀行之間切換');
-  a.name=o.name.trim();a.type=o.type;
+  a.name=o.name.trim();a.type=o.type;if(o.type!=='card'&&o.excl)a.excl=true;else delete a.excl;
   if(old&&(old.cur||'TWD')!==(o.type==='bank'&&o.cur==='USD'?'USD':'TWD')&&S.tx.some(t=>t.acct===old.id||t.to===old.id))return toast('已經有紀錄的帳戶不能改幣別，請另外新增一個美元帳戶');
   if(o.type==='bank'&&o.cur==='USD')a.cur='USD';else delete a.cur;
   if(o.type==='card'){const g=String(o.group||'').trim();if(g)a.group=g;else delete a.group}
