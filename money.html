@@ -179,6 +179,7 @@ const A=id=>S.accts.find(a=>a.id===id),isCard=a=>!!a&&a.type==='card';
 // 子帳戶：同一家銀行的帳戶填一樣的「所屬銀行」，選單顯示成「國泰世華・數存」
 const nm=a=>a?(a.group?a.group+'・':'')+a.name+(a.cur==='USD'?'（美元）':''):'?';
 const acno=a=>{const n=String(a.no||'').replace(/\D/g,'');if(!n)return a.code?'('+a.code+')':'';return(a.code?'('+a.code+') ':'')+(HIDE?'•••••':'末五碼 '+n.slice(-5))};
+const PIN='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-1px;margin-right:2px"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
 const CPI='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" style="vertical-align:-2px;margin-left:3px"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
 const copyTag=(no,label)=>no?`<span class="cpy" data-a="copy" data-i="${E(no)}" title="複製完整帳號">${label}${CPI}</span>`:E(label||'');
 const tail5=no=>HIDE?'•••••':'末五碼 '+String(no||'').replace(/\D/g,'').slice(-5);
@@ -309,7 +310,7 @@ function shopField(o){const used=shopUsed(),top=[...new Set(used.concat(['7-ELEV
  ${U.shopAll?SHOPS.map(([g,ns])=>`<div class="sub" style="margin:8px 0 2px">${g}</div><div class="chips">${ns.map(n=>`<button class="chip ${o.shop===n?'on':''}" data-a="shop" data-i="${E(n)}">${E(n)}</button>`).join('')}</div>`).join(''):''}`}
 function txLine(t){
  const a=A(t.acct),to=A(t.to),x=t.type==='xfer';
- return`<div class="li" data-a="edtx" data-i="${t.id}"><div class="ic">${E(x?'轉':(t.cat||'?').slice(0,1))}</div><div class="sp"><div>${E(t.note||(x?'轉帳':t.cat)||'')}</div><div class="sub">${x?E(nm(a)+' → '+nm(to)):E((t.cat||'')+(t.shop?' · 📍'+t.shop:'')+' · '+nm(a))}${t.bill?' · 帳單':''}${t.src&&t.src!=='m'?' · 匯入':''}</div>${stPill(t)}</div><div class="num ${t.type==='in'?'in':''}">${t.type==='in'?'+':x?'':'−'}${M(t.amt)}</div></div>`;
+ return`<div class="li" data-a="edtx" data-i="${t.id}"><div class="ic">${E(x?'轉':(t.cat||'?').slice(0,1))}</div><div class="sp"><div>${E(t.note||(x?'轉帳':t.cat)||'')}</div><div class="sub">${x?E(nm(a)+' → '+nm(to)):E(t.cat||'')+(t.shop?' · '+PIN+E(t.shop):'')+' · '+E(nm(a))}${t.bill?' · 帳單':''}${t.src&&t.src!=='m'?' · 匯入':''}</div>${stPill(t)}</div><div class="num ${t.type==='in'?'in':''}">${t.type==='in'?'+':x?'':'−'}${M(t.amt)}</div></div>`;
 }
 function vTx(){
  const q=U.q.toLowerCase(),fc=isCard(A(U.fa))&&U.fs,xs=S.tx.filter(t=>t.d.startsWith(U.mon)&&(!U.fa||t.acct===U.fa||t.to===U.fa)&&(!fc||(txStatus(t)||{}).k===U.fs)&&(!q||((t.note||'')+' '+(t.cat||'')+' '+(t.shop||'')).toLowerCase().includes(q)))
