@@ -903,6 +903,8 @@ function vAsk(){const hr=hourly();
  ${CHAT.length?'<div style="text-align:right;margin-top:8px"><a href="#" class="sub" data-a="askclr">清除對話</a></div>':''}`}
 
 // ── 獨立帳本 ──
+// 帳本按鈕用短名：拿掉「銀行」兩個字，名稱裡已經有美元就不再加（美元）
+const bkName=b=>{const g=String(b.group||'').replace('銀行','');return(g?g+'・':'')+b.name+(b.cur==='USD'&&!/美/.test(b.name)?'（美元）':'')};
 function vBook(){const bs=S.accts.filter(a=>a.book&&!isCard(a));
  if(!bs.length)return`<h1>獨立帳本</h1><div class="card"><b>把某個帳戶的錢單獨拉出來記</b><div class="sub" style="margin-top:6px">例如「第一銀行・爸媽」：爸媽轉進來、副業收入、買股票、繳儲蓄險都從這裡，想另外看清楚，又不想混進日常花費。</div><div class="sub" style="margin-top:6px">做法：到「設定 → 帳戶」點那個帳戶，勾「📒 獨立帳本」，回來這裡就會出現。</div><button class="go" style="margin-top:10px" data-a="tab" data-i="set">去設定帳戶</button></div>`;
  if(!bs.some(a=>a.id===U.bk))U.bk=bs[0].id;const a=A(U.bk),m=U.bkm||today().slice(0,7),d0=pd(m+'-01');
@@ -912,8 +914,8 @@ function vBook(){const bs=S.accts.filter(a=>a.book&&!isCard(a));
  const tr=(S.trades||[]).filter(t=>t.acct===a.id),buy=tr.filter(t=>t.type==='buy').reduce((s,t)=>s+conv(t.sh*t.px+(+t.fee||0),t.cur,'TWD'),0),sell=tr.filter(t=>t.type==='sell').reduce((s,t)=>s+conv(t.sh*t.px-(+t.fee||0)-(+t.tax||0),t.cur,'TWD'),0),div=tr.filter(t=>t.type==='div').reduce((s,t)=>s+conv(+t.amt||0,t.cur,'TWD'),0);
  const bl=S.bills.filter(b=>b.acct===a.id).sort((x,y)=>x.next<y.next?-1:1);
  const tm=tr.filter(t=>t.d.startsWith(m)),tOut=tm.filter(t=>t.type==='buy').reduce((s,t)=>s+conv(t.sh*t.px+(+t.fee||0),t.cur,'TWD'),0),tIn=tm.filter(t=>t.type!=='buy').reduce((s,t)=>s+conv(t.type==='div'?+t.amt||0:t.sh*t.px-(+t.fee||0)-(+t.tax||0),t.cur,'TWD'),0);inn+=tIn;out+=tOut;
- let h=`<h1>獨立帳本</h1>${bs.length>1?`<div class="chips" style="margin-bottom:10px">${bs.map(b=>`<button class="chip ${b.id===a.id?'on':''}" data-a="bkacct" data-i="${b.id}">${E(nm(b))}</button>`).join('')}</div>`:''}
- <div class="card"><div class="sub">${E(nm(a))} 現在有</div><div class="big">${MA(a)}</div>${a.excl?'<div class="sub">🔒 沒算進總資產</div>':''}
+ let h=`<h1>獨立帳本</h1>${bs.length>1?`<div class="fs" style="margin-bottom:10px;scrollbar-width:none">${bs.map(b=>`<button class="chip ${b.id===a.id?'on':''}" data-a="bkacct" data-i="${b.id}">${E(bkName(b))}</button>`).join('')}</div>`:''}
+ <div class="card"><div class="sub">${E((a.group?a.group+'・':'')+a.name+(a.cur==='USD'&&!/美/.test(a.name)?'（美元）':''))} 現在有</div><div class="big">${MA(a)}</div>${a.excl?'<div class="sub">🔒 沒算進總資產</div>':''}
  <div class="mh" style="margin:10px 0 4px"><button class="go q" data-a="bkmon" data-i="-1">‹</button><b>${d0.getFullYear()} 年 ${d0.getMonth()+1} 月</b><button class="go q" data-a="bkmon" data-i="1">›</button></div>
  <div class="tiles"><div><span class="sub">進來</span><b class="in">${M(inn)}</b></div><div><span class="sub">出去</span><b>${M(out)}</b></div><div><span class="sub">差額</span><b class="${inn-out<0?'neg':''}">${M(inn-out)}</b></div></div></div>
  <div class="row" style="gap:8px;margin-bottom:8px"><button class="go sp" data-a="bkadd" data-i="in">＋ 錢進來</button><button class="go g sp" data-a="bkadd" data-i="out">＋ 錢出去</button></div>`;
