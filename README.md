@@ -68,3 +68,7 @@ python3 -m http.server 8000
 - 新聞和美股報價是 GitHub Actions 每小時抓一次（`.github/workflows/pages.yml` 的 `schedule`）。GitHub 只在**預設分支**跑排程，可能晚幾分鐘。
 - 美股報價預設抓常見的 ETF 和大型股。自己的美股沒出現的話，到倉庫 **Settings → Secrets and variables → Actions → Variables** 新增 `US_SYMBOLS`，例如 `PLTR,SOFI,O`。
 - 想加減新聞來源，改 `scripts/fetch_news.py` 裡的 `FEEDS`。
+
+## 版權
+
+版權所有 © 2026 mei0829，保留一切權利。未經同意，請勿複製或使用本網站的程式碼與設計。詳見 [LICENSE](LICENSE)。
