@@ -625,6 +625,7 @@ const HELP=[
  ['add','記一筆（花錢、收入、轉帳）',['tx','home','cal'],`按右下角「<b>＋</b>」：<br>・<b>支出</b>：打金額、選帳戶和分類。說明裡有「全家」「中油」這類字會自動選分類。<br>・<b>收入</b>：薪水選「收入」，帳戶選銀行（不能選信用卡），日期是入帳日。<br>・<b>轉帳／繳卡費</b>：自己帳戶之間搬錢、繳信用卡費都用這個，<b>不算收入支出</b>。`],
  ['card','信用卡：刷卡到繳清的 4 個階段',['card','tx','home'],`刷卡時用「刷卡那天」記，網站會標出：<br><b>… 未入帳</b> 銀行還沒收到 → <b>○ 未出帳</b> 等結帳日 → <b>● 已出帳</b> 要繳 → <b>✓ 已繳清</b><br>匯入銀行明細時會自動跟你記的那筆配對、補上入帳日，不會重複。繳卡費時在總覽點那張卡 →「<b>記錄繳卡費</b>」。`],
  ['cycle','結帳日、繳款日某個月不一樣',['card','set'],`平常照「每月幾號」自動算。銀行某一期因為假日改日期時：<br>總覽點那張卡 →「<b>接下來的日期</b>」→ 按「<b>修改</b>」，照帳單上的日期填，<b>只會改那一期</b>。<br>建議每次收到帳單時看一眼，跟網站一樣就不用管。銀行永久改日期的話，到「設定 → 帳戶」改每月固定日。`],
+ ['bsug','預算要設多少？依習慣給建議',['budget'],`不知道預算要設多少，可以<b>先照常記帳</b>。記滿 30 天後，「更多 → 預算」會出現「<b>依照你的消費習慣</b>」：每個分類平均每月花多少、建議預算多少（購物、娛樂、飲料這種想要的建議少 10%）。<br>可以一個一個「套用」，或「全部套用」；也可以按「請 AI 幫我看看」拿幾句建議。記越久越準，之後可以每個月回來調整。`],
  ['iou','幫朋友代墊、誰欠我錢',['tx','iou','home'],`<b>刷卡幫朋友付</b>：記那筆刷卡時按「<b>＋ 幫朋友代墊</b>」，填誰、多少（可以加好幾個人）。整筆照樣算進卡費，但支出統計、預算、圖表只算你自己花的。<br><b>朋友還錢</b>：總覽的「代墊與欠款」或「更多 → 代墊與欠款」，按「<b>還我了</b>」，選錢進哪個帳戶。不算收入；只還一部分也可以。<br><b>朋友先幫你付</b>：按「＋ 我欠別人」，還的時候按「我還了」，那時才算你的支出。<br>總覽會顯示「別人欠我」「我欠別人」合計和每個人的金額。`],
  ['wallet','我的錢一覽、時薪、要不要買',['home','wallet','ask'],`總覽的「<b>我的錢一覽</b>」：所有帳戶總餘額（含現金）、信用卡這個月刷多少／還沒繳多少、每天／每週／每月應該存多少，還有<b>時薪</b>。<br>時薪：填本薪和其他收入，每一項可以勾「<b>辛苦錢</b>」（自己工作賺的）；家人贊助、紅包、利息不勾，就不會拿來算時薪。加上每天上班幾小時、一週幾天，就會算出「辛苦錢時薪」。之後記帳輸入金額，會顯示「要工作多久」。<br>「<b>要不要買？</b>」：像 LINE 一樣打「耳機 3990」，會用你的錢幫你判斷要買、等幾天、還是先不要。`],
  ['tips','看到「ⓘ」是什麼？',['home','bills','tx','set'],`為了畫面清爽，說明文字都收起來了。看到藍色的「<b>ⓘ</b>」點一下就會展開，再點一次收起來。<br>找不到答案的話，按右上角「<b>?</b>」搜尋關鍵字，例如「卡費」「預存」「分期」。`],
@@ -726,18 +727,36 @@ function budgetAlert(){
  if(!xs.length)return'';
  return`<div class="card" data-a="tab" data-i="budget" style="cursor:pointer"><b>預算提醒</b>${xs.map(([c,v,b])=>{const L=lvl(v/b);return`<div class="row" style="margin-top:4px"><span class="sp">${L[1]}　${E(c)}</span><span class="num sub">${M(v)} / ${M(b)}</span></div>`}).join('')}</div>`;
 }
+// 依照最近的記帳算預算建議：記滿 30 天才給，最多看最近 90 天；想要的（購物、娛樂…）建議少 10%
+const FLEX=['購物','娛樂','服飾穿搭','咖啡飲品','點心','按摩','其他'];
+function budgetSug(){const t0=today(),xs=S.tx.filter(t=>t.type==='out'&&!t.bill&&myA(t)>0&&t.d<=t0);if(!xs.length)return{days:0};
+ const first=xs.reduce((m,t)=>t.d<m?t.d:m,t0),days=1-dleft(first);if(days<30)return{days};
+ const n=Math.min(days,90),from=shiftD(t0,-(n-1)),by={};xs.filter(t=>t.d>=from).forEach(t=>{by[t.cat||'其他']=(by[t.cat||'其他']||0)+myA(t)});
+ const rows=Object.keys(by).map(c=>{const avg=by[c]/n*30.4,f=FLEX.includes(c);return{c,avg,f,sug:Math.max(100,Math.ceil(avg*(f?0.9:1)/100)*100)}}).filter(r=>r.avg>=50).sort((a,b)=>b.avg-a.avg);
+ return{days,n,rows,tot:rows.reduce((a,r)=>a+r.sug,0),avg:rows.reduce((a,r)=>a+r.avg,0)}}
+function budgetSugCard(){const G=budgetSug(),B=S.budget;
+ if(G.days<30){const d=G.days||0;return`<div class="card"><b>先記帳，之後幫你算預算</b><div class="sub" style="margin-top:4px">${d?'已經記帳 <b>'+d+'</b> 天，':'還沒有支出紀錄，'}記滿 30 天，這裡會依照你的消費習慣建議每個分類的預算（記 60 天會更準）。這段時間照常記就好，不用先設。</div><div class="bar" style="margin-top:8px"><i style="width:${Math.min(100,d/30*100)}%"></i></div><div class="sub" style="text-align:right">${d} / 30 天</div></div>`}
+ const inc=wInc(),top=G.rows[0],fl=G.rows.filter(r=>r.f),save=fl.reduce((a,r)=>a+(r.avg-r.sug),0);
+ return`<h2>依照你的消費習慣</h2><div class="card"><div class="sub">最近 ${G.n} 天，平均每個月日常花 <b class="num">${M(G.avg)}</b>${inc?'，是收入的 '+Math.round(G.avg/inc*100)+'%':''}</div>
+ <table class="pv" style="margin-top:8px"><tr><th>分類</th><th style="text-align:right">平均每月</th><th style="text-align:right">建議預算</th><th></th></tr>${G.rows.map(r=>`<tr><td>${E(r.c)}</td><td class="num" style="text-align:right">${M(r.avg)}</td><td class="num" style="text-align:right"><b>${M(r.sug)}</b>${r.f?'<div class="sub">少 10%</div>':''}</td><td style="text-align:right">${+B.cats[r.c]===r.sug?'<span class="sub">✓</span>':`<button class="go q" style="padding:3px 8px;font-size:12px" data-a="bsug1" data-i="${E(r.c)}">套用</button>`}</td></tr>`).join('')}</table>
+ <div class="msg" style="margin-top:8px">${top?`花最多的是「<b>${E(top.c)}</b>」，每月約 ${M(top.avg)}。`:''}${save>50?`「想要的」東西（${fl.slice(0,3).map(r=>E(r.c)).join('、')}）各少 10%，每月可以多存約 <b>${M(save)}</b>。`:''}</div>
+ <div class="row" style="gap:8px;margin-top:10px"><button class="go sp" data-a="bsugall">全部套用（總預算 ${M(G.tot)}）</button><button class="go g sp" data-a="bsugai">請 AI 幫我看看</button></div>
+ ${U.bai?`<div class="note keep" style="margin-top:10px;font-size:14px;color:var(--ink)">${U.bai}</div>`:''}
+ <div class="note" data-t="建議怎麼算的？">用最近最多 90 天的支出（不含固定收支自動記的、幫朋友代墊的部分），換算成平均每個月。吃飯、交通這種需要的照平均給；購物、娛樂、飲料這種想要的建議少 10%。之後每個月可以再回來看，習慣變了建議也會跟著變。</div></div>`}
 function vBudget(){
  const m=U.bm,sp=spentBy(m),B=S.budget,t0=today(),cur=m===t0.slice(0,7),d0=pd(m+'-01'),n=dim(d0.getFullYear(),d0.getMonth()),left=cur?n-pd(t0).getDate()+1:0;
  const tot=Object.values(sp).reduce((a,b)=>a+b,0);
  const meter=(v,b)=>{const p=v/b,L=lvl(p);return`<div class="meter"><i style="width:${Math.min(100,p*100)}%;background:${L[0]}"></i></div><div class="row sub" style="margin-top:2px"><span class="sp">${L[1]?`<b style="color:var(--ink)">${L[1]}</b>　`:''}${v>b?'超過 '+M(v-b):'還剩 '+M(b-v)}</span>${cur&&v<b&&left?`<span>每天可花 ${M((b-v)/left)}</span>`:''}</div>`};
  let h=`<div class="mh"><button class="go q" data-a="bmon" data-i="-1">‹</button><b>${d0.getFullYear()} 年 ${d0.getMonth()+1} 月預算</b><button class="go q" data-a="bmon" data-i="1">›</button></div>`;
- h+=`<div class="card"><div class="row"><div class="sp"><div class="sub">這個月已經花了</div><div class="big">${M(tot)}</div></div>${+B.total?`<div style="text-align:right"><div class="sub">總預算</div><b class="num">${M(B.total)}</b></div>`:''}</div>${+B.total?meter(tot,+B.total):'<div class="sub" style="margin-top:6px">還沒設總預算，可以在下面填。</div>'}</div>`;
+ h+=`<div class="card"><div class="row"><div class="sp"><div class="sub">這個月已經花了</div><div class="big">${M(tot)}</div></div>${+B.total?`<div style="text-align:right"><div class="sub">總預算</div><b class="num">${M(B.total)}</b></div>`:''}</div>${+B.total?meter(tot,+B.total):'<div class="sub" style="margin-top:6px">還沒設預算也沒關係，先照常記帳就好。</div>'}</div>`;
  const withB=S.cats.out.filter(c=>+B.cats[c]>0),noB=Object.keys(sp).filter(c=>!(+B.cats[c]>0));
  if(withB.length)h+=`<h2>分類預算</h2><div class="card">${withB.map(c=>`<div style="margin:8px 0"><div class="row"><b class="sp">${E(c)}</b><span class="num">${M(sp[c]||0)} <span class="sub">/ ${M(B.cats[c])}</span></span></div>${meter(sp[c]||0,+B.cats[c])}</div>`).join('')}</div>`;
  if(noB.length)h+=`<h2>沒設預算的分類</h2><div class="card">${hbars(noB.map(c=>[c,sp[c]]).sort((a,b)=>b[1]-a[1]))}</div>`;
- h+=`<h2>設定每月預算（空白＝不設）</h2><div class="card"><label class="fl"><span>每月總預算</span><input inputmode="numeric" data-m="budget.total" data-s="1" data-n="1" value="${E(B.total||'')}" placeholder="例：20000"></label>
+ h+=budgetSugCard();
+ const hasB=+B.total>0||Object.values(B.cats).some(v=>+v>0);
+ h+=`${hasB?'<h2>設定每月預算（空白＝不設）</h2><div class="card">':'<details class="tip" style="margin-top:12px"><summary>想現在就自己設預算 ▾</summary><div class="card" style="border:0;padding:8px 0;background:none">'}<label class="fl"><span>每月總預算</span><input inputmode="numeric" data-m="budget.total" data-s="1" data-n="1" value="${E(B.total||'')}" placeholder="例：20000"></label>
  <div class="grid" style="margin-top:8px">${S.cats.out.map(c=>`<label class="fl"><span>${E(c)}</span><input inputmode="numeric" data-m="budget.cats.${E(c)}" data-s="1" data-n="1" value="${E(B.cats[c]||'')}" placeholder="—"></label>`).join('')}</div>
- <div class="note" data-t="怎麼用？">填完到上面看就會更新。用到 80% 會變黃色提醒，超過會變紅色，總覽頁最上面也會出現提醒。</div></div>`;
+ <div class="note" data-t="怎麼用？">填完到上面看就會更新。用到 80% 會變黃色提醒，超過會變紅色，總覽頁最上面也會出現提醒。</div></div>${hasB?'':'</details>'}`;
  return h;
 }
 
@@ -1433,6 +1452,12 @@ const ACT={
   const t=x.dir==='in'?{id:nid(),d:o.d,type:'in',amt,acct:o.acct,cat:'收回代墊',note:x.who+' 還我'+(x.note?'（'+x.note+'）':''),iou:1,src:'m',ts:Date.now()}:{id:nid(),d:o.d,type:'out',amt,acct:o.acct,cat:x.cat||'其他',note:'還 '+x.who+(x.note?'（'+x.note+'）':''),src:'m',ts:Date.now()};
   S.tx.push(t);(x.back=x.back||[]).push({d:o.d,amt,tx:t.id});U.sheet=null;save();render();toast(iouLeft(x)>0?'已記下，還差 '+M(iouLeft(x)):'✓ '+x.who+' 這筆還清了')},
  iouall:()=>{U.iouAll=!U.iouAll;render()},
+ bsug1:i=>{const r=(budgetSug().rows||[]).find(x=>x.c===i);if(!r)return;S.budget.cats[i]=r.sug;save();render();toast(i+' 預算設成 '+M(r.sug))},
+ bsugall:()=>{const G=budgetSug();if(!G.rows)return;if(!confirm('把建議的預算全部套用？（之後還可以自己改）'))return;G.rows.forEach(r=>{S.budget.cats[r.c]=r.sug});S.budget.total=G.tot;save();render();toast('已套用，總預算 '+M(G.tot))},
+ bsugai:async()=>{const G=budgetSug();if(!G.rows)return;U.bai='AI 看看中…';render();
+  try{const r=await askAI(`你是溫暖、務實的理財教練，用繁體中文（台灣用語）、口語、條列 3～5 點給建議，每點一句話，不要說教。看這位記帳新手最近 ${G.n} 天的消費（台幣，平均每月），指出值得注意的地方、哪裡可以省、怎麼設預算比較不痛苦。只用提供的數字，不要編造。\n每月收入：${wInc()||'沒填'}\n各分類平均每月：${JSON.stringify(Object.fromEntries(G.rows.map(r=>[r.c,Math.round(r.avg)])))}\n只回 JSON：{"tips":["...","..."]}`);
+   U.bai=r&&r.tips&&r.tips.length?'<b>AI 的建議</b><br>'+r.tips.map(t=>'・'+E(String(t))).join('<br>'):'AI 這次沒有回答，等一下再試試。'}catch(e){U.bai=e&&String(e.code||'').indexOf('quota')===0?'AI 今天的免費額度用完了，明天再試，或先參考上面的建議。':'現在連不到 AI，先參考上面的建議就好。'}
+  if(U.tab==='budget')render()},
  az:()=>{U.az=!U.az;render()},
  shopall:()=>{U.shopAll=!U.shopAll;render()},
  cat:i=>{const o=U.sheet.o;o.cat=i;o.catSet=1;render()},
