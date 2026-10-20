@@ -165,12 +165,13 @@ const addM=(s,n,day)=>{const d=pd(s);return ymd(d.getFullYear(),d.getMonth()+n,d
 
 // 預設分類與自動分類規則（關鍵字不分大小寫，越上面越優先）
 const OUT=['餐飲','交通','停車費','購物','日用品','居家','房貸','電信網路','水電瓦斯','保險','醫療','娛樂','學習','稅費','其他'];
-const INC=['薪資','獎金','退款','利息','其他收入'];
+const INC=['薪資','家人贊助','獎金','退款','利息','其他收入'];
 const RULES=[['停車','停車費'],['路邊','停車費'],['PARKING','停車費'],['加油','交通'],['中油','交通'],['台塑石油','交通'],['高鐵','交通'],['台鐵','交通'],['臺鐵','交通'],['捷運','交通'],['悠遊卡','交通'],['一卡通','交通'],['UBER','交通'],['大車隊','交通'],['ETC','交通'],['遠通','交通'],['UBER EATS','餐飲'],['FOODPANDA','餐飲'],['統一超商','餐飲'],['7-ELEVEN','餐飲'],['全家','餐飲'],['萊爾富','餐飲'],['OK超商','餐飲'],['星巴克','餐飲'],['麥當勞','餐飲'],['全聯','日用品'],['家樂福','日用品'],['好市多','日用品'],['COSTCO','日用品'],['屈臣氏','日用品'],['康是美','日用品'],['IKEA','居家'],['中華電信','電信網路'],['台灣大哥大','電信網路'],['遠傳','電信網路'],['電信','電信網路'],['台灣電力','水電瓦斯'],['電費','水電瓦斯'],['水費','水電瓦斯'],['自來水','水電瓦斯'],['瓦斯','水電瓦斯'],['人壽','保險'],['產險','保險'],['保險','保險'],['診所','醫療'],['醫院','醫療'],['藥局','醫療'],['NETFLIX','娛樂'],['SPOTIFY','娛樂'],['YOUTUBE','娛樂'],['APPLE.COM','娛樂'],['GOOGLE','娛樂'],['威秀','娛樂'],['蝦皮','購物'],['MOMO','購物'],['PCHOME','購物'],['博客來','學習'],['稅','稅費'],['監理','稅費'],['薪資','薪資'],['薪轉','薪資'],['利息','利息']];
 const DEF=()=>({accts:[{id:'cash',name:'現金',type:'cash',init:0},{id:'bank',name:'銀行帳戶',type:'bank',init:0},{id:'card1',name:'信用卡',type:'card',init:0,close:5,due:20,since:today()}],tx:[],bills:[],cats:{out:OUT.slice(),in:INC.slice()},rules:RULES.map(([k,c])=>({k,c})),living:null,keep:0,lastAcct:'cash',perk:{extra:'',q:'',amt:'',sum:null,cache:{}},fx:{USD:32,d:'',auto:0},plan:{income:'',from:'',items:[],done:''},payees:[],trades:[],prices:{},fee:{disc:1,min:20},budget:{total:0,cats:{}},calc:{p:100000,c:5000,r:6,y:20,goal:3000000},skin:'',mode:'auto',guideOff:false});
 let S;try{const r=localStorage.getItem('money-v1');S=Object.assign(DEF(),r?JSON.parse(r):{})}catch(e){S=DEF()}
 // 舊資料：用現金付的不可能是自動扣款
 S.bills.forEach(b=>{const a=S.accts.find(x=>x.id===b.acct);if(b.auto&&a&&a.type==='cash'){b.auto=false;delete b.autoRec}});
+if(!S.cats.in.includes('家人贊助'))S.cats.in.splice(Math.max(0,S.cats.in.indexOf('薪資')+1),0,'家人贊助');
 if(!S.cats.out.includes('房貸'))S.cats.out.splice(Math.max(0,S.cats.out.indexOf('居家')+1),0,'房貸');
 const U={fs:'',cardId:'',cyc:'',tab:'home',h:30,mon:today().slice(0,7),fa:'',q:'',sheet:null,imp:null,cm:today().slice(0,7),cd:today(),bm:today().slice(0,7),cn:6,chm:''};
 const CL={st:'☁︎ 連線中…',last:{},LT0:0,HAS0:false};try{CL.LT0=+localStorage.getItem('money-t')||0;CL.HAS0=!!localStorage.getItem('money-v1')}catch(e){}
@@ -606,7 +607,7 @@ const HELP=[
  ['add','記一筆（花錢、收入、轉帳）',['tx','home','cal'],`按右下角「<b>＋</b>」：<br>・<b>支出</b>：打金額、選帳戶和分類。說明裡有「全家」「中油」這類字會自動選分類。<br>・<b>收入</b>：薪水選「收入」，帳戶選銀行（不能選信用卡），日期是入帳日。<br>・<b>轉帳／繳卡費</b>：自己帳戶之間搬錢、繳信用卡費都用這個，<b>不算收入支出</b>。`],
  ['card','信用卡：刷卡到繳清的 4 個階段',['card','tx','home'],`刷卡時用「刷卡那天」記，網站會標出：<br><b>… 未入帳</b> 銀行還沒收到 → <b>○ 未出帳</b> 等結帳日 → <b>● 已出帳</b> 要繳 → <b>✓ 已繳清</b><br>匯入銀行明細時會自動跟你記的那筆配對、補上入帳日，不會重複。繳卡費時在總覽點那張卡 →「<b>記錄繳卡費</b>」。`],
  ['cycle','結帳日、繳款日某個月不一樣',['card','set'],`平常照「每月幾號」自動算。銀行某一期因為假日改日期時：<br>總覽點那張卡 →「<b>接下來的日期</b>」→ 按「<b>修改</b>」，照帳單上的日期填，<b>只會改那一期</b>。<br>建議每次收到帳單時看一眼，跟網站一樣就不用管。銀行永久改日期的話，到「設定 → 帳戶」改每月固定日。`],
- ['wallet','我的錢一覽、時薪、要不要買',['home','wallet','ask'],`總覽的「<b>我的錢一覽</b>」：所有帳戶總餘額（含現金）、信用卡這個月刷多少／還沒繳多少、每天／每週／每月應該存多少，還有<b>時薪</b>。<br>時薪：填本薪和其他收入（兼職、獎金可以填平均），加上每天上班幾小時、一週幾天，就會算出來。之後記帳輸入金額，會顯示「要工作多久」。<br>「<b>要不要買？</b>」：像 LINE 一樣打「耳機 3990」，會用你的錢幫你判斷要買、等幾天、還是先不要。`],
+ ['wallet','我的錢一覽、時薪、要不要買',['home','wallet','ask'],`總覽的「<b>我的錢一覽</b>」：所有帳戶總餘額（含現金）、信用卡這個月刷多少／還沒繳多少、每天／每週／每月應該存多少，還有<b>時薪</b>。<br>時薪：填本薪和其他收入，每一項可以勾「<b>辛苦錢</b>」（自己工作賺的）；家人贊助、紅包、利息不勾，就不會拿來算時薪。加上每天上班幾小時、一週幾天，就會算出「辛苦錢時薪」。之後記帳輸入金額，會顯示「要工作多久」。<br>「<b>要不要買？</b>」：像 LINE 一樣打「耳機 3990」，會用你的錢幫你判斷要買、等幾天、還是先不要。`],
  ['tips','看到「ⓘ」是什麼？',['home','bills','tx','set'],`為了畫面清爽，說明文字都收起來了。看到藍色的「<b>ⓘ</b>」點一下就會展開，再點一次收起來。<br>找不到答案的話，按右上角「<b>?</b>」搜尋關鍵字，例如「卡費」「預存」「分期」。`],
  ['fund','年繳費怎麼預存、怎麼不會誤花',['bills','home'],`年繳、半年繳的錢（保險、牌照稅、燃料費…）建議<b>每個月先存一點</b>：<br>1. 設定 → 帳戶 → 新增一個專門的帳戶（例如網銀子帳戶「國泰 預存」），勾「<b>📦 這是預存帳戶</b>」。<br>2. 固定收支 → 編輯那筆年繳費 → 「📦 每個月先存一點」選這個帳戶。會自動多一個「預存・保險費」每月提醒（金額 ÷ 月數）。<br>3. 進度條會顯示「已存多少 / 要繳多少」，繳完後從 0 重新開始存。<br>4. 繳費時「從哪個帳戶扣」選預存帳戶。<br><b>怕誤以為有錢花？</b>總覽會顯示「<b>💡 真的可以花的錢</b>」＝現金＋銀行 − 預存 − 卡費，預存帳戶也會單獨列出來。<br>預存的錢因為之後要繳出去，預設<b>不算進總資產</b>；想算進去的話，在總覽那行點「改成要算」。`],
  ['shop','在哪裡買（店家、地點）',['tx','chart'],`記支出時有「<b>在哪裡買</b>」：點下面的常用店家，或按「更多店家」看分類清單；也可以打字搜尋，清單沒有的就直接輸入，例如「阿嬤麵攤」。<br>說明裡有店名（例如「抹茶吐司/全家」）會自動帶入。你用過的地方會排到最前面。<br>記帳頁的搜尋可以搜店家；圖表頁會列出「這個月最常花錢的地方」。`],
@@ -798,15 +799,17 @@ function sheetTrade(o){
 // 時薪：每月收入（本薪＋其他，可以自己加減）÷ 每月上班小時
 function W(){if(!S.work)S.work={items:[{id:'w1',n:'本薪',amt:Math.round(billPM('in'))||''}],h:8,d:5,save:''};return S.work}
 const wInc=()=>W().items.reduce((a,x)=>a+(+x.amt||0),0);
+// 辛苦錢：自己工作賺的（本薪、加班、兼職…），家人贊助這種不算，時薪只用辛苦錢算
+const wEarn=()=>W().items.reduce((a,x)=>a+(x.earn===false?0:+x.amt||0),0);
 const wHours=()=>(+W().h||0)*(+W().d||0)*52/12;
-const hourly=()=>wHours()?wInc()/wHours():0;
+const hourly=()=>wHours()?wEarn()/wHours():0;
 const hrsTxt=v=>{const r=hourly();if(!r||!(v>0))return'';const h=v/r;return h<1?'約 '+Math.max(1,Math.round(h*60))+' 分鐘':h<=8*3?'約 '+(Math.round(h*10)/10)+' 小時':'約 '+(Math.round(h/(+W().h||8)*10)/10)+' 天'};
 const hrsLine=o=>o.type==='out'&&hourly()&&pAmt(o.amt)>0?'要工作 '+hrsTxt(pAmt(o.amt)):'';
 function cardMonth(c,m){return S.tx.filter(t=>t.acct===c.id&&t.d.startsWith(m)).reduce((a,t)=>a+(t.type==='in'?-t.amt:t.type==='out'?t.amt:0),0)}
 const saveTarget=()=>{const w=W();return w.save!==''&&w.save!=null?+w.save||0:Math.round(billPM('save'))||Math.round(wInc()*0.2)};
 function savedMonth(m){const tos=new Set(S.accts.filter(a=>a.hold).map(a=>a.id));S.bills.forEach(b=>{if(b.kind==='save'&&b.to)tos.add(b.to)});return S.tx.filter(t=>t.type==='xfer'&&t.d.startsWith(m)&&tos.has(t.to)).reduce((a,t)=>a+t.amt,0)}
 function moneyFacts(){const m=today().slice(0,7),liq=liquid(),hd=holdAmt(),owe=S.accts.filter(isCard).reduce((a,c)=>a+cardInfo(c).owe,0),sp=spentBy(m),spent=Object.values(sp).reduce((a,b)=>a+b,0),B=S.budget||{},pay=S.bills.filter(b=>b.kind==='in'&&b.next).sort((a,b)=>a.next<b.next?-1:1)[0];
- return{真的可以花:Math.round(liq-hd-owe),這個月已花:Math.round(spent),每月收入:wInc(),時薪:Math.round(hourly()),這個月總預算:+B.total||null,總預算還剩:+B.total?Math.round(+B.total-spent):null,購物預算還剩:+(B.cats||{})['購物']?Math.round(+B.cats['購物']-(sp['購物']||0)):null,離下次發薪天數:pay?dleft(pay.next):null,每月想存:saveTarget(),這個月已存:Math.round(savedMonth(m))}}
+ return{真的可以花:Math.round(liq-hd-owe),這個月已花:Math.round(spent),每月收入:wInc(),每月辛苦錢:wEarn(),辛苦錢時薪:Math.round(hourly()),這個月總預算:+B.total||null,總預算還剩:+B.total?Math.round(+B.total-spent):null,購物預算還剩:+(B.cats||{})['購物']?Math.round(+B.cats['購物']-(sp['購物']||0)):null,離下次發薪天數:pay?dleft(pay.next):null,每月想存:saveTarget(),這個月已存:Math.round(savedMonth(m))}}
 function vWallet(){
  const m=today().slice(0,7),liq=liquid(),cash=S.accts.filter(a=>a.type==='cash'&&!a.excl).reduce((a,x)=>a+conv(bal(x),x.cur,'TWD'),0),cards=S.accts.filter(isCard),owe=cards.reduce((a,c)=>a+cardInfo(c).owe,0),cm=cards.reduce((a,c)=>a+cardMonth(c,m),0),hd=holdAmt(),sp=liq-hd-owe,w=W(),T=saveTarget(),sv=savedMonth(m),hr=hourly();
  let h=`<h1>我的錢一覽</h1>
@@ -819,11 +822,12 @@ function vWallet(){
  <div class="row" style="margin-top:10px"><span class="sub sp">這個月已存 <b class="num">${M(sv)}</b> / ${M(T)}</span><b class="sub">${T?Math.floor(Math.min(100,sv/T*100)):0}%</b></div><div class="bar"><i style="width:${T?Math.min(100,sv/T*100):0}%"></i></div>
  <label class="fl" style="margin-top:10px"><span>每月想存多少（空著＝${billPM('save')?'照「存錢」固定項目':'收入的 20%'}）</span><input inputmode="numeric" value="${E(w.save)}" placeholder="${Math.round(billPM('save'))||Math.round(wInc()*0.2)||''}" data-m="work.save" data-s="1" data-r="1"></label>
  <div class="note" data-t="「已存」怎麼算？">這個月轉進「📦 預存帳戶」或「存錢」固定項目指定帳戶的錢，都算已存。每天／每週是把每月金額平均攤開，方便你感覺「今天少花一點就存到了」。</div></div>
- <h2>我的時薪</h2><div class="card"><div class="row"><div class="sp"><div class="sub">工作 1 小時賺</div><div class="big">${hr?M(hr):'—'}</div></div><div style="text-align:right"><div class="sub">每月收入</div><b class="num in">${M(wInc())}</b></div></div>
- ${w.items.map((x,i)=>`<div class="row" style="gap:6px;margin-top:6px"><input style="flex:1.2" value="${E(x.n)}" data-m="work.items.${i}.n" data-s="1" placeholder="例：兼職、獎金"><input style="flex:1" inputmode="numeric" value="${E(x.amt)}" data-m="work.items.${i}.amt" data-s="1" data-r="1" placeholder="每月多少"><button class="x" data-a="wdel" data-i="${i}" aria-label="刪除">×</button></div>`).join('')}
- <button class="go q" style="margin-top:8px" data-a="wadd">＋ 其他收入</button>
+ <h2>我的時薪</h2><div class="card"><div class="row"><div class="sp"><div class="sub">辛苦錢時薪（工作 1 小時賺）</div><div class="big">${hr?M(hr):'—'}</div></div><div style="text-align:right"><div class="sub">每月辛苦錢</div><b class="num in">${M(wEarn())}</b>${wInc()!==wEarn()?`<div class="sub">全部收入 ${M(wInc())}</div>`:''}</div></div>
+ <div class="sub" style="margin-top:8px">每月收入有哪些？勾「辛苦錢」的才會拿來算時薪</div>
+ ${w.items.map((x,i)=>`<div class="row" style="gap:6px;margin-top:6px"><input style="flex:1.2;min-width:0" value="${E(x.n)}" data-m="work.items.${i}.n" data-s="1" placeholder="例：兼職、家人贊助"><input style="flex:1;min-width:0" inputmode="numeric" value="${E(x.amt)}" data-m="work.items.${i}.amt" data-s="1" data-r="1" placeholder="每月多少"><label style="display:flex;align-items:center;gap:3px;font-size:13px;white-space:nowrap"><input type="checkbox" data-m="work.items.${i}.earn" data-s="1" data-r="1" ${x.earn===false?'':'checked'} style="width:18px;height:18px">辛苦錢</label><button class="x" data-a="wdel" data-i="${i}" aria-label="刪除">×</button></div>`).join('')}
+ <div class="row" style="gap:6px;margin-top:8px"><button class="go q" data-a="wadd">＋ 工作收入（加班、兼職…）</button><button class="go q" data-a="wfam">＋ 家人贊助</button></div>
  <div class="grid" style="margin-top:8px"><label class="fl"><span>一天上班幾小時</span><input inputmode="decimal" value="${E(w.h)}" data-m="work.h" data-s="1" data-r="1"></label><label class="fl"><span>一週上幾天</span><input inputmode="decimal" value="${E(w.d)}" data-m="work.d" data-s="1" data-r="1"></label></div>
- <div class="note" data-t="時薪怎麼算？">時薪＝每月收入 ÷（每天小時 × 每週天數 × 52 週 ÷ 12 個月）。獎金、兼職這種不固定的，填平均每月大概多少就好，隨時可以改。記帳時輸入金額，會顯示「要工作多久」。</div></div>
+ <div class="note" data-t="時薪怎麼算？"><b>辛苦錢</b>＝自己工作賺來的：本薪、加班費、獎金、兼職、接案…，打勾。<b>家人贊助、紅包、利息、股利</b>這種不是用時間換來的，不要勾，它們還是算收入（存錢目標會算進去），只是不拿來算時薪。<br>時薪＝每月辛苦錢 ÷（每天小時 × 每週天數 × 52 週 ÷ 12 個月）。不固定的填平均每月大概多少就好，隨時可以改。記帳時輸入金額，會顯示「要工作多久」。</div></div>
  <button class="go" style="width:100%;margin-top:4px" data-a="tab" data-i="ask">想買東西？問問看要不要買</button>`;
  return h;
 }
@@ -1360,7 +1364,8 @@ const ACT={
  shop:i=>{const o=U.sheet.o;o.shop=o.shop===i?'':i;o.shopSet=!!o.shop;const si=$('fshop');if(si)si.value=o.shop;document.querySelectorAll('[data-a="shop"]').forEach(b=>b.classList.toggle('on',b.dataset.i===o.shop));
   if(!o.catSet){const g=guess(o.note+' '+o.shop,o.type);if(g&&g!==o.cat){o.cat=g;document.querySelectorAll('[data-a="cat"]').forEach(b=>b.classList.toggle('on',b.dataset.i===g))}}},
  holdin:()=>{S.holdIn=!S.holdIn;save();render();toast(S.holdIn?'預存的錢現在算進總資產':'預存的錢不算進總資產了')},
- wadd:()=>{W().items.push({id:nid(),n:'',amt:''});save();render()},
+ wadd:()=>{W().items.push({id:nid(),n:'',amt:'',earn:true});save();render()},
+ wfam:()=>{W().items.push({id:nid(),n:'家人贊助',amt:'',earn:false});save();render()},
  wdel:i=>{W().items.splice(+i,1);save();render()},
  asksend:()=>{const el=$('askq'),q=String(el&&el.value||'').trim();if(q)chatAsk(q)},
  askq:i=>chatAsk(i),
