@@ -841,13 +841,13 @@ function chatRule(q){const v=chatPrice(q),F=moneyFacts();if(!v)return'想買什�
  else if(pct>0.2||(hourly()&&v/hourly()>16))L.push('👉 <b>建議等 3 天再決定</b>：金額不小，過幾天還是很想要、也確定會常用，再買比較不會後悔。');
  else L.push('👉 <b>可以買</b>，在你的能力範圍內。買之前問自己：是「需要」還是「想要」？有沒有更便宜的選擇？');
  return L.join('<br>')}
-async function chatAsk(q){CHAT.push({r:'me',t:q});CHAT.push({r:'bot',t:chatRule(q),wait:1});chatSave();render();chatEnd();
- const k=CHAT.length-1;
- try{const hist=CHAT.slice(-9,-1).map(x=>(x.r==='me'?'我：':'你：')+String(x.t).replace(/<[^>]+>/g,'')).join('\n');
-  const r=await askAI(`你是使用者的理財好朋友，用 LINE 聊天的口吻、繁體中文（台灣用語）、溫暖但誠實，回覆 2～4 句，可以用一個 emoji。幫他判斷「要不要買」：要提到這東西等於要工作多久、對他現在可以花的錢的影響，給明確建議（可以買／等幾天再決定／先不要買），必要時反問一個問題（例如是需要還是想要、會用多久）。不要編造數字，只用下面提供的。\n他的財務（台幣）：${JSON.stringify(moneyFacts())}\n這次提到的價格：${chatPrice(q)||'沒說'}；時薪換算：${hrsTxt(chatPrice(q))||'沒設定'}\n最近對話：\n${hist}\n只回 JSON：{"reply":"..."}`);
-  if(r&&r.reply&&CHAT[k]){CHAT[k]={r:'bot',t:E(String(r.reply)).replace(/\n/g,'<br>'),ai:1}}}catch(e){}
- if(CHAT[k])delete CHAT[k].wait;chatSave();if(U.tab==='ask'){render();chatEnd()}}
-const chatEnd=()=>setTimeout(()=>{const el=$('askq');window.scrollTo(0,document.body.scrollHeight);el&&el.focus({preventScroll:true})},30);
+async function chatAsk(q){const id=nid();CHAT.push({r:'me',t:q});CHAT.push({r:'bot',t:chatRule(q),wait:1,id});chatSave();render();chatEnd(true);
+ const hit=()=>CHAT.find(x=>x.id===id);
+ try{const hist=CHAT.filter(x=>!x.wait&&x.id!==id).slice(-8).map(x=>(x.r==='me'?'我：':'你：')+String(x.t).replace(/<[^>]+>/g,'')).join('\n');
+  const r=await askAI(`這次他問的是：「${q}」，只回答這一題。\n你是使用者的理財好朋友，用 LINE 聊天的口吻、繁體中文（台灣用語）、溫暖但誠實，回覆 2～4 句，可以用一個 emoji。幫他判斷「要不要買」：要提到這東西等於要工作多久、對他現在可以花的錢的影響，給明確建議（可以買／等幾天再決定／先不要買），必要時反問一個問題（例如是需要還是想要、會用多久）。不要編造數字，只用下面提供的。\n他的財務（台幣）：${JSON.stringify(moneyFacts())}\n這次提到的價格：${chatPrice(q)||'沒說'}；時薪換算：${hrsTxt(chatPrice(q))||'沒設定'}\n最近對話：\n${hist}\n只回 JSON：{"reply":"..."}`);
+  const m=hit();if(r&&r.reply&&m){m.t=E(String(r.reply)).replace(/\n/g,'<br>');m.ai=1}}catch(e){}
+ const m=hit();if(!m)return;delete m.wait;chatSave();if(U.tab==='ask'){render();chatEnd(false)}}
+const chatEnd=f=>setTimeout(()=>{const b=document.querySelector('.chat .bub:last-child');if(b)b.scrollIntoView({block:'end',behavior:'smooth'});if(f){const el=$('askq');el&&el.focus({preventScroll:true})}},30);
 function vAsk(){const hr=hourly();
  return`<h1>要不要買？</h1>${hr?'':'<div class="note keep">先到「<a href="#" data-a="tab" data-i="wallet">我的錢一覽</a>」填收入和上班時間，我就能告訴你每樣東西要工作多久。</div>'}
  <div class="chat">${(CHAT.length?CHAT:[{r:'bot',t:'嗨！想買什麼？跟我說<b>東西和價錢</b>，例如「耳機 3990」，我會幫你看看現在適不適合買 😊'}]).map(x=>`<div class="bub ${x.r==='me'?'me':''}">${x.r==='me'?E(x.t):x.t}${x.wait?'<div class="sub" style="margin-top:4px">再想一下…</div>':''}</div>`).join('')}</div>
