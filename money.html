@@ -397,7 +397,7 @@ function acctGroups(){const gs=[],seen={};S.accts.forEach(a=>{const g=a.type!=='
 function acctJump(){const gs=acctGroups();if(gs.length<4)return'';
  return`<div class="jump chips" role="navigation" aria-label="跳到帳戶">${gs.map(([g,as],i)=>`<button class="chip" data-a="jump" data-i="ag${i}">${E(g||as[0].name)}</button>`).join('')}</div>`}
 function acctList(){
- return acctGroups().map(([g,as],i)=>{if(!g)return`<div id="ag${i}" class="jt">${acctLine(as[0])}</div>`;as=as.filter(a=>!isCard(a)).concat(as.filter(isCard));const dep=as.filter(a=>!isCard(a)&&!a.excl).reduce((s,a)=>s+conv(bal(a),a.cur,'TWD'),0),owe=as.filter(isCard).reduce((s,a)=>s+cardInfo(a).owe,0);
+ return acctGroups().map(([g,as],i)=>{if(!g)return`<div id="ag${i}" class="grp jt">${acctLine(as[0])}</div>`;as=as.filter(a=>!isCard(a)).concat(as.filter(isCard));const dep=as.filter(a=>!isCard(a)&&!a.excl).reduce((s,a)=>s+conv(bal(a),a.cur,'TWD'),0),owe=as.filter(isCard).reduce((s,a)=>s+cardInfo(a).owe,0);
   return`<div class="grp jt" id="ag${i}"><div class="gh"><b>${E(g)}</b><span class="sub">${as.some(a=>!isCard(a))?M(dep):''}${owe?' · 卡費 '+M(owe):''}</span></div>${as.map(a=>acctLine(a,1)).join('')}</div>`}).join('');
 }
 // 已有的規則：依分類收在一起、字小一點，可以搜尋
