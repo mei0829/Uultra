@@ -634,6 +634,7 @@ const HELP=[
  ['add','記一筆（花錢、收入、轉帳）',['tx','home','cal'],`按右下角「<b>＋</b>」：<br>・<b>支出</b>：打金額、選帳戶和分類。說明裡有「全家」「中油」這類字會自動選分類。<br>・<b>收入</b>：薪水選「收入」，帳戶選銀行（不能選信用卡），日期是入帳日。<br>・<b>轉帳／繳卡費</b>：自己帳戶之間搬錢、繳信用卡費都用這個，<b>不算收入支出</b>。`],
  ['card','信用卡：刷卡到繳清的 4 個階段',['card','tx','home'],`刷卡時用「刷卡那天」記，網站會標出：<br><b>… 未入帳</b> 銀行還沒收到 → <b>○ 未出帳</b> 等結帳日 → <b>● 已出帳</b> 要繳 → <b>✓ 已繳清</b><br>匯入銀行明細時會自動跟你記的那筆配對、補上入帳日，不會重複。繳卡費時在總覽點那張卡 →「<b>記錄繳卡費</b>」。`],
  ['cycle','結帳日、繳款日某個月不一樣',['card','set'],`平常照「每月幾號」自動算。銀行某一期因為假日改日期時：<br>總覽點那張卡 →「<b>接下來的日期</b>」→ 按「<b>修改</b>」，照帳單上的日期填，<b>只會改那一期</b>。<br>建議每次收到帳單時看一眼，跟網站一樣就不用管。銀行永久改日期的話，到「設定 → 帳戶」改每月固定日。`],
+ ['idea','賺錢點子筆記',['idea'],`「更多 → <b>賺錢點子</b>」：想到、看到能賺錢的方法，在黃色便條打一句話按「記下」就好。<br>點進去可以補預估每月可賺、要先花多少、每週幾小時（會算時薪，跟正職比）、下一步、筆記。<br>進度：想法 → 研究中 → 進行中 → 有在賺；不做的改「先放著」。上面會顯示進行中的點子每月預估可以多賺多少。`],
  ['check','對帳便條（每週看一次真實帳戶）',['check','home'],`「更多 → <b>對帳便條</b>」：像便條紙一樣列出所有帳戶。打開網銀 App，看過一個、數字對了就點一下打勾；點錯再點一下就取消。<br>數字不對就按「更新餘額」改成真的數字。<br>全部勾完會自動記下檢核時間，下面有檢核紀錄。超過 7 天沒對帳，總覽會出現黃色便條提醒。`],
  ['trip','旅遊、買東西要預存（單次目標）',['bills'],`想為一次旅遊、一個大東西先存錢：<br>1. 設定 → 帳戶 → 新增一個帳戶（例如「國泰 旅遊」，網銀子帳戶最好），勾「<b>📦 預存帳戶</b>」，這筆錢就不會被當成可以花的。<br>2. 固定收支 → 新增「<b>旅遊基金</b>」：從薪水帳戶轉到旅遊帳戶、每次存多少、<b>目標金額</b>、<b>存到哪天</b>（出發日）。<br>3. 進度條會顯示存了多少，還會算「還有幾次、每次要存多少」，不夠會提醒你。<br>4. 出發後在旅遊帳戶記花費，那時才算支出。玩完把這個固定項目刪掉就好。`],
  ['vary','停車費、電費這種金額不固定的，怎麼記？',['bills'],`<b>不用每次停車都記。</b>停車費是政府代扣、每個月扣一次，這樣做：<br>1. 固定收支 → 停車費：金額填<b>大概的月平均</b>（例如 1,500），勾「<b>金額每次不一樣</b>」。<br>2. 這個平均金額會被算進「未來要準備多少錢」，網站會<b>自動幫你預留</b>，不用另外轉帳存。<br>3. 真的扣款後（看信用卡或銀行 App），按「<b>已扣款，填實際金額</b>」，輸入真的扣了多少和<b>扣款日</b>（預設是這期的日子，提早或延後扣的話改成真的那天），就記好了。<br>4. 從哪個帳戶扣就選哪個（例如中油卡），錢就從那裡算。<br>⚠︎ 如果你是<b>每次停車自己付</b>（繳費機、App），那就每次記一筆、<b>不要</b>加固定項目，避免重複；想控制就到「預算」幫停車費設上限。`],
@@ -1004,6 +1005,31 @@ function sheetAcctV(o){const a=A(o.id);if(!a)return'';const xs=S.tx.filter(t=>t.
  <div class="card" style="padding:4px 12px;margin:0">${xs.length?h:'<div class="sub" style="padding:10px 0">這個帳戶還沒有交易紀錄。</div>'}</div>
  ${xs.length>n?`<div style="text-align:center;margin-top:8px"><button class="go q" data-a="avmore">再看 30 筆（還有 ${xs.length-n} 筆）</button></div>`:''}`}
 
+// ── 賺錢點子筆記 ──
+const IST=[['idea','想法'],['try','研究中'],['doing','進行中'],['done','有在賺'],['drop','先放著']];
+const IDS=()=>S.ideas||(S.ideas=[]);
+function vIdea(){const xs=IDS(),f=U.if||'',sh=xs.filter(x=>f?x.st===f:x.st!=='drop').sort((a,b)=>(b.up||0)-(a.up||0)),cnt=k=>xs.filter(x=>x.st===k).length;
+ const mo=xs.filter(x=>x.st==='doing'||x.st==='done').reduce((a,x)=>a+(+x.est||0),0);
+ let h=`<h1>賺錢點子</h1><div class="memo"><b>想到就先記下來</b><div class="row" style="gap:6px;margin-top:8px"><input id="idq" style="flex:1;background:rgba(255,255,255,.7)" placeholder="例：週末接設計案、二手拍賣、教家教" enterkeyhint="done"><button class="go" data-a="idadd">記下</button></div>
+ ${mo?`<div class="sub" style="margin-top:8px">進行中＋有在賺的點子，預估每月可以多 <b>${M(mo)}</b></div>`:''}</div>
+ <div class="fs" style="margin-bottom:10px;scrollbar-width:none"><button class="chip ${f?'':'on'}" data-a="idf" data-i="">全部 ${xs.filter(x=>x.st!=='drop').length}</button>${IST.map(([k,n])=>`<button class="chip ${f===k?'on':''}" data-a="idf" data-i="${k}">${n} ${cnt(k)}</button>`).join('')}</div>`;
+ h+=sh.length?sh.map(x=>{const i=IST.findIndex(s=>s[0]===x.st),nx=IST[i+1]&&i<3?IST[i+1]:null;return`<div class="card" data-a="idedit" data-i="${x.id}" style="cursor:pointer"><div class="row"><b class="sp">${E(x.t)}</b><span class="pill ${x.st==='doing'||x.st==='done'?'y':''}">${IST[i][1]}</span></div>
+  ${x.est||x.cost||x.hrs?`<div class="sub" style="margin-top:4px">${x.est?'預估每月 <b class="in">+'+M(x.est)+'</b>':''}${x.cost?'・要先花 '+M(x.cost):''}${x.hrs?'・每週約 '+E(x.hrs)+' 小時':''}${x.est&&x.hrs&&+x.hrs>0?'・時薪約 '+M(x.est/(+x.hrs*52/12)):''}</div>`:''}
+  ${x.next?`<div style="margin-top:4px">👉 下一步：${E(x.next)}</div>`:''}${x.n?`<div class="sub" style="margin-top:4px;white-space:pre-wrap">${E(x.n.length>80?x.n.slice(0,80)+'…':x.n)}</div>`:''}
+  <div class="row" style="margin-top:6px"><span class="sub sp">${md(x.d)} 記的</span>${nx?`<button class="go q" style="padding:3px 10px;font-size:12px" data-a="idnext" data-i="${x.id}">→ ${nx[1]}</button>`:''}</div></div>`}).join(''):`<div class="card sub">${f?'這一類還沒有點子。':'還沒有點子。看到、聽到、想到能賺錢的方法，就在上面記一筆，之後再慢慢研究。'}</div>`;
+ h+=`<div class="note" data-t="怎麼用？">想到就先打一句話記下來，不用想清楚。之後點進去可以補：預估每月能賺多少、要先花多少、每週要花幾小時（會幫你算時薪，跟正職比比看值不值得）、下一步要做什麼。<br>狀態：想法 → 研究中 → 進行中 → 有在賺；不想做的改成「先放著」，不會刪掉，之後還能拿出來看。<br>開始有收入後，記帳時收入分類選「副業」，也可以到「我的錢一覽」把它加進收入。</div>`;
+ return h}
+function sheetIdea(o){return`<div class="row"><b class="sp" style="font-size:17px">賺錢點子</b><button class="x" data-a="close">×</button></div>
+ <div class="grid"><label class="fl w"><span>點子</span><input value="${E(o.t)}" data-m="sheet.o.t"></label>
+ <div class="fl w"><span>現在進度</span><div class="chips">${IST.map(([k,n])=>`<button class="chip ${o.st===k?'on':''}" data-a="idst" data-i="${k}">${n}</button>`).join('')}</div></div>
+ <label class="fl"><span>預估每月可賺</span><input inputmode="numeric" value="${E(o.est||'')}" data-m="sheet.o.est" placeholder="大概就好"></label>
+ <label class="fl"><span>要先花多少（成本）</span><input inputmode="numeric" value="${E(o.cost||'')}" data-m="sheet.o.cost" placeholder="例：器材、課程"></label>
+ <label class="fl"><span>每週要花幾小時</span><input inputmode="decimal" value="${E(o.hrs||'')}" data-m="sheet.o.hrs"></label><span></span>
+ <label class="fl w"><span>下一步要做什麼</span><input value="${E(o.next||'')}" data-m="sheet.o.next" placeholder="例：問朋友有沒有需要、查平台抽成"></label>
+ <label class="fl w"><span>筆記（想法、優缺點、連結…）</span><textarea rows="5" data-m="sheet.o.n">${E(o.n||'')}</textarea></label></div>
+ ${hourly()&&+o.est>0&&+o.hrs>0?`<div class="sub" style="margin-top:6px">這個點子時薪約 ${M(+o.est/(+o.hrs*52/12))}，你正職的時薪約 ${M(hourly())}。</div>`:''}
+ <div class="row" style="margin-top:14px;gap:8px">${o.id?'<button class="go r" data-a="iddel">刪除</button>':''}<span class="sp"></span><button class="go" data-a="idsave">儲存</button></div>`}
+
 // ── 代墊與欠款 ──
 function iouSum(){const o={in:0,out:0,ppl:{}};(S.iou||[]).forEach(x=>{const l=iouLeft(x);if(l<0.5)return;o[x.dir]+=l;const p=o.ppl[x.who]=o.ppl[x.who]||{in:0,out:0};p[x.dir]+=l});return o}
 function iouCard(){const I=iouSum();if(!I.in&&!I.out)return'';const ps=Object.keys(I.ppl);
@@ -1145,7 +1171,7 @@ function sheetAcct(o){
 const STK=[['stock','我的持股'],['news','股價與新聞'],['calc','複利計算']];
 const stkSeg=()=>`<div class="chips" style="margin:0 0 12px">${STK.map(([k,n])=>`<button class="chip ${U.tab===k?'on':''}" data-a="tab" data-i="${k}">${n}</button>`).join('')}</div>`;
 const TABS=[['home','◎','總覽'],['tx','✎','記帳'],['cal','▦','月曆'],['bills','◷','固定收支'],['stock','↗','股票'],['more','⋯','更多']];
-const MORE=[['check','☑','對帳便條','每週打開網銀看一次，看過就打勾'],['book','▣','獨立帳本','爸媽帳戶、副業：收入和投資另外算'],['iou','⇄','代墊與欠款','幫朋友代墊、誰欠我、我欠誰'],['wallet','◉','我的錢一覽','總餘額、信用卡、每天該存多少、時薪'],['ask','？','要不要買？','想買東西時，像聊天一樣問問看'],['perk','✦','刷卡優惠','在哪裡刷用哪張卡、CUBE 要切哪個權益'],['plan','◫','分帳戶','薪水進來先分好：固定支出、生活費、存錢、投資'],['budget','◔','預算','每個分類一個月能花多少，快超過會提醒'],['chart','▥','圖表','每個月花多少、錢都花在哪'],['imp','⇣','匯入明細','信用卡、銀行、電子發票、截圖'],['set','⚙︎','設定與風格','帳戶、顏色、深色模式、備份'],['guide','?','新手教學','從頭一步一步開始']];
+const MORE=[['idea','✧','賺錢點子','想到能賺錢的方法，先記下來慢慢研究'],['check','☑','對帳便條','每週打開網銀看一次，看過就打勾'],['book','▣','獨立帳本','爸媽帳戶、副業：收入和投資另外算'],['iou','⇄','代墊與欠款','幫朋友代墊、誰欠我、我欠誰'],['wallet','◉','我的錢一覽','總餘額、信用卡、每天該存多少、時薪'],['ask','？','要不要買？','想買東西時，像聊天一樣問問看'],['perk','✦','刷卡優惠','在哪裡刷用哪張卡、CUBE 要切哪個權益'],['plan','◫','分帳戶','薪水進來先分好：固定支出、生活費、存錢、投資'],['budget','◔','預算','每個分類一個月能花多少，快超過會提醒'],['chart','▥','圖表','每個月花多少、錢都花在哪'],['imp','⇣','匯入明細','信用卡、銀行、電子發票、截圖'],['set','⚙︎','設定與風格','帳戶、顏色、深色模式、備份'],['guide','?','新手教學','從頭一步一步開始']];
 let RD=0,RD2=0,KF=0;
 function render(){
  // 換掉畫面時，正在輸入的欄位失焦會觸發 change；那次重畫延後到這次畫完再做
@@ -1157,11 +1183,11 @@ function render(){
 function calmNotes(){document.querySelectorAll('#app .note,#sheet .note').forEach(n=>{const st=n.getAttribute('style')||'';if(n.id||n.classList.contains('keep')||st.includes('--bad')||n.querySelector('input,select,button,textarea'))return;
  const d=document.createElement('details');d.className='tip'+(n.classList.contains('w')?' w':'');d.innerHTML=`<summary>ⓘ ${E(n.dataset.t||'說明')}</summary><div></div>`;d.lastChild.innerHTML=n.innerHTML;n.replaceWith(d)})}
 function renderNow(){
- const y=window.scrollY,V={check:vCheck,book:vBook,iou:vIou,wallet:vWallet,ask:vAsk,perk:vPerk,plan:vPlan,card:vCard,home:vHome,tx:vTx,cal:vCal,bills:vBills,more:vMore,budget:vBudget,chart:vChart,stock:vStock,news:vNews,calc:vCalc,imp:vImp,set:vSet,guide:vGuide},sub=MORE.some(m=>m[0]===U.tab),ae=KF&&document.activeElement,am=ae&&ae.dataset&&ae.dataset.m,cp=am&&ae.selectionStart;KF=0;
+ const y=window.scrollY,V={idea:vIdea,check:vCheck,book:vBook,iou:vIou,wallet:vWallet,ask:vAsk,perk:vPerk,plan:vPlan,card:vCard,home:vHome,tx:vTx,cal:vCal,bills:vBills,more:vMore,budget:vBudget,chart:vChart,stock:vStock,news:vNews,calc:vCalc,imp:vImp,set:vSet,guide:vGuide},sub=MORE.some(m=>m[0]===U.tab),ae=KF&&document.activeElement,am=ae&&ae.dataset&&ae.dataset.m,cp=am&&ae.selectionStart;KF=0;
  CI={};LM=null;normAcct();$('tip').style.display='none';$('eye').textContent='•••• 已隱藏・點兩下顯示';$('eye').classList.toggle('on',HIDE);$('eye').setAttribute('aria-label',HIDE?'顯示金額':'隱藏金額');
  $('app').innerHTML=(sub?'<button class="back" data-a="tab" data-i="more">‹ 更多</button>':'')+V[U.tab]();
  $('nav').innerHTML=TABS.map(([k,i,n])=>`<button class="${U.tab===k||(k==='more'&&sub)||(k==='stock'&&STK.some(x=>x[0]===U.tab))?'on':''}" data-a="tab" data-i="${k}"><b>${i}</b>${n}</button>`).join('');
- const sh=U.sheet,SH={broker:sheetBroker,pay:sheetPay,acctv:sheetAcctV,iou:sheetIou,iback:sheetIback,help:sheetHelp,cyc:sheetCyc,pcard:sheetPCard,pitem:sheetPItem,payee:sheetPayee,start:sheetStart,tx:sheetTx,bill:sheetBill,acct:sheetAcct,trade:sheetTrade,recon:sheetRecon,hold:sheetHold};$('sheet').innerHTML=sh?`<div class="sheet" data-a="bg"><div>${SH[sh.k](sh.o)}</div></div>`:'';
+ const sh=U.sheet,SH={idea:sheetIdea,broker:sheetBroker,pay:sheetPay,acctv:sheetAcctV,iou:sheetIou,iback:sheetIback,help:sheetHelp,cyc:sheetCyc,pcard:sheetPCard,pitem:sheetPItem,payee:sheetPayee,start:sheetStart,tx:sheetTx,bill:sheetBill,acct:sheetAcct,trade:sheetTrade,recon:sheetRecon,hold:sheetHold};$('sheet').innerHTML=sh?`<div class="sheet" data-a="bg"><div>${SH[sh.k](sh.o)}</div></div>`:'';
  calmNotes();window.scrollTo(0,y);
  document.querySelectorAll('[data-entry]').forEach(el=>{const k=el.dataset.entry,P=S.perk||{},r=k==='sum'?P.sum&&P.sum.r:(P.cache[pkKey(P.q,P.amt)]||{}).r,html=r&&r._entry;if(html){try{el.attachShadow({mode:'open'}).innerHTML=html}catch(e){}}});
  if(am){const f=document.querySelector(`[data-m="${am}"]`);if(f&&f.tagName!=='SELECT'){f.focus();try{f.setSelectionRange(cp,cp)}catch(e){}}}
@@ -1594,6 +1620,13 @@ const ACT={
  bksave:()=>{const o=U.sheet.o,name=(o.pick&&o.pick!=='其他'?o.pick:String(o.name||'')).trim();if(!name)return toast('請選擇或輸入券商');
   const b=o.id&&BK().find(x=>x.id===o.id)||{id:'bk'+nid()};Object.assign(b,{name,no:String(o.no||'').trim(),acct:o.acct||'',note:String(o.note||'').trim(),disc:pAmt(o.disc)>0&&pAmt(o.disc)<=1?pAmt(o.disc):null,min:String(o.min==null?'':o.min).trim()===''?null:pAmt(o.min)||0});if(!BK().includes(b))BK().push(b);U.sa=b.id;U.sheet=null;save();render();toast('已儲存 '+name)},
  bkdel:()=>{const id=U.sheet.o.id;if(!confirm('刪除這個證券戶？（交易紀錄不會刪，會改成用交割帳戶分）'))return;S.brokers=BK().filter(x=>x.id!==id);S.trades.forEach(t=>{if(t.bk===id)delete t.bk});U.sa='';U.sheet=null;save();render()},
+ idadd:()=>{const el=$('idq'),t=String(el&&el.value||'').trim();if(!t)return toast('先打一句話');IDS().push({id:nid(),t,st:'idea',d:today(),up:Date.now()});save();render();toast('記下來了 ✧')},
+ idf:i=>{U.if=i;render()},
+ idedit:i=>{const x=IDS().find(y=>y.id===i);if(x){U.sheet={k:'idea',o:Object.assign({},x)};render()}},
+ idst:i=>{U.sheet.o.st=i;render()},
+ idnext:i=>{const x=IDS().find(y=>y.id===i);if(!x)return;const k=IST.findIndex(s=>s[0]===x.st);if(k<3){x.st=IST[k+1][0];x.up=Date.now();save();render();toast('改成「'+IST[k+1][1]+'」')}},
+ idsave:()=>{const o=U.sheet.o;if(!String(o.t||'').trim())return toast('請寫點子');const x=IDS().find(y=>y.id===o.id);if(!x)return;Object.assign(x,{t:o.t.trim(),st:o.st,est:pAmt(o.est)||'',cost:pAmt(o.cost)||'',hrs:pAmt(o.hrs)||'',next:String(o.next||'').trim(),n:String(o.n||'').trim(),up:Date.now()});U.sheet=null;save();render()},
+ iddel:()=>{if(!confirm('刪除這個點子？（不想做可以改成「先放著」）'))return;S.ideas=IDS().filter(y=>y.id!==U.sheet.o.id);U.sheet=null;save();render()},
  az:()=>{U.az=!U.az;render()},
  shopall:()=>{U.shopAll=!U.shopAll;render()},
  cat:i=>{const o=U.sheet.o;o.cat=i;o.catSet=1;render()},
@@ -1772,7 +1805,7 @@ window.addEventListener('scroll',()=>{tipEl.style.display='none'},{passive:true}
 let TAP0=0,TAPX=0,TAPY=0;
 document.addEventListener('pointerup',e=>{if(e.pointerType==='mouse'&&e.button)return;const t=e.target;if(t.closest('input,select,textarea,button,a,label,[data-a],.sheet,nav,svg'))return TAP0=0;
  const n=Date.now();if(n-TAP0<350&&Math.abs(e.clientX-TAPX)<30&&Math.abs(e.clientY-TAPY)<30){TAP0=0;ACT.eye()}else{TAP0=n;TAPX=e.clientX;TAPY=e.clientY}});
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='askq'&&!e.isComposing){e.preventDefault();ACT.asksend();return}if(e.key==='Enter'&&e.target.id==='pkq'&&!e.isComposing){e.preventDefault();S.perk.q=e.target.value;save();perkGo(false)}});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='idq'&&!e.isComposing){e.preventDefault();ACT.idadd();return}if(e.key==='Enter'&&e.target.id==='askq'&&!e.isComposing){e.preventDefault();ACT.asksend();return}if(e.key==='Enter'&&e.target.id==='pkq'&&!e.isComposing){e.preventDefault();S.perk.q=e.target.value;save();perkGo(false)}});
 document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el)return;if(el.tagName==='A')e.preventDefault();const f=ACT[el.dataset.a];if(f)f(el.dataset.i,el,e)});
 function field(e){
  const el=e.target,p=el.dataset&&el.dataset.m;if(!p)return;
