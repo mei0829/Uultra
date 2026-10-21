@@ -650,7 +650,7 @@ const HELP=[
  ['plan','分帳戶：這個月可以花多少',['plan'],`薪水進來先分好：收入 − 一定要繳的（房貸、帳單）＝ 可以分配的錢。<br>按「<b>套用這個建議</b>」會自動分成生活費 50%、想買的 20%、存起來 30%，再點每一塊調整。<br>分給生活費的就是這個月能花的，總覽最上面會顯示「<b>這個月還可以花</b>」。`],
  ['imp','匯入明細、截圖辨識',['imp'],`「更多 → 匯入明細」：<br>・銀行／信用卡網站下載的 <b>CSV</b> 直接選檔<br>・<b>截圖</b>或刷卡簡訊：選「用 AI 辨識」<br>・電子發票載具的 CSV 也可以<br>重複的會自動不勾選；轉到自己帳戶的，可以把類型改成「轉到…」，就不會算成支出。`],
  ['perk','刷卡優惠：用哪張卡最划算',['perk'],`打要去哪裡刷（例：中油、夢時代），按「幫我比較」，AI 會上網查現在的優惠，告訴你用哪張卡、CUBE 要切哪個權益。<br>在「我的卡」幫每張卡填<b>官方卡名</b>，查得比較準。每天第一次打開會自動更新各卡重點。結果僅供參考，刷大筆前到銀行 App 確認。`],
- ['stocka','好幾個證券戶怎麼分開看？股價會即時跳嗎？',['stock'],`<b>新增證券戶</b>：股票頁最上面按「<b>＋ 證券戶</b>」，選券商（例如國泰證券）、填<b>證券帳號</b>、選<b>交割銀行帳戶</b>（買賣股票的錢從哪個銀行戶頭進出，沒有的話先到「設定 → 帳戶」新增）。一間一間加。<br>記交易時「哪個證券戶」選它，錢會自動從交割帳戶扣。以前用同一個交割帳戶記的交易，會自動算到這個證券戶。<br>股票頁最上面會出現每個證券戶的按鈕，點了就只看那個戶的市值、賺賠、持股、交易明細和每月收益；點「全部帳戶」看合計。<br><b>股價</b>：不是即時跳動。每天第一次打開自動抓一次（台股用收盤價，下午收盤後才更新；美股抓最新價），想再抓按「更新股價」。持股旁邊會顯示當天漲跌幾 %，漲停、跌停（台股 ±10%）會標出來。`],
+ ['stocka','好幾個證券戶怎麼分開看？股價會即時跳嗎？',['stock'],`<b>新增證券戶</b>：股票頁最上面按「<b>＋ 證券戶</b>」，選券商（例如國泰證券）、填<b>證券帳號</b>、選<b>交割銀行帳戶</b>（買賣股票的錢從哪個銀行戶頭進出，沒有的話先到「設定 → 帳戶」新增）。一間一間加。<br>記交易時「哪個證券戶」選它，錢會自動從交割帳戶扣。<br><b>手續費優惠</b>：點進證券戶，按「AI 上網查手續費優惠」，會整理折扣、最低手續費、月退或當日折抵、美股複委託費率，附資料來源；按「套用」之後在這個證券戶記交易會用這個折扣算。也可以按「修改」自己填。AI 整理的以券商官網為準。以前用同一個交割帳戶記的交易，會自動算到這個證券戶。<br>股票頁最上面會出現每個證券戶的按鈕，點了就只看那個戶的市值、賺賠、持股、交易明細和每月收益；點「全部帳戶」看合計。<br><b>股價</b>：不是即時跳動。每天第一次打開自動抓一次（台股用收盤價，下午收盤後才更新；美股抓最新價），想再抓按「更新股價」。持股旁邊會顯示當天漲跌幾 %，漲停、跌停（台股 ±10%）會標出來。`],
  ['stock','股票（台股、美股）',['stock'],`記「買進／賣出／領股利」，網站算持股、賺賠。可以「<b>截圖匯入持股</b>」。<br>每天第一次打開會自動更新股價和美元匯率，抓不到時點「現價」自己填。選了「錢從哪個帳戶進出」，銀行餘額會一起變。`],
  ['budget','預算、圖表、月曆',['budget','chart','cal'],`<b>預算</b>：每個分類一個月最多花多少，用到 80% 變黃、超過變紅。<br><b>圖表</b>：每月花多少、錢花在哪。<br><b>月曆</b>：每天花多少，有小圓點的日子要繳錢。`],
  ['acct','帳戶、子帳戶、帳號',['set'],`「設定 → 帳戶」：銀行選下拉選單會自動帶銀行代碼；同一家銀行的子帳戶會排在一起，信用卡也可以選發卡銀行。<br>帳號只顯示末五碼，<b>點一下藍色的末五碼</b>就會複製完整帳號。也可以存「常用匯款帳號」。`],
@@ -811,14 +811,32 @@ function holdings(ac){
 }
 function stockMonth(m){holdings();const xs=SEV.filter(e=>e.d.startsWith(m));return{div:xs.reduce((s,e)=>s+conv(e.div,e.cur,'TWD'),0),real:xs.reduce((s,e)=>s+conv(e.real,e.cur,'TWD'),0),n:xs.length}}
 const gain=(v,pct,c)=>HIDE?'<span class="num">$ ••••</span>':`<span class="num ${v>0.005?'up':v<-0.005?'down':''}">${v>0.005?'▲ +':v<-0.005?'▼ ':''}${MC(v,c)}${pct!=null&&isFinite(pct)?` (${v>0?'+':''}${(pct*100).toFixed(1)}%)`:''}</span>`;
-function calcFee(o){const a=(+o.sh||0)*(+o.px||0);if(!a||o.type==='div'||o.cur==='USD')return{fee:0,tax:0};return{fee:Math.max(+S.fee.min||0,Math.floor(a*0.001425*(+S.fee.disc||1))),tax:o.type==='sell'?Math.floor(a*(/^00/.test(String(o.sym||'').trim())?0.001:0.003)):0}}
+function calcFee(o){const a=(+o.sh||0)*(+o.px||0);if(!a||o.type==='div'||o.cur==='USD')return{fee:0,tax:0};const b=o.bk&&(S.brokers||[]).find(x=>x.id===o.bk),disc=b&&+b.disc>0?+b.disc:+S.fee.disc||1,mn=b&&b.min!=null&&b.min!==''?+b.min:+S.fee.min||0;return{fee:Math.max(mn,Math.floor(a*0.001425*disc)),tax:o.type==='sell'?Math.floor(a*(/^00/.test(String(o.sym||'').trim())?0.001:0.003)):0}}
 function saName(a){const g=String(a.group||'').replace('銀行','');return(g?g+'・':'')+a.name}
+// AI 上網查這家券商現在的手續費優惠
+function bkFeeBox(b){const f=b.feeInfo;if(U.bkBusy===b.id)return'<div class="note keep" style="margin-top:10px">AI 上網查 '+E(b.name)+' 的手續費優惠中…（約 10～30 秒）</div>';
+ if(!f)return`<button class="go g" style="width:100%;margin-top:10px" data-a="bkfee" data-i="${b.id}">AI 上網查「${E(b.name)}」手續費優惠</button>`;
+ const ok=+f.disc>0||f.min!=null;
+ return`<div class="note keep" style="margin-top:10px;font-size:14px;color:var(--ink)"><div class="row"><b class="sp">手續費優惠（${md(f.d)} 查的）</b><a href="#" class="sub" data-a="bkfee" data-i="${b.id}">重新查</a></div>
+ <div style="margin-top:4px">${+f.disc>0?'台股電子下單 <b>'+(+f.disc*10).toFixed(2).replace(/\.?0+$/,'')+' 折</b>':'台股折扣：查不到'}${f.min!=null?'・最低 <b>$'+E(f.min)+'</b>':''}${f.refund?'・'+E(f.refund):''}</div>
+ ${f.us?`<div class="sub">美股複委託：${E(f.us)}</div>`:''}${f.summary?`<div style="margin-top:4px">${E(f.summary)}</div>`:''}${f.note?`<div class="sub" style="margin-top:2px">條件：${E(f.note)}</div>`:''}
+ ${ok?`<button class="go q" style="margin-top:8px" data-a="bkfeeuse" data-i="${b.id}">套用到這個證券戶</button>`:''}
+ ${pkSrc(f)}<div class="sub" style="margin-top:4px">⚠︎ AI 整理的不一定完全正確，優惠常常變，以券商官網或營業員說的為準。</div></div>`}
+async function bkFeeGo(id){const b=(S.brokers||[]).find(x=>x.id===id);if(!b)return;U.bkBusy=id;render();
+ try{const r=await askAI(`你是台灣證券手續費顧問。今天是 ${today()}。請用 Google 搜尋「${b.name}」目前的股票手續費優惠（優先看券商官網、近期新聞或比較文章），整理：台股電子下單手續費折扣、最低手續費、折讓方式（當日折抵／日退／月退）、美股複委託費率、申請條件或限制（例如新戶、年齡、期限）。只根據搜尋結果，查不到的欄位填 null 或空字串，不要編造。
+只回傳 JSON（不要其他文字）：{"disc":0.28,"min":20,"refund":"月退","us":"美股複委託費率簡述","summary":"2～3 句重點","note":"條件或限制"}（disc 是幾折換成小數，例如 2.8 折＝0.28；查不到就 null）`,null,true);
+  b.feeInfo={d:today(),disc:r&&+r.disc>0&&+r.disc<=1?+r.disc:null,min:r&&r.min!=null&&isFinite(+r.min)?+r.min:null,refund:String(r&&r.refund||''),us:String(r&&r.us||''),summary:String(r&&r.summary||''),note:String(r&&r.note||''),_src:(r&&r._src||[]).slice(0,6)};save()}
+ catch(e){console.error(e);toast(aiErr(e))}
+ U.bkBusy=0;render()}
+
 function sheetBroker(o){const known=BROKERS.includes(o.name);return`<div class="row"><b class="sp" style="font-size:17px">${o.id?'修改證券戶':'新增證券戶'}</b><button class="x" data-a="close">×</button></div>
  <div class="grid"><label class="fl w"><span>券商</span><select data-m="sheet.o.pick" data-r="1"><option value="">選擇券商</option>${BROKERS.map(n=>`<option ${(o.pick||'')===n?'selected':''}>${n}</option>`).join('')}<option value="其他" ${o.pick==='其他'?'selected':''}>其他（自己打）</option></select></label>
  ${o.pick==='其他'?`<label class="fl w"><span>券商名稱</span><input value="${E(o.name)}" data-m="sheet.o.name" placeholder="例：XX 證券"></label>`:''}
  <label class="fl w"><span>證券帳號 ${o.no?copyTag(o.no,'複製'):''}</span><input inputmode="numeric" value="${E(o.no)}" data-m="sheet.o.no" placeholder="例：9A12-1234567"></label>
  <label class="fl w"><span>交割銀行帳戶（買賣股票的錢從這裡進出）</span><select data-m="sheet.o.acct"><option value="">還沒選</option>${S.accts.filter(a=>!isCard(a)).map(a=>`<option value="${a.id}" ${o.acct===a.id?'selected':''}>${E(nm(a))}</option>`).join('')}</select></label>
- <label class="fl w"><span>備註</span><input value="${E(o.note)}" data-m="sheet.o.note" placeholder="例：手續費 2.8 折、美股複委託"></label></div>
+ <label class="fl"><span>手續費折扣（2.8 折填 0.28）</span><input inputmode="decimal" value="${E(o.disc==null?'':o.disc)}" data-m="sheet.o.disc" placeholder="空白＝用預設"></label>
+ <label class="fl"><span>最低手續費</span><input inputmode="numeric" value="${E(o.min==null?'':o.min)}" data-m="sheet.o.min" placeholder="例：20"></label>
+ <label class="fl w"><span>備註</span><input value="${E(o.note)}" data-m="sheet.o.note" placeholder="例：月退、美股複委託"></label></div>
  <div class="sub" style="margin-top:6px">交割帳戶是銀行的戶頭，沒有的話先到「設定 → 帳戶」新增。以前用這個交割帳戶記的交易，會自動算到這個證券戶。</div>
  <div class="row" style="margin-top:14px;gap:8px">${o.id?'<button class="go r" data-a="bkdel">刪除</button>':''}<span class="sp"></span><button class="go" data-a="bksave">儲存</button></div>`}
 
@@ -829,7 +847,8 @@ function vStock(){
  const T=(h,k)=>conv(h[k],h.cur,'TWD'),sum=(xs,k)=>xs.reduce((s,h)=>s+T(h,k),0);
  const val=sum(on,'val'),cost=sum(on,'cost'),un=sum(on,'unreal'),re=sum(hs,'real'),dv=sum(hs,'div'),hasUS=hs.some(h=>h.cur==='USD')||S.accts.some(a=>a.cur==='USD');
  let h=`<h1>股票</h1>${stkSeg()}<div class="fs" style="margin-bottom:10px;scrollbar-width:none">${acs.length?`<button class="chip ${U.sa?'':'on'}" data-a="sa" data-i="">全部</button>`:''}${acs.map(k=>`<button class="chip ${U.sa===k?'on':''}" data-a="sa" data-i="${k}">${E(keyName(k))}</button>`).join('')}<button class="chip" data-a="bkadd">＋ 證券戶</button></div>
- ${curB?`<div class="card"><div class="row"><div class="sp"><b>${E(curB.name)}</b><div class="sub">證券帳號 ${curB.no?copyTag(curB.no,curB.no):'沒填'}</div><div class="sub">交割帳戶 ${A(curB.acct)?E(nm(A(curB.acct)))+' '+MA(A(curB.acct)):'沒選'}</div>${curB.note?`<div class="sub">${E(curB.note)}</div>`:''}</div><button class="go q" data-a="bkedit" data-i="${curB.id}">修改</button></div></div>`:''}
+ ${curB?`<div class="card"><div class="row"><div class="sp"><b>${E(curB.name)}</b><div class="sub">證券帳號 ${curB.no?copyTag(curB.no,curB.no):'沒填'}</div><div class="sub">交割帳戶 ${A(curB.acct)?E(nm(A(curB.acct)))+' '+MA(A(curB.acct)):'沒選'}</div>${curB.note?`<div class="sub">${E(curB.note)}</div>`:''}<div class="sub">手續費 ${+curB.disc>0?(+curB.disc*10).toFixed(2).replace(/\.?0+$/,'')+' 折':'用預設'}${curB.min!=null&&curB.min!==''?'・最低 $'+curB.min:''}</div></div><button class="go q" data-a="bkedit" data-i="${curB.id}">修改</button></div>
+ ${bkFeeBox(curB)}</div>`:''}
  <div class="card"><div class="sub">${U.sa?E(keyName(U.sa))+' ':''}目前市值</div><div class="big">${M(val)}</div><div class="sub">投入成本 ${M(cost)}</div>
  <div class="tiles"><div><span class="sub">還沒賣的賺賠</span><b>${gain(un)}</b></div><div><span class="sub">已經賣掉賺賠</span><b>${gain(re)}</b></div><div><span class="sub">領到的股利</span><b class="num">${M(dv)}</b></div></div>
  <div class="msg">全部加起來：${gain(un+re+dv)}</div><div class="note" data-t="顏色、股價怎麼更新？">紅色＝賺、綠色＝賠（台股習慣）。股價<b>不是即時跳動</b>的：每天第一次打開會自動抓一次（台股用證交所公布的<b>收盤價</b>，下午收盤後才會更新；美股抓最新價），想再抓按「更新股價」。旁邊會顯示當天漲跌，漲停跌停（±10%）也會標出來。抓不到的點「現價」手動改。${hasUS?'美股都用目前匯率換成台幣加總。':''}</div></div>
@@ -1570,10 +1589,12 @@ const ACT={
  avadd:i=>{const a=A(i);openTx({type:'out',amt:'',acct:i,to:'',cat:'',d:today(),note:''})},
  fee15:()=>{const o=U.sheet.o,a=pAmt(o.amt)||0;if(!a)return toast('先輸入金額');o.fee=String(Math.round(a*0.015));const f=document.querySelector('[data-m="sheet.o.fee"]');if(f)f.value=o.fee;const n=$('feetot');if(n)n.textContent=feeTot(o)},
  sa:i=>{U.sa=i;render()},
+ bkfee:i=>bkFeeGo(i),
+ bkfeeuse:i=>{const b=(S.brokers||[]).find(x=>x.id===i),f=b&&b.feeInfo;if(!f)return;if(+f.disc>0)b.disc=f.disc;if(f.min!=null)b.min=f.min;save();render();toast('已套用，之後在這個證券戶記交易會用這個手續費算')},
  bkadd:()=>{U.sheet={k:'broker',o:{pick:'',name:'',no:'',acct:U.sa&&U.sa.startsWith('a:')?U.sa.slice(2):'',note:''}};render()},
  bkedit:i=>{const b=BK().find(x=>x.id===i);if(b)U.sheet={k:'broker',o:Object.assign({},b,{pick:BROKERS.includes(b.name)?b.name:'其他'})};render()},
  bksave:()=>{const o=U.sheet.o,name=(o.pick&&o.pick!=='其他'?o.pick:String(o.name||'')).trim();if(!name)return toast('請選擇或輸入券商');
-  const b=o.id&&BK().find(x=>x.id===o.id)||{id:'bk'+nid()};Object.assign(b,{name,no:String(o.no||'').trim(),acct:o.acct||'',note:String(o.note||'').trim()});if(!BK().includes(b))BK().push(b);U.sa=b.id;U.sheet=null;save();render();toast('已儲存 '+name)},
+  const b=o.id&&BK().find(x=>x.id===o.id)||{id:'bk'+nid()};Object.assign(b,{name,no:String(o.no||'').trim(),acct:o.acct||'',note:String(o.note||'').trim(),disc:pAmt(o.disc)>0&&pAmt(o.disc)<=1?pAmt(o.disc):null,min:String(o.min==null?'':o.min).trim()===''?null:pAmt(o.min)||0});if(!BK().includes(b))BK().push(b);U.sa=b.id;U.sheet=null;save();render();toast('已儲存 '+name)},
  bkdel:()=>{const id=U.sheet.o.id;if(!confirm('刪除這個證券戶？（交易紀錄不會刪，會改成用交割帳戶分）'))return;S.brokers=BK().filter(x=>x.id!==id);S.trades.forEach(t=>{if(t.bk===id)delete t.bk});U.sa='';U.sheet=null;save();render()},
  az:()=>{U.az=!U.az;render()},
  shopall:()=>{U.shopAll=!U.shopAll;render()},
@@ -1769,6 +1790,7 @@ function field(e){
  if(el.dataset.fe||el.dataset.hr){const n=$('feetot');if(n)n.textContent=feeTot(U.sheet.o)}
  if(el.dataset.hr){const n=$('fhrs');if(n)n.textContent=hrsLine(U.sheet.o)}
  if(el.dataset.cn){const n=$('cardnote');if(n)n.innerHTML=cardNote(U.sheet.o)}
+ if(p==='sheet.o.bk'&&U.sheet.o.sh!=null&&!U.sheet.o.feeSet){const f=calcFee(U.sheet.o);U.sheet.o.fee=f.fee||'';U.sheet.o.tax=f.tax||''}
  if(el.dataset.fee&&!U.sheet.o.feeSet){const o=U.sheet.o,f=calcFee(o);o.fee=f.fee;o.tax=f.tax;const a=$('tfee'),b=$('ttax');if(a)a.value=f.fee;if(b)b.value=f.tax}
  if(el.dataset.g){const o=U.sheet.o;if(p==='sheet.o.shop'){o.shopSet=!!o.shop;document.querySelectorAll('[data-a="shop"]').forEach(b=>b.classList.toggle('on',b.dataset.i===o.shop))}else if(!o.shopSet&&o.type!=='xfer'){const f=shopFind(o.note);if(f!==(o.shop||'')){o.shop=f;const si=$('fshop');if(si)si.value=f;document.querySelectorAll('[data-a="shop"]').forEach(b=>b.classList.toggle('on',b.dataset.i===f))}}
   if(!o.catSet){const g=guess(o.note+' '+(o.shop||''),o.type);if(g&&g!==o.cat){o.cat=g;document.querySelectorAll('[data-a="cat"]').forEach(b=>b.classList.toggle('on',b.dataset.i===g))}}}
