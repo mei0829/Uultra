@@ -853,13 +853,29 @@ function vStock(){
  h+=`<h2>手續費設定（台股）</h2><div class="card"><div class="grid"><label class="fl"><span>手續費折扣（6 折填 0.6）</span><input inputmode="decimal" data-m="fee.disc" data-s="1" value="${E(S.fee.disc)}"></label><label class="fl"><span>最低手續費</span><input inputmode="numeric" data-m="fee.min" data-s="1" value="${E(S.fee.min)}"></label></div><div class="note" data-t="手續費怎麼算？">手續費＝成交金額 × 0.1425% × 折扣；賣出時另扣證交稅 0.3%（00 開頭的 ETF 是 0.1%）。記交易時會自動算，也可以手動改。</div></div>`;
  return h;
 }
+// 股票代號 → 名稱：台股抓證交所／櫃買中心的全部清單（一天抓一次存起來），美股用常見清單
+const USN={VOO:'Vanguard S&P 500 ETF',VTI:'Vanguard 全市場 ETF',VT:'Vanguard 全世界 ETF',QQQ:'Invesco 那斯達克100 ETF',SPY:'SPDR S&P 500 ETF',IVV:'iShares S&P 500 ETF',BND:'Vanguard 總體債券 ETF',VYM:'Vanguard 高股息 ETF',SCHD:'Schwab 美國股息 ETF',VNQ:'Vanguard 房地產 ETF',SOXX:'iShares 半導體 ETF',SMH:'VanEck 半導體 ETF',TLT:'iShares 20年期以上美債 ETF',AAPL:'蘋果 Apple',MSFT:'微軟 Microsoft',NVDA:'輝達 NVIDIA',TSLA:'特斯拉 Tesla',GOOGL:'Alphabet（Google）A',GOOG:'Alphabet（Google）C',AMZN:'亞馬遜 Amazon',META:'Meta（Facebook）',TSM:'台積電 ADR',AVGO:'博通 Broadcom',AMD:'超微 AMD',INTC:'英特爾 Intel',NFLX:'Netflix',KO:'可口可樂',PEP:'百事',JNJ:'嬌生',PG:'寶僑',V:'Visa',MA:'Mastercard',JPM:'摩根大通',BRK_B:'波克夏 B',DIS:'迪士尼',COST:'好市多 Costco',WMT:'沃爾瑪',MCD:'麥當勞',NKE:'Nike',SBUX:'星巴克',O:'Realty Income',PLTR:'Palantir',ARM:'Arm',ASML:'艾司摩爾 ASML'};
+let SYMN=(()=>{try{return JSON.parse(localStorage.getItem('money-symn')||'null')}catch(e){return null}})();
+async function symLoad(){if(SYMN&&SYMN.d===today()&&Object.keys(SYMN.m||{}).length>100)return;const m={};
+ for(const[u,kc,kn]of[['https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL','Code','Name'],['https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes','SecuritiesCompanyCode','CompanyName']]){
+  try{const r=await fetch(u);if(!r.ok)continue;const js=await r.json();if(Array.isArray(js))js.forEach(x=>{const c=String(x[kc]||'').trim().toUpperCase(),n=String(x[kn]||'').trim();if(c&&n)m[c]=n})}catch(e){}}
+ if(Object.keys(m).length){SYMN={d:today(),m};try{localStorage.setItem('money-symn',JSON.stringify(SYMN))}catch(e){}}}
+function symName(c,cur){c=String(c||'').trim().toUpperCase();if(!c)return'';const h=(S.trades||[]).find(t=>t.sym===c&&t.name);if(h)return h.name;
+ if(cur==='USD'||/^[A-Z][A-Z.\-]*$/.test(c))return USN[c.replace(/[.\-]/g,'_')]||'';return(SYMN&&SYMN.m&&SYMN.m[c])||''}
+// 打代號或中文名稱都能找：列出最多 20 個符合的
+function symOpts(q,cur){q=String(q||'').trim().toUpperCase();const own=holdings().map(x=>[x.sym,x.name]),seen=new Set(),out=[];
+ const add=(c,n)=>{if(!seen.has(c)&&out.length<20){seen.add(c);out.push(`<option value="${E(c)}">${E(n||'')}</option>`)}};
+ own.forEach(([c,n])=>{if(!q||c.startsWith(q)||String(n).toUpperCase().includes(q))add(c,n)});
+ if(q){const src=cur==='USD'?Object.keys(USN).map(k=>[k.replace('_','.'),USN[k]]):Object.entries((SYMN&&SYMN.m)||{});src.forEach(([c,n])=>{if(c.startsWith(q)||String(n).toUpperCase().includes(q))add(c,n)})}
+ return out.join('')}
+
 function sheetTrade(o){
  const dv=o.type==='div',us=o.cur==='USD';
  return`<div class="row"><b class="sp" style="font-size:17px">${o.id?'編輯交易':'記一筆交易'}</b><button class="x" data-a="close">×</button></div>
  <div class="chips" style="margin:8px 0">${[['buy','買進'],['sell','賣出'],['div','領股利']].map(([k,n])=>`<button class="chip ${o.type===k?'on':''}" data-a="tt" data-i="${k}">${n}</button>`).join('')}</div>
  <div class="chips" style="margin-bottom:8px">${[['TWD','台股（台幣）'],['USD','美股（美元）']].map(([k,n])=>`<button class="chip ${(o.cur||'TWD')===k?'on':''}" data-a="tmk" data-i="${k}">${n}</button>`).join('')}</div>
- <div class="grid"><label class="fl"><span>股票代號</span><input value="${E(o.sym)}" data-m="sheet.o.sym" data-fee="1" placeholder="${us?'例：VOO、AAPL':'例：0050'}" list="symlist"></label>
- <label class="fl"><span>名稱</span><input value="${E(o.name)}" data-m="sheet.o.name" placeholder="${us?'例：Vanguard S&P 500':'例：元大台灣50'}"></label>
+ <div class="grid"><label class="fl"><span>股票代號</span><input value="${E(o.sym)}" data-m="sheet.o.sym" data-fee="1" data-sym="name" placeholder="${us?'例：VOO、AAPL':'例：0050 或 台積'}" list="symlist" autocomplete="off"></label>
+ <label class="fl"><span>名稱（會自動帶）</span><input id="symname" value="${E(o.name)}" data-ns="1" data-m="sheet.o.name" placeholder="${us?'例：Vanguard S&P 500':'例：元大台灣50'}"></label>
  <label class="fl"><span>日期</span><input type="date" value="${o.d}" data-m="sheet.o.d"></label>
  ${dv?`<label class="fl"><span>領到多少錢${us?'（美元，扣稅後）':''}</span><input inputmode="decimal" value="${E(o.amt)}" data-m="sheet.o.amt"></label>`:`
   <label class="fl"><span>${us?'股數（可以有小數）':'股數（1 張＝1000 股）'}</span><input inputmode="decimal" value="${E(o.sh)}" data-m="sheet.o.sh" data-fee="1"></label>
@@ -868,7 +884,7 @@ function sheetTrade(o){
  ${o.type==='sell'&&!us?`<label class="fl"><span>證交稅</span><input id="ttax" inputmode="numeric" value="${E(o.tax)}" data-m="sheet.o.tax" data-fs="1"></label>`:''}`}
  ${BK().length?`<label class="fl w"><span>哪個證券戶</span><select data-m="sheet.o.bk" data-r="1"><option value="">沒有／其他</option>${BK().map(b=>`<option value="${b.id}" ${o.bk===b.id?'selected':''}>${E(keyName(b.id))}</option>`).join('')}</select></label>`:''}
  ${o.bk&&BK().find(b=>b.id===o.bk)?`<div class="sub w">錢會從交割帳戶「${E(((A(BK().find(b=>b.id===o.bk).acct))&&nm(A(BK().find(b=>b.id===o.bk).acct)))||'沒選')}」進出</div>`:`<label class="fl w"><span>錢從哪個帳戶進出（選了會一起更新餘額）</span><select data-m="sheet.o.acct"><option value="">不連動</option>${S.accts.filter(a=>!isCard(a)).map(a=>`<option value="${a.id}" ${o.acct===a.id?'selected':''}>${E(nm(a))}</option>`).join('')}</select></label>${BK().length?'':'<div class="sub w">有好幾個證券戶？到股票頁按「＋ 證券戶」新增，填證券帳號和交割帳戶，記交易時選它就好。</div>'}`}</div>
- <datalist id="symlist">${holdings().map(x=>`<option value="${E(x.sym)}">${E(x.name)}</option>`).join('')}</datalist>
+ <datalist id="symlist">${symOpts(o.sym,o.cur)}</datalist>
  <div class="row" style="margin-top:14px;gap:8px">${o.id?'<button class="go r" data-a="deltrade">刪除</button>':''}<span class="sp"></span><button class="go" data-a="savetrade">儲存</button></div>`;
 }
 
@@ -1066,7 +1082,7 @@ function sheetBill(o){
  <div class="chips" style="margin:8px 0">${[['out','要繳的錢'],['in','固定收入'],['inv','定期投資'],['save','存錢']].map(([k,n])=>`<button class="chip ${K===k?'on':''}" data-a="bk" data-i="${k}">${n}</button>`).join('')}</div>
  <div class="sub" style="margin-bottom:4px">${tip}</div>
  <div class="grid"><label class="fl w"><span>名稱</span><input value="${E(o.name)}" data-m="sheet.o.name" placeholder="${inv?'例：0050 定期定額':inc?'例：薪水':sv?'例：強迫儲蓄、旅遊基金':'例：房貸'}"></label>
- ${inv?`<div class="fl w"><span>市場</span><div class="chips">${[['TWD','台股（台幣）'],['USD','美股（美元）']].map(([k,n])=>`<button class="chip ${(o.cur||'TWD')===k?'on':''}" data-a="bmk" data-i="${k}">${n}</button>`).join('')}</div></div><label class="fl"><span>股票代號</span><input value="${E(o.sym||'')}" data-m="sheet.o.sym" placeholder="例：0050"></label><label class="fl"><span>股票名稱（選填）</span><input value="${E(o.sname||'')}" data-m="sheet.o.sname" placeholder="例：元大台灣50"></label>`:''}
+ ${inv?`<div class="fl w"><span>市場</span><div class="chips">${[['TWD','台股（台幣）'],['USD','美股（美元）']].map(([k,n])=>`<button class="chip ${(o.cur||'TWD')===k?'on':''}" data-a="bmk" data-i="${k}">${n}</button>`).join('')}</div></div><label class="fl"><span>股票代號</span><input value="${E(o.sym||'')}" data-m="sheet.o.sym" data-sym="sname" list="symlist2" autocomplete="off" placeholder="例：0050"></label><label class="fl"><span>股票名稱（選填）</span><input value="${E(o.sname||'')}" id="symname" data-ns="1" data-m="sheet.o.sname" placeholder="例：元大台灣50"></label><datalist id="symlist2">${symOpts(o.sym,o.cur)}</datalist>`:''}
  <label class="fl"><span>${inv?'每期扣款金額'+(o.cur==='USD'?'（美元）':''):inc?'每次金額':sv?'每次存多少':'每次金額（大概就好）'}</span><input inputmode="decimal" value="${E(o.amt)}" data-m="sheet.o.amt"></label>
  <label class="fl"><span>多久一次</span><select data-m="sheet.o.freq" data-n="1" data-r="1">${FQ.map(([v,n])=>`<option value="${v}" ${+o.freq===v?'selected':''}>${n}</option>`).join('')}</select></label>
  <label class="fl"><span>下次${inc?'入帳':sv?'存錢':'繳費／扣款'}日</span><input type="date" value="${o.next}" data-m="sheet.o.next"></label>
@@ -1483,7 +1499,7 @@ const setP=(o,p,v)=>{const k=p.split('.');let a=o;while(k.length>1)a=a[k.shift()
 const getP=(o,p)=>p.split('.').reduce((a,k)=>a==null?a:a[k],o);
 function openTx(o){U.sheet={k:'tx',o};U.shopAll=false;render();if(!o.id)setTimeout(()=>{const f=$('famt');f&&f.focus()},50)}
 const saveTo=from=>(S.accts.find(a=>!isCard(a)&&a.id!==from&&/存|儲|定存|基金/.test(a.name+(a.group||'')))||S.accts.find(a=>a.type==='bank'&&a.id!==from)||S.accts.find(a=>!isCard(a)&&a.id!==from)||{}).id||'';
-function openBill(o){U.sheet={k:'bill',o};render()}
+function openBill(o){U.sheet={k:'bill',o};render();if(o.kind==='inv')symLoad()}
 // 固定項目變成一筆紀錄；「存錢」記成帳戶互轉（不算花費）
 const billTx=(b,o)=>Object.assign(b.kind==='save'?{type:'xfer',acct:b.acct,to:b.to,cat:''}:{type:b.kind==='in'?'in':'out',acct:b.acct,cat:b.cat},{note:b.name,bill:b.id},o);
 function autoBills(){
@@ -1600,7 +1616,7 @@ const ACT={
  edbill:i=>{const b=S.bills.find(x=>x.id===i);if(b)openBill(Object.assign({},b,{fund:(S.bills.find(x=>x.id===b.fb)||{}).to||''}))},
  bauto:i=>{const o=U.sheet.o;o.auto=i==='1';if(o.auto&&o.autoRec==null)o.autoRec=true;render()},
  bmk:i=>{U.sheet.o.cur=i;render()},
- bk:i=>{const o=U.sheet.o;o.kind=i;if(i==='save'&&(!o.to||o.to===o.acct))o.to=saveTo(o.acct);const cs=S.cats[i==='in'?'in':'out'];if(!cs.includes(o.cat))o.cat=cs[0];if(i!=='out'&&isCard(A(o.acct)))o.acct=firstBank();render()},
+ bk:i=>{const o=U.sheet.o;o.kind=i;if(i==='inv')symLoad();if(i==='save'&&(!o.to||o.to===o.acct))o.to=saveTo(o.acct);const cs=S.cats[i==='in'?'in':'out'];if(!cs.includes(o.cat))o.cat=cs[0];if(i!=='out'&&isCard(A(o.acct)))o.acct=firstBank();render()},
  savebill:()=>{const o=U.sheet.o,amt=pAmt(o.amt);
   if(!o.name.trim())return toast('請輸入名稱');if(!(amt>=0))return toast('請輸入金額');if(!o.next)return toast('請選日期');
   if(o.end&&o.end<o.next)return toast('最後一期不能早於下次扣款日');if(o.kind==='inv'&&!String(o.sym||'').trim())return toast('請輸入要買的股票代號');
@@ -1734,8 +1750,8 @@ Object.assign(ACT,{
  cn:i=>{U.cn=+i;render()},
  chm:i=>{U.chm=i;render()},
  px:i=>{const p=S.prices[i],h=holdings().find(x=>x.sym===i),v=prompt(i+' 現在的股價'+(h&&h.cur==='USD'?'（美元）':''),p?p.p:'');if(v===null)return;const n=pAmt(v);if(!(n>0))return toast('股價不正確');S.prices[i]={p:n,d:today()};save();render()},
- addtrade:()=>{const b=BK().find(x=>x.id===U.sa)||(!U.sa&&BK().find(x=>x.id===S.lastBK));U.sheet={k:'trade',o:{type:'buy',cur:'TWD',sym:'',name:'',d:today(),sh:'',px:'',fee:'',tax:'',amt:'',bk:b?b.id:'',acct:b?b.acct:U.sa&&U.sa.startsWith('a:')?U.sa.slice(2):(A(S.lastTA)?S.lastTA:'')}};render()},
- edtrade:i=>{const t=S.trades.find(x=>x.id===i);if(t){const k=tradeKey(t);U.sheet={k:'trade',o:Object.assign({amt:'',fee:'',tax:''},t,{feeSet:1,bk:BK().some(b=>b.id===k)?k:''})};render()}},
+ addtrade:()=>{symLoad();const b=BK().find(x=>x.id===U.sa)||(!U.sa&&BK().find(x=>x.id===S.lastBK));U.sheet={k:'trade',o:{type:'buy',cur:'TWD',sym:'',name:'',d:today(),sh:'',px:'',fee:'',tax:'',amt:'',bk:b?b.id:'',acct:b?b.acct:U.sa&&U.sa.startsWith('a:')?U.sa.slice(2):(A(S.lastTA)?S.lastTA:'')}};render()},
+ edtrade:i=>{symLoad();const t=S.trades.find(x=>x.id===i);if(t){const k=tradeKey(t);U.sheet={k:'trade',o:Object.assign({amt:'',fee:'',tax:''},t,{feeSet:1,bk:BK().some(b=>b.id===k)?k:''})};render()}},
  tmk:i=>{const o=U.sheet.o;o.cur=i;if(!o.feeSet)Object.assign(o,calcFee(o));render()},
  tt:i=>{const o=U.sheet.o;o.type=i;if(!o.feeSet)Object.assign(o,calcFee(o));render()},
  savetrade:()=>{const o=U.sheet.o,sym=String(o.sym||'').trim().toUpperCase();if(!sym)return toast('請輸入股票代號');
@@ -1772,6 +1788,8 @@ function field(e){
  if(el.dataset.fe||el.dataset.hr){const n=$('feetot');if(n)n.textContent=feeTot(U.sheet.o)}
  if(el.dataset.hr){const n=$('fhrs');if(n)n.textContent=hrsLine(U.sheet.o)}
  if(el.dataset.cn){const n=$('cardnote');if(n)n.innerHTML=cardNote(U.sheet.o)}
+ if(el.dataset.ns)U.sheet.o.nameSet=!!el.value;
+ if(el.dataset.sym){const o=U.sheet.o,k=el.dataset.sym,n=symName(o.sym,o.cur);if(n&&(!o.nameSet||!o[k])){o[k]=n;o.nameSet=0;const f=$('symname');if(f)f.value=n}const dl=$(k==='name'?'symlist':'symlist2');if(dl)dl.innerHTML=symOpts(o.sym,o.cur)}
  if(p==='sheet.o.bk'&&U.sheet.o.sh!=null&&!U.sheet.o.feeSet){const f=calcFee(U.sheet.o);U.sheet.o.fee=f.fee||'';U.sheet.o.tax=f.tax||''}
  if(el.dataset.fee&&!U.sheet.o.feeSet){const o=U.sheet.o,f=calcFee(o);o.fee=f.fee;o.tax=f.tax;const a=$('tfee'),b=$('ttax');if(a)a.value=f.fee;if(b)b.value=f.tax}
  if(el.dataset.g){const o=U.sheet.o;if(p==='sheet.o.shop'){o.shopSet=!!o.shop;document.querySelectorAll('[data-a="shop"]').forEach(b=>b.classList.toggle('on',b.dataset.i===o.shop))}else if(!o.shopSet&&o.type!=='xfer'){const f=shopFind(o.note);if(f!==(o.shop||'')){o.shop=f;const si=$('fshop');if(si)si.value=f;document.querySelectorAll('[data-a="shop"]').forEach(b=>b.classList.toggle('on',b.dataset.i===f))}}
