@@ -77,6 +77,9 @@ button.go:disabled{opacity:.5}
 .bar{height:8px;border-radius:4px;background:var(--bg);overflow:hidden;margin-top:3px}.bar i{display:block;height:100%;background:var(--acc)}
 .x{border:0;background:none;color:var(--sub);font-size:18px;cursor:pointer;padding:0 4px}
 .chat{display:flex;flex-direction:column;gap:8px}.bub{max-width:82%;padding:9px 13px;border-radius:16px 16px 16px 4px;background:var(--card);border:1px solid var(--line);font-size:15px;line-height:1.6;align-self:flex-start}.bub.me{align-self:flex-end;border-radius:16px 16px 4px 16px;background:color-mix(in srgb,var(--acc) 14%,var(--card));border-color:transparent}
+.memo{background:#FFF6C9;color:#3B3417;border-radius:4px 4px 14px 4px;padding:14px 16px;margin:8px 0 12px;box-shadow:0 2px 6px rgba(0,0,0,.12);position:relative}.memo .sub{color:#7A6C3A}.memo:before{content:'';position:absolute;top:-7px;left:50%;width:56px;height:14px;margin-left:-28px;background:rgba(255,255,255,.55);border:1px solid rgba(0,0,0,.06);transform:rotate(-2deg)}
+.mk{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px dashed rgba(59,52,23,.18);cursor:pointer}.mk:last-child{border-bottom:0}.mk i{flex:none;width:22px;height:22px;border:2px solid #9C8B4A;border-radius:5px;display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:700;color:#fff}.mk.on i{background:#6F8F5A;border-color:#6F8F5A}.mk.on .cn{text-decoration:line-through;opacity:.55}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .memo{background:#3A3420;color:#F1E7C2}:root:not([data-theme="light"]) .memo .sub{color:#CDBF8E}}:root[data-theme="dark"] .memo{background:#3A3420;color:#F1E7C2}:root[data-theme="dark"] .memo .sub{color:#CDBF8E}
 .tip{margin:6px 0;font-size:13px;color:var(--sub)}.tip>summary{cursor:pointer;list-style:none;display:inline-block;color:var(--acc);font-size:13px;padding:2px 0}.tip>summary::-webkit-details-marker{display:none}.tip[open]>div{background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:8px 12px;margin-top:4px;line-height:1.7}
 .note{font-size:12px;color:var(--sub);background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:8px 12px;margin:8px 0;line-height:1.7}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(80px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:20px;font-size:13px;z-index:30;display:none;max-width:90vw}
@@ -292,7 +295,7 @@ function monthCard(){let h='';
  return h}
 function vHome(){
  const F=forecast(U.h),keep=+S.keep||0,short=Math.max(0,keep-F.min),reserve=Math.max(0,F.liq-F.min)+keep;
- let h=`<h1>我的記帳</h1>${guideCard()}${spendCard()}${budgetAlert()}
+ let h=`<h1>我的記帳</h1>${guideCard()}${ckCard()}${spendCard()}${budgetAlert()}
  ${assetCard(F.liq)}<div class="row" style="gap:8px;margin:-2px 0 10px"><button class="go g sp" data-a="tab" data-i="wallet">我的錢一覽</button><button class="go g sp" data-a="tab" data-i="ask">要不要買？</button></div>${monthCard()}${iouCard()}${saveCard()}
  <h2>未來要準備多少錢</h2>
  <div class="chips" style="margin-bottom:8px">${[30,60,90].map(n=>`<button class="chip ${U.h===n?'on':''}" data-a="h" data-i="${n}">${n} 天</button>`).join('')}</div>
@@ -629,6 +632,7 @@ const HELP=[
  ['add','記一筆（花錢、收入、轉帳）',['tx','home','cal'],`按右下角「<b>＋</b>」：<br>・<b>支出</b>：打金額、選帳戶和分類。說明裡有「全家」「中油」這類字會自動選分類。<br>・<b>收入</b>：薪水選「收入」，帳戶選銀行（不能選信用卡），日期是入帳日。<br>・<b>轉帳／繳卡費</b>：自己帳戶之間搬錢、繳信用卡費都用這個，<b>不算收入支出</b>。`],
  ['card','信用卡：刷卡到繳清的 4 個階段',['card','tx','home'],`刷卡時用「刷卡那天」記，網站會標出：<br><b>… 未入帳</b> 銀行還沒收到 → <b>○ 未出帳</b> 等結帳日 → <b>● 已出帳</b> 要繳 → <b>✓ 已繳清</b><br>匯入銀行明細時會自動跟你記的那筆配對、補上入帳日，不會重複。繳卡費時在總覽點那張卡 →「<b>記錄繳卡費</b>」。`],
  ['cycle','結帳日、繳款日某個月不一樣',['card','set'],`平常照「每月幾號」自動算。銀行某一期因為假日改日期時：<br>總覽點那張卡 →「<b>接下來的日期</b>」→ 按「<b>修改</b>」，照帳單上的日期填，<b>只會改那一期</b>。<br>建議每次收到帳單時看一眼，跟網站一樣就不用管。銀行永久改日期的話，到「設定 → 帳戶」改每月固定日。`],
+ ['check','對帳便條（每週看一次真實帳戶）',['check','home'],`「更多 → <b>對帳便條</b>」：像便條紙一樣列出所有帳戶。打開網銀 App，看過一個、數字對了就點一下打勾；點錯再點一下就取消。<br>數字不對就按「更新餘額」改成真的數字。<br>全部勾完會自動記下檢核時間，下面有檢核紀錄。超過 7 天沒對帳，總覽會出現黃色便條提醒。`],
  ['trip','旅遊、買東西要預存（單次目標）',['bills'],`想為一次旅遊、一個大東西先存錢：<br>1. 設定 → 帳戶 → 新增一個帳戶（例如「國泰 旅遊」，網銀子帳戶最好），勾「<b>📦 預存帳戶</b>」，這筆錢就不會被當成可以花的。<br>2. 固定收支 → 新增「<b>旅遊基金</b>」：從薪水帳戶轉到旅遊帳戶、每次存多少、<b>目標金額</b>、<b>存到哪天</b>（出發日）。<br>3. 進度條會顯示存了多少，還會算「還有幾次、每次要存多少」，不夠會提醒你。<br>4. 出發後在旅遊帳戶記花費，那時才算支出。玩完把這個固定項目刪掉就好。`],
  ['book','爸媽帳戶、副業：獨立帳本',['book','set'],`想把某個帳戶的錢單獨拉出來記（例如第一銀行・爸媽：爸媽轉進來、副業收入，拿去買股票、繳儲蓄險）：<br>1. 設定 → 帳戶 → 點那個帳戶，勾「<b>📒 獨立帳本</b>」。<br>2. 「更多 → 獨立帳本」就會看到：現在有多少、每個月進出多少、錢從哪裡來、從這裡買的股票、固定扣的儲蓄險、明細。<br>3. 這個帳戶的收支<b>不會混進</b>日常花費、預算、圖表。<br>記收入時分類可以選「家人贊助」或「副業」。買股票記交易時，扣款帳戶選這個帳戶。`],
  ['bsug','預算要設多少？依習慣給建議',['budget'],`不知道預算要設多少，可以<b>先照常記帳</b>。記滿 30 天後，「更多 → 預算」會出現「<b>依照你的消費習慣</b>」：每個分類平均每月花多少、建議預算多少（購物、娛樂、飲料這種想要的建議少 10%）。<br>可以一個一個「套用」，或「全部套用」；也可以按「請 AI 幫我看看」拿幾句建議。記越久越準，之後可以每個月回來調整。`],
@@ -927,6 +931,22 @@ function vBook(){const bs=S.accts.filter(a=>a.book&&!isCard(a));
  <div class="note" data-t="這個帳本怎麼算？">勾了「📒 獨立帳本」的帳戶，收入（爸媽給的、副業）和支出（儲蓄險…）都不會算進總覽、記帳、預算、圖表的日常收支，也不會出現在「未來要準備多少錢」裡，只在這頁看。<br>從這個帳戶買股票，請到「股票」記交易時把扣款帳戶選這個帳戶。儲蓄險可以在「固定收支」新增，「從哪個帳戶扣」選這個帳戶。</div>`;
  return h}
 
+// ── 對帳便條：一個一個帳戶打開網銀看過就打勾，全部勾完記下檢核時間；建議一週一次 ──
+function CK(){if(!S.chk)S.chk={on:{},log:[]};return S.chk}
+const ckLast=()=>{const L=CK().log;return L.length?L[L.length-1]:null};
+const ckAgo=t=>{const d=Math.floor((Date.now()-t)/864e5);return d<1?'今天':d===1?'昨天':d+' 天前'};
+const ckWhen=t=>{const d=new Date(t);return(d.getMonth()+1)+'/'+d.getDate()+' 週'+WD[d.getDay()]+' '+nwHM(d)};
+function ckCard(){const l=ckLast(),d=l?Math.floor((Date.now()-l.t)/864e5):99;if(d<7)return'';
+ return`<div class="memo" data-a="tab" data-i="check" style="cursor:pointer"><b>📝 該對帳了</b><div class="sub" style="margin-top:2px">${l?'上次檢核是 '+ckAgo(l.t)+'，':'還沒檢核過，'}花 5 分鐘打開網銀，一個一個帳戶看一下 ›</div></div>`}
+function vCheck(){const C=CK(),as=S.accts,n=as.filter(a=>C.on[a.id]).length,all=as.length&&n===as.length,l=ckLast();
+ let h=`<h1>對帳便條</h1><div class="memo"><div class="row"><b class="sp">${all?'✓ 這一輪都看完了':'打開網銀 App，看過一個勾一個'}</b><span class="sub">${n} / ${as.length}</span></div>
+ <div class="sub" style="margin:2px 0 8px">${l?'上次全部看完：'+ckWhen(l.t)+'（'+ckAgo(l.t)+'）':'還沒有檢核紀錄'}・建議至少一週一次</div>
+ ${as.map(a=>`<div class="mk ${C.on[a.id]?'on':''}" data-a="ckt" data-i="${a.id}"><i>${C.on[a.id]?'✓':''}</i><span class="sp cn">${E(nm(a))}</span><span class="num">${isCard(a)?'未繳 '+M(cardInfo(a).owe):MA(a)}</span></div>`).join('')}
+ <div class="row" style="gap:8px;margin-top:10px">${n?'<button class="go q" data-a="ckreset">全部取消勾選</button>':''}<span class="sp"></span>${all?'':'<button class="go q" data-a="recon">數字不對？更新餘額</button>'}</div></div>
+ <div class="note" data-t="怎麼對帳？">打開網銀或信用卡 App，看這個帳戶「真的有多少錢／卡費多少」，跟這裡顯示的一樣就打勾；不一樣就按「更新餘額」改成真的數字（或補記漏掉的那筆）。按錯了再點一下就取消。<br>全部勾完會自動記下時間，下一次打開時勾選會清掉、重新開始。超過 7 天沒對帳，總覽會出現黃色便條提醒你。</div>`;
+ if(C.log.length)h+=`<h2>檢核紀錄</h2><div class="card">${C.log.slice(-8).reverse().map(x=>`<div class="row" style="padding:5px 0"><span class="sp">${ckWhen(x.t)}</span><span class="sub">${x.n} 個帳戶</span></div>`).join('')}</div>`;
+ return h}
+
 // ── 代墊與欠款 ──
 function iouSum(){const o={in:0,out:0,ppl:{}};(S.iou||[]).forEach(x=>{const l=iouLeft(x);if(l<0.5)return;o[x.dir]+=l;const p=o.ppl[x.who]=o.ppl[x.who]||{in:0,out:0};p[x.dir]+=l});return o}
 function iouCard(){const I=iouSum();if(!I.in&&!I.out)return'';const ps=Object.keys(I.ppl);
@@ -1063,7 +1083,7 @@ function sheetAcct(o){
 const STK=[['stock','我的持股'],['news','股價與新聞'],['calc','複利計算']];
 const stkSeg=()=>`<div class="chips" style="margin:0 0 12px">${STK.map(([k,n])=>`<button class="chip ${U.tab===k?'on':''}" data-a="tab" data-i="${k}">${n}</button>`).join('')}</div>`;
 const TABS=[['home','◎','總覽'],['tx','✎','記帳'],['cal','▦','月曆'],['bills','◷','固定收支'],['stock','↗','股票'],['more','⋯','更多']];
-const MORE=[['book','▣','獨立帳本','爸媽帳戶、副業：收入和投資另外算'],['iou','⇄','代墊與欠款','幫朋友代墊、誰欠我、我欠誰'],['wallet','◉','我的錢一覽','總餘額、信用卡、每天該存多少、時薪'],['ask','？','要不要買？','想買東西時，像聊天一樣問問看'],['perk','✦','刷卡優惠','在哪裡刷用哪張卡、CUBE 要切哪個權益'],['plan','◫','分帳戶','薪水進來先分好：固定支出、生活費、存錢、投資'],['budget','◔','預算','每個分類一個月能花多少，快超過會提醒'],['chart','▥','圖表','每個月花多少、錢都花在哪'],['imp','⇣','匯入明細','信用卡、銀行、電子發票、截圖'],['set','⚙︎','設定與風格','帳戶、顏色、深色模式、備份'],['guide','?','新手教學','從頭一步一步開始']];
+const MORE=[['check','☑','對帳便條','每週打開網銀看一次，看過就打勾'],['book','▣','獨立帳本','爸媽帳戶、副業：收入和投資另外算'],['iou','⇄','代墊與欠款','幫朋友代墊、誰欠我、我欠誰'],['wallet','◉','我的錢一覽','總餘額、信用卡、每天該存多少、時薪'],['ask','？','要不要買？','想買東西時，像聊天一樣問問看'],['perk','✦','刷卡優惠','在哪裡刷用哪張卡、CUBE 要切哪個權益'],['plan','◫','分帳戶','薪水進來先分好：固定支出、生活費、存錢、投資'],['budget','◔','預算','每個分類一個月能花多少，快超過會提醒'],['chart','▥','圖表','每個月花多少、錢都花在哪'],['imp','⇣','匯入明細','信用卡、銀行、電子發票、截圖'],['set','⚙︎','設定與風格','帳戶、顏色、深色模式、備份'],['guide','?','新手教學','從頭一步一步開始']];
 let RD=0,RD2=0,KF=0;
 function render(){
  // 換掉畫面時，正在輸入的欄位失焦會觸發 change；那次重畫延後到這次畫完再做
@@ -1075,7 +1095,7 @@ function render(){
 function calmNotes(){document.querySelectorAll('#app .note,#sheet .note').forEach(n=>{const st=n.getAttribute('style')||'';if(n.id||n.classList.contains('keep')||st.includes('--bad')||n.querySelector('input,select,button,textarea'))return;
  const d=document.createElement('details');d.className='tip'+(n.classList.contains('w')?' w':'');d.innerHTML=`<summary>ⓘ ${E(n.dataset.t||'說明')}</summary><div></div>`;d.lastChild.innerHTML=n.innerHTML;n.replaceWith(d)})}
 function renderNow(){
- const y=window.scrollY,V={book:vBook,iou:vIou,wallet:vWallet,ask:vAsk,perk:vPerk,plan:vPlan,card:vCard,home:vHome,tx:vTx,cal:vCal,bills:vBills,more:vMore,budget:vBudget,chart:vChart,stock:vStock,news:vNews,calc:vCalc,imp:vImp,set:vSet,guide:vGuide},sub=MORE.some(m=>m[0]===U.tab),ae=KF&&document.activeElement,am=ae&&ae.dataset&&ae.dataset.m,cp=am&&ae.selectionStart;KF=0;
+ const y=window.scrollY,V={check:vCheck,book:vBook,iou:vIou,wallet:vWallet,ask:vAsk,perk:vPerk,plan:vPlan,card:vCard,home:vHome,tx:vTx,cal:vCal,bills:vBills,more:vMore,budget:vBudget,chart:vChart,stock:vStock,news:vNews,calc:vCalc,imp:vImp,set:vSet,guide:vGuide},sub=MORE.some(m=>m[0]===U.tab),ae=KF&&document.activeElement,am=ae&&ae.dataset&&ae.dataset.m,cp=am&&ae.selectionStart;KF=0;
  CI={};LM=null;$('tip').style.display='none';$('eye').textContent='•••• 已隱藏・點兩下顯示';$('eye').classList.toggle('on',HIDE);$('eye').setAttribute('aria-label',HIDE?'顯示金額':'隱藏金額');
  $('app').innerHTML=(sub?'<button class="back" data-a="tab" data-i="more">‹ 更多</button>':'')+V[U.tab]();
  $('nav').innerHTML=TABS.map(([k,i,n])=>`<button class="${U.tab===k||(k==='more'&&sub)||(k==='stock'&&STK.some(x=>x[0]===U.tab))?'on':''}" data-a="tab" data-i="${k}"><b>${i}</b>${n}</button>`).join('');
@@ -1443,7 +1463,7 @@ function payBill(b,skip){
 }
 const ACT={
  jump:i=>{const el=$(i);if(!el)return;const bar=document.querySelector('.jump'),off=(bar?bar.offsetHeight:0)+16;window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY-off,behavior:'smooth'});el.classList.remove('hit');void el.offsetWidth;el.classList.add('hit')},
- tab:i=>{U.tab=i;U.sheet=null;render();window.scrollTo(0,0);if(i==='home'||i==='stock')autoPx();if((i==='home'||i==='bills')&&CL.col)autoBills()},
+ tab:i=>{if(i==='check'&&U.tab!=='check'){const C=CK(),l=ckLast();if(C.done&&l&&Date.now()-l.t>36e5){C.on={};C.done=0;save()}}U.tab=i;U.sheet=null;render();window.scrollTo(0,0);if(i==='home'||i==='stock')autoPx();if((i==='home'||i==='bills')&&CL.col)autoBills()},
  nwcat:i=>{NW.cat=i;NW.lim=40;nwSave();render()},
  nwreg:i=>{NW.reg=i;NW.lim=40;nwSave();render()},
  nwmore:()=>{NW.lim+=40;$('nwl').innerHTML=nwList()},
@@ -1492,6 +1512,8 @@ const ACT={
  bkacct:i=>{U.bk=i;render()},
  bkmon:i=>{U.bkm=addM((U.bkm||today().slice(0,7))+'-01',+i).slice(0,7);render()},
  bkadd:i=>openTx({type:i,amt:'',acct:U.bk,to:'',cat:i==='in'?'家人贊助':'',d:today(),note:''}),
+ ckt:i=>{const C=CK();if(C.on[i])delete C.on[i];else C.on[i]=1;const as=S.accts;if(as.length&&as.every(a=>C.on[a.id])){C.log.push({t:Date.now(),n:as.length});C.log=C.log.slice(-60);C.done=1;toast('✓ 全部看完了！已記下檢核時間')}else C.done=0;save();render()},
+ ckreset:()=>{const C=CK();C.on={};C.done=0;save();render()},
  az:()=>{U.az=!U.az;render()},
  shopall:()=>{U.shopAll=!U.shopAll;render()},
  cat:i=>{const o=U.sheet.o;o.cat=i;o.catSet=1;render()},
