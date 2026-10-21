@@ -947,6 +947,17 @@ function vCheck(){const C=CK(),as=S.accts,n=as.filter(a=>C.on[a.id]).length,all=
  if(C.log.length)h+=`<h2>檢核紀錄</h2><div class="card">${C.log.slice(-8).reverse().map(x=>`<div class="row" style="padding:5px 0"><span class="sp">${ckWhen(x.t)}</span><span class="sub">${x.n} 個帳戶</span></div>`).join('')}</div>`;
  return h}
 
+// 點帳戶：看這個帳戶的交易紀錄（信用卡另外有帳單頁）
+function sheetAcctV(o){const a=A(o.id);if(!a)return'';const xs=S.tx.filter(t=>t.acct===a.id||t.to===a.id).sort((x,y)=>x.d<y.d?1:x.d>y.d?-1:(y.ts||0)-(x.ts||0)),n=o.n||30;
+ const m=today().slice(0,7),mi=xs.filter(t=>t.d.startsWith(m)),inn=mi.reduce((s,t)=>s+((t.type==='in'&&t.acct===a.id)||(t.type==='xfer'&&t.to===a.id)?t.amt:0),0),out=mi.reduce((s,t)=>s+((t.type==='out'&&t.acct===a.id)||(t.type==='xfer'&&t.acct===a.id)?t.amt:0),0);
+ let h='',last='';xs.slice(0,n).forEach(t=>{if(t.d.slice(0,7)!==last){last=t.d.slice(0,7);h+=`<div class="dh"><span>${+last.slice(0,4)} 年 ${+last.slice(5)} 月</span></div>`}h+=txLine(t)});
+ return`<div class="row"><b class="sp" style="font-size:17px">${E(nm(a))}</b><button class="x" data-a="close">×</button></div>
+ <div class="row" style="margin:6px 0 4px"><div class="sp"><div class="sub">現在有</div><div class="big ${bal(a)<-0.5?'neg':''}">${MA(a)}</div></div><div style="text-align:right"><div class="sub">這個月 進 / 出</div><b class="num in">${M(inn)}</b> / <b class="num">${M(out)}</b></div></div>
+ ${a.no?`<div class="sub">帳號 ${copyTag(a.no,(a.code?'('+a.code+') ':'')+tail5(a.no))}</div>`:''}
+ <div class="row" style="gap:6px;margin:10px 0"><button class="go sp" data-a="avadd" data-i="${a.id}">＋ 記一筆</button><button class="go g sp" data-a="edacct" data-i="${a.id}">修改／對帳</button></div>
+ <div class="card" style="padding:4px 12px;margin:0">${xs.length?h:'<div class="sub" style="padding:10px 0">這個帳戶還沒有交易紀錄。</div>'}</div>
+ ${xs.length>n?`<div style="text-align:center;margin-top:8px"><button class="go q" data-a="avmore">再看 30 筆（還有 ${xs.length-n} 筆）</button></div>`:''}`}
+
 // ── 代墊與欠款 ──
 function iouSum(){const o={in:0,out:0,ppl:{}};(S.iou||[]).forEach(x=>{const l=iouLeft(x);if(l<0.5)return;o[x.dir]+=l;const p=o.ppl[x.who]=o.ppl[x.who]||{in:0,out:0};p[x.dir]+=l});return o}
 function iouCard(){const I=iouSum();if(!I.in&&!I.out)return'';const ps=Object.keys(I.ppl);
@@ -1099,7 +1110,7 @@ function renderNow(){
  CI={};LM=null;$('tip').style.display='none';$('eye').textContent='•••• 已隱藏・點兩下顯示';$('eye').classList.toggle('on',HIDE);$('eye').setAttribute('aria-label',HIDE?'顯示金額':'隱藏金額');
  $('app').innerHTML=(sub?'<button class="back" data-a="tab" data-i="more">‹ 更多</button>':'')+V[U.tab]();
  $('nav').innerHTML=TABS.map(([k,i,n])=>`<button class="${U.tab===k||(k==='more'&&sub)||(k==='stock'&&STK.some(x=>x[0]===U.tab))?'on':''}" data-a="tab" data-i="${k}"><b>${i}</b>${n}</button>`).join('');
- const sh=U.sheet,SH={iou:sheetIou,iback:sheetIback,help:sheetHelp,cyc:sheetCyc,pcard:sheetPCard,pitem:sheetPItem,payee:sheetPayee,start:sheetStart,tx:sheetTx,bill:sheetBill,acct:sheetAcct,trade:sheetTrade,recon:sheetRecon,hold:sheetHold};$('sheet').innerHTML=sh?`<div class="sheet" data-a="bg"><div>${SH[sh.k](sh.o)}</div></div>`:'';
+ const sh=U.sheet,SH={acctv:sheetAcctV,iou:sheetIou,iback:sheetIback,help:sheetHelp,cyc:sheetCyc,pcard:sheetPCard,pitem:sheetPItem,payee:sheetPayee,start:sheetStart,tx:sheetTx,bill:sheetBill,acct:sheetAcct,trade:sheetTrade,recon:sheetRecon,hold:sheetHold};$('sheet').innerHTML=sh?`<div class="sheet" data-a="bg"><div>${SH[sh.k](sh.o)}</div></div>`:'';
  calmNotes();window.scrollTo(0,y);
  document.querySelectorAll('[data-entry]').forEach(el=>{const k=el.dataset.entry,P=S.perk||{},r=k==='sum'?P.sum&&P.sum.r:(P.cache[pkKey(P.q,P.amt)]||{}).r,html=r&&r._entry;if(html){try{el.attachShadow({mode:'open'}).innerHTML=html}catch(e){}}});
  if(am){const f=document.querySelector(`[data-m="${am}"]`);if(f&&f.tagName!=='SELECT'){f.focus();try{f.setSelectionRange(cp,cp)}catch(e){}}}
@@ -1232,8 +1243,8 @@ function acctBrief(){
  const rows=[],ex=[];let nz=0;
  ord.forEach(k=>{const as=gs[k].slice().sort((x,y)=>isCard(x)-isCard(y)||Math.abs(v(y))-Math.abs(v(x))),show=U.az?as:as.filter(a=>!zero(a));nz+=as.length-as.filter(a=>!zero(a)).length;if(!show.length)return;
   const own=show.filter(a=>!isCard(a)).reduce((t,a)=>t+v(a),0),owe=show.filter(isCard).reduce((t,a)=>t-v(a),0),one=show.length===1&&!(show[0].group&&show[0].type!=='cash');
-  const item=a=>`<span class="ai" data-a="edacct" data-i="${a.id}">${E(k==='\u0000x'||k==='\u0000h'?nm(a):a.name+(a.cur==='USD'?'（美元）':''))} <b class="num ${isCard(a)&&!zero(a)?'neg':''}">${isCard(a)?(zero(a)?'已繳清':'未繳 '+M(-v(a))):MA(a)}</b></span>`;
-  const r={w:Math.abs(own)+owe,h:`<div class="ag"><div class="row"><b class="sp">${E(k==='\u0000x'?'🔒 沒算進總資產':k==='\u0000h'?S.holdIn?'📦 預存（存著要繳的，不能花）':'📦 預存（要繳出去，沒算進總資產）':one?show[0].name:k)}</b>${own||!owe?`<b class="num ${own<-0.5?'neg':''}">${M(own)}</b>`:''}</div>${one&&k!=='\u0000x'&&k!=='\u0000h'&&!isCard(show[0])&&!show[0].cur?'':`<div class="ais">${show.map(item).join('')}</div>`}</div>`};
+  const item=a=>`<span class="ai" data-a="${isCard(a)?'card':'acctv'}" data-i="${a.id}">${E(k==='\u0000x'||k==='\u0000h'?nm(a):a.name+(a.cur==='USD'?'（美元）':''))} <b class="num ${isCard(a)&&!zero(a)?'neg':''}">${isCard(a)?(zero(a)?'已繳清':'未繳 '+M(-v(a))):MA(a)}</b></span>`;
+  const r={w:Math.abs(own)+owe,h:`<div class="ag"${one?` data-a="${isCard(show[0])?'card':'acctv'}" data-i="${show[0].id}" style="cursor:pointer"`:''}><div class="row"><b class="sp">${E(k==='\u0000x'?'🔒 沒算進總資產':k==='\u0000h'?S.holdIn?'📦 預存（存著要繳的，不能花）':'📦 預存（要繳出去，沒算進總資產）':one?show[0].name:k)}</b>${own||!owe?`<b class="num ${own<-0.5?'neg':''}">${M(own)}</b>`:''}</div>${one&&k!=='\u0000x'&&k!=='\u0000h'&&!isCard(show[0])&&!show[0].cur?'':`<div class="ais">${show.map(item).join('')}</div>`}</div>`};
   (k==='\u0000x'?ex:k==='\u0000h'?(ex.unshift(r),[]):rows).push(r)});
  rows.sort((x,y)=>y.w-x.w);
  return`<div class="agl">${rows.concat(ex).map(r=>r.h).join('')}</div>${nz?`<button class="lnk" data-a="az">${U.az?'收起 $0 的帳戶 ▴':'還有 '+nz+' 個帳戶是 $0，點我顯示 ▾'}</button>`:''}`;
@@ -1514,6 +1525,9 @@ const ACT={
  bkadd:i=>openTx({type:i,amt:'',acct:U.bk,to:'',cat:i==='in'?'家人贊助':'',d:today(),note:''}),
  ckt:i=>{const C=CK();if(C.on[i])delete C.on[i];else C.on[i]=1;const as=S.accts;if(as.length&&as.every(a=>C.on[a.id])){C.log.push({t:Date.now(),n:as.length});C.log=C.log.slice(-60);C.done=1;toast('✓ 全部看完了！已記下檢核時間')}else C.done=0;save();render()},
  ckreset:()=>{const C=CK();C.on={};C.done=0;save();render()},
+ acctv:i=>{U.sheet={k:'acctv',o:{id:i,n:30}};render()},
+ avmore:()=>{U.sheet.o.n+=30;render()},
+ avadd:i=>{const a=A(i);openTx({type:'out',amt:'',acct:i,to:'',cat:'',d:today(),note:''})},
  az:()=>{U.az=!U.az;render()},
  shopall:()=>{U.shopAll=!U.shopAll;render()},
  cat:i=>{const o=U.sheet.o;o.cat=i;o.catSet=1;render()},
