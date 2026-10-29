@@ -488,7 +488,7 @@ async function readPhoto(file){
   const[cy,cm]=S.cm.split('-').map(Number);if(!y)y=cy;if(m<1||m>12)m=cm;
   const rows=mkRows(y,m,out.events||[]);if(!rows.length)throw {code:'empty'};
   IMP={rows,note:'已讀取 '+rows.length+' 筆（'+y+' 年 '+m+' 月）'};
- }catch(e){const c=(e&&e.code)||'';IMP={err:c==='not_granted'?'你沒有允許 Claude 協助，所以無法讀取照片。':c.indexOf('quota')===0?'今天的免費讀取次數用完了，請明天再試，或用上方「＋ 新增」手動加入。':c==='none'||c==='noimg'?'AI 讀照片功能還沒開啟，請管理員到 Firebase 開啟「AI Logic」。也可以用上方「＋ 新增」手動加入。':c==='empty'?'沒有讀到活動，請換一張更清楚的照片再試。':c==='cancelled'?'已取消。':'讀取失敗，請稍後再試。'}}
+ }catch(e){const c=(e&&e.code)||'';IMP={err:c==='not_granted'?'你沒有允許 Claude 協助，所以無法讀取照片。':c==='quota_day'?'今天 AI 的免費額度用完了（整個網站共用一份，包含記帳的刷卡優惠和其他被邀請的人），台灣時間下午 3～4 點會重置；也可以用上方「＋ 新增」手動加入。':c.indexOf('quota')===0?'AI 現在太忙或一分鐘內用太多次（不是今天額度用完），等 1 分鐘再按一次「匯入」試試。':c==='none'||c==='noimg'?'AI 讀照片功能還沒開啟，請管理員到 Firebase 開啟「AI Logic」。也可以用上方「＋ 新增」手動加入。':c==='empty'?'沒有讀到活動，請換一張更清楚的照片再試。':c==='cancelled'?'已取消。':'讀取失敗，請稍後再試。'}}
  render()}
 function impBox(){
  const tm=`<div class="grid" style="margin-top:8px"><div class="fl"><span>開始</span><div class="row" style="gap:4px">${tsel2('19:30','imsh','imsm')}</div></div><div class="fl"><span>結束</span><div class="row" style="gap:4px">${tsel2('21:00','imeh','imem')}</div></div></div><div class="sub" style="margin:4px 0">每場都套用這個時間，匯入後仍可單獨修改</div>`;

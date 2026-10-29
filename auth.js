@@ -49,6 +49,11 @@ async function shrink(file) {
     return { mimeType: file.type || 'image/jpeg', data: String(b).split(',')[1] };
   }
 }
+// 記錄這支手機今天用了幾次 AI、最後一次錯誤（給錯誤訊息參考）
+function aiLog(ok, err) {
+  try { const d = new Date().toISOString().slice(0, 10), o = JSON.parse(localStorage.getItem('ai-log') || '{}'); if (o.d !== d) { o.d = d; o.n = 0; o.f = 0; } if (ok) o.n++; else { o.f++; o.e = String(err || '').slice(0, 300); } localStorage.setItem('ai-log', JSON.stringify(o)); } catch (x) {}
+}
+window.aiUsage = () => { try { const o = JSON.parse(localStorage.getItem('ai-log') || '{}'); return o.d === new Date().toISOString().slice(0, 10) ? o : { n: 0, f: 0 }; } catch (x) { return { n: 0, f: 0 }; } };
 const sampler = {
   limits: async () => ({ images: true }),
   json: async (prompt, opts) => {
@@ -73,15 +78,25 @@ const sampler = {
           o._src = (g.groundingChunks || []).map(c => c.web).filter(Boolean).map(w => ({ t: w.title || w.domain || '', u: w.uri }));
           o._entry = (g.searchEntryPoint && g.searchEntryPoint.renderedContent) || '';
         }
+        aiLog(1);
         return o;
       } catch (e) {
         last = e;
         if (e && e.code === 'empty') throw e;
-        if (!/not.?found|404|not supported/i.test(String(e && e.message))) break;
+        const em = String(e && e.message);
+        // 額度或忙碌（429）：先等一下再試同一個模型，還是不行就換下一個模型（每個模型的額度是分開算的）
+        if (/quota|429|RESOURCE_EXHAUSTED|rate|overloaded|503|UNAVAILABLE/i.test(em)) {
+          if (!/per.?day|PerDay|daily/i.test(em) && !e._retried) {
+            await new Promise(r => setTimeout(r, 4000));
+            try { e._retried = 1; const m2 = aim.getGenerativeModel(ai, (opts && opts.search) ? { model: name, tools: [{ googleSearch: {} }] } : { model: name, generationConfig: { responseMimeType: 'application/json' } }); const r2 = await m2.generateContent(parts); let t2 = r2.response.text().trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/, ''); if (opts && opts.search) { const a2 = t2.indexOf('{'), b2 = t2.lastIndexOf('}'); if (a2 >= 0 && b2 > a2) t2 = t2.slice(a2, b2 + 1); } aiLog(1); return JSON.parse(t2); } catch (e2) { last = e2; }
+          }
+          continue;
+        }
+        if (!/not.?found|404|not supported/i.test(em)) break;
       }
     }
     const msg = String(last && last.message);
-    console.error('AI', last);
+    console.error('AI', last);aiLog(0, msg);
     // 分辨是「每分鐘次數太多」還是「今天的額度用完」
     if (/quota|429|RESOURCE_EXHAUSTED|rate/i.test(msg)) throw { code: /per.?day|PerDay|daily/i.test(msg) ? 'quota_day' : /per.?minute|PerMinute/i.test(msg) ? 'quota_min' : 'quota' };
     if (/not been used|disabled|PERMISSION_DENIED|403|api-not-enabled|not enabled/i.test(msg)) throw { code: 'none' };

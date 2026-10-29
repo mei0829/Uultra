@@ -1309,7 +1309,7 @@ async function impAI(){
  }catch(e){I.busy=0;render();toast(aiErr(e))}
 }
 
-const aiErr=e=>{const c=e&&e.code;return c==='quota_min'?'AI 一分鐘內用太多次了，等一分鐘再試':c==='quota_day'?'今天的 AI 免費額度用完了，台灣時間下午 3～4 點會重置':c==='quota'?'AI 免費額度用完了（可能是每分鐘或每天的上限），請過一會兒再試':c==='none'?'AI 還沒啟用：請到 Firebase 主控台開啟 AI Logic':c==='empty'?'AI 看不懂這張圖':'AI 辨識失敗，請再試一次'};
+const aiErr=e=>{const c=e&&e.code;return c==='quota_min'?'AI 一分鐘內用太多次了，等一分鐘再試':c==='quota_day'?'今天的 AI 免費額度用完了（和名單網站共用一份），台灣時間下午 3～4 點會重置':c==='quota'?'AI 現在太忙或一分鐘內用太多次，等 1 分鐘再試一次':c==='none'?'AI 還沒啟用：請到 Firebase 主控台開啟 AI Logic':c==='empty'?'AI 看不懂這張圖':'AI 辨識失敗，請再試一次'};
 async function askAI(prompt,file,search){const sm=window.claude&&await claude.use('sample');if(!sm)throw{code:'none'};return sm.json(prompt,Object.assign(file?{images:file}:{},search?{search:true}:{}))}
 
 // ── 總資產、對帳、截圖辨識、股價 ──
