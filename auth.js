@@ -37,7 +37,8 @@ function clearLocal() {
 let started = false, FBAPP = null;
 
 // 用 Gemini（Firebase AI Logic）讀照片或文字；頁面透過 claude.use('sample') 呼叫
-const AI_MODELS = ['gemini-3.6-flash', 'gemini-3-flash', 'gemini-2.5-flash'];
+// 每個模型的免費額度分開算：一個用完就換下一個（最後一個比較輕量，額度通常比較多）
+const AI_MODELS = ['gemini-3.6-flash', 'gemini-3-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'];
 async function shrink(file) {
   try {
     const bm = await createImageBitmap(file), k = Math.min(1, 2000 / Math.max(bm.width, bm.height));
@@ -62,7 +63,7 @@ const sampler = {
     const ai = aim.getAI(FBAPP, { backend: new aim.GoogleAIBackend() });
     const parts = [prompt];
     if (opts && opts.images) parts.push({ inlineData: await shrink(opts.images) });
-    let last;
+    let last, quota;
     for (const name of AI_MODELS) {
       try {
         // search：讓 Gemini 用 Google 搜尋查最新資料（這時不能指定 JSON 格式，改從文字裡取出 JSON）
@@ -90,11 +91,14 @@ const sampler = {
             await new Promise(r => setTimeout(r, 4000));
             try { e._retried = 1; const m2 = aim.getGenerativeModel(ai, (opts && opts.search) ? { model: name, tools: [{ googleSearch: {} }] } : { model: name, generationConfig: { responseMimeType: 'application/json' } }); const r2 = await m2.generateContent(parts); let t2 = r2.response.text().trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/, ''); if (opts && opts.search) { const a2 = t2.indexOf('{'), b2 = t2.lastIndexOf('}'); if (a2 >= 0 && b2 > a2) t2 = t2.slice(a2, b2 + 1); } aiLog(1); return JSON.parse(t2); } catch (e2) { last = e2; }
           }
+          quota = last;
           continue;
         }
         if (!/not.?found|404|not supported/i.test(em)) break;
       }
     }
+    // 每個模型都試過了：有遇到額度問題就照額度回報（最後一個模型可能只是不存在）
+    if (quota && /not.?found|404|not supported/i.test(String(last && last.message))) last = quota;
     const msg = String(last && last.message);
     console.error('AI', last);aiLog(0, msg);
     // 分辨是「每分鐘次數太多」還是「今天的額度用完」
