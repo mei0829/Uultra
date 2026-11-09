@@ -206,6 +206,11 @@ function remCard(){const rows=[],t=today();
  if(pfh)rows.push(hsec('pf','🧴','產品使用跟進',pf?`<span style="color:var(--bad)">${pf} 人該跟進了</span>`:'最近完成的紀錄',()=>`<div class="flat">${pfh}</div>`));
  if(!rows.length)return '';
  return `<div class="card" style="padding:10px 14px"><b>🔔 提醒</b>${rows.join('')}</div>`}
+// 首頁帳號提醒：這個帳號雲端沒資料（只有示範名單），或雲端連不上時提醒，避免以為資料不見
+function acctBanner(){const em=(window.FBU&&FBU.email)||'',demo=S.people.length&&S.people.every(p=>/^示範：/.test(p.name||''));
+ if(CL.ok&&CL.empty&&demo)return `<div class="card" style="padding:10px 12px;border-left:4px solid var(--bad)"><b style="font-size:14px">⚠︎ 這個帳號的雲端還沒有資料</b><div class="sub" style="font-size:13px;margin-top:4px;line-height:1.6">目前登入：<b>${E(em)}</b><br>所以只看到「示範」名單。如果你的資料是用別的 Email 登入的，請先登出，再用那個 Email 登入（不要在這裡新增資料）。</div><div style="text-align:right;margin-top:6px"><button class="go q" data-a="logout">登出，換帳號</button></div></div>`;
+ if(!CL.ok&&/^⚠︎/.test(String(CL.st)))return `<div class="card" style="padding:10px 12px;border-left:4px solid var(--bad)"><b style="font-size:14px">⚠︎ 沒有連到雲端</b><div class="sub" style="font-size:13px;margin-top:4px">${E(CL.st)}${em?'<br>目前登入：'+E(em):''}。先不要新增資料，重新整理或重新登入試試。</div></div>`;
+ return ''}
 function today_v(){
  if(S.qm)return quoteMgr();
  const pl=plan(),ids=pl.ids.filter(P),wd=WD[new Date(S.pd+'T00:00:00').getDay()];
@@ -217,7 +222,7 @@ function today_v(){
   <div class="sub">${E(p.job)}${p.status?'・'+E(p.status):''}</div>${ldb(p)?'<div style="margin-top:4px">'+ldb(p)+'</div>':''}${rows}
   <div class="row" style="margin-top:6px"><input id="lg${id}" placeholder="跟進後記一筆"><button class="go q" data-pl="${id}">記錄</button></div>
   <div class="chips" style="margin-top:8px"><span class="sub" style="align-self:center">下次跟進</span>${[[1,'明天'],[3,'3 天後'],[7,'一週後']].map(([n,l])=>`<button class="chip ${p.next===shiftD(S.pd,n)?'on':''}" data-nx="${id}|${n}">${l}</button>`).join('')}</div></div>`}).join('');
- return `<h1>跟進計畫</h1>${bkWarn()}${promoCard()}${remCard()}${evCard()}
+ return `<h1>跟進計畫</h1>${acctBanner()}${bkWarn()}${promoCard()}${remCard()}${evCard()}
  <div class="row" style="margin:4px 0 8px;gap:6px;align-items:center"><button class="x" data-pd="-1" style="flex:none;font-size:18px;padding:2px 10px">‹</button><div class="sp" style="text-align:center;font-size:14px"><b>${+S.pd.slice(5,7)}/${+S.pd.slice(8)}（週${wd}）</b>${S.pd===today()?' <span class="sub" style="font-size:12px">今天</span>':' <button class="chip" data-pd="0" style="font-size:12px;padding:2px 8px">回今天</button>'}</div><button class="x" data-pd="1" style="flex:none;font-size:18px;padding:2px 10px">›</button></div>
  ${quoteCard()}
  ${todoCard()}
@@ -1804,8 +1809,9 @@ async function cloudPush(){
     location.reload();return}
   }
   Object.keys(docs).forEach(id=>{if(id.startsWith('s_')&&id!=='s__meta')CL.last[id.slice(2)]=docs[id].j});
-  CL.ok=1;
+  CL.ok=1;CL.empty=ct===0;
   if((ct===0&&hasLocal)||lt>ct){cloudPush()}else CL.st='☁︎ 已同步到雲端';
+  try{render()}catch(e){}
  }catch(e){CL.st=navigator.onLine?'⚠︎ 雲端連線失敗，資料只存在這支手機':'📴 離線中：資料先存在這支手機，連上網路會自動同步'}
 })();
 // 恢復網路：一開始沒連上雲端就重新載入比對新舊；之前連上過就把沒送出的變更補送
