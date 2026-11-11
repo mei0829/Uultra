@@ -118,7 +118,7 @@ function startApp(fs, fsm, user) {
   } catch (e) {}
   const { collection, doc, setDoc, getDocs, getDoc, query, where, documentId } = fsm;
   const col = path => ({
-    doc: id => ({ set: o => setDoc(doc(fs, path, id), o) }),
+    doc: id => ({ set: o => setDoc(doc(fs, path, id), o), del: () => fsm.deleteDoc(doc(fs, path, id)) }),
     get: async () => {
       // 照片（p_ 開頭）很大，只在要看的時候才下載；其他資料文件照常讀取
       const c = collection(fs, path), [a, b] = await Promise.all([getDocs(query(c, where(documentId(), '<', 'p_'))), getDocs(query(c, where(documentId(), '>=', 'p`')))]);

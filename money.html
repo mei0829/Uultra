@@ -1860,10 +1860,11 @@ async function cloudPush(){
  CL.busy=1;
  try{
   if(!localStorage.getItem('money-t'))localStorage.setItem('money-t',String(Date.now()));
-  const t=+localStorage.getItem('money-t'),o=parts();
-  for(const k of Object.keys(o)){const j=o[k];if(j===undefined||j===CL.last[k])continue;if(j.length>900000){CL.st='⚠︎「'+k+'」資料太大，無法同步';continue}await CL.col.doc('m_'+k).set({j});CL.last[k]=j}
+  const t=+localStorage.getItem('money-t'),o=parts(),big=[];
+  for(const k of Object.keys(o)){const j=o[k];if(j===undefined||j===CL.last[k])continue;if(j.length>900000){big.push(k);continue}await CL.col.doc('m_'+k).set({j});CL.last[k]=j}
   await CL.col.doc('m__meta').set({t});
-  CL.st='☁︎ 已同步到雲端 '+new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+  // 有沒同步上去的資料就一直顯示警告，不要被「已同步」蓋掉
+  CL.st=big.length?'⚠︎「'+big.join('、')+'」資料太大，沒有同步到雲端，只存在這支手機':'☁︎ 已同步到雲端 '+new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
  }catch(e){CL.st='⚠︎ 雲端同步失敗，資料仍存在這支手機（'+((e&&e.code)||'錯誤')+'）'}
  CL.busy=0;if(CL.again){CL.again=0;cloudQ()}
 }

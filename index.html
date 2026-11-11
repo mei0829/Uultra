@@ -209,6 +209,7 @@ function remCard(){const rows=[],t=today();
 // 首頁帳號提醒：這個帳號雲端沒資料（只有示範名單），或雲端連不上時提醒，避免以為資料不見
 function acctBanner(){const em=(window.FBU&&FBU.email)||'',demo=S.people.length&&S.people.every(p=>/^示範：/.test(p.name||''));
  if(CL.ok&&CL.empty&&demo)return `<div class="card" style="padding:10px 12px;border-left:4px solid var(--bad)"><b style="font-size:14px">⚠︎ 這個帳號的雲端還沒有資料</b><div class="sub" style="font-size:13px;margin-top:4px;line-height:1.6">目前登入：<b>${E(em)}</b><br>所以只看到「示範」名單。如果你的資料是用別的 Email 登入的，請先登出，再用那個 Email 登入（不要在這裡新增資料）。</div><div style="text-align:right;margin-top:6px"><button class="go q" data-a="logout">登出，換帳號</button></div></div>`;
+ if(CL.ok&&CL.warn)return `<div class="card" style="padding:10px 12px;border-left:4px solid var(--bad)"><b style="font-size:14px">⚠︎ 有資料沒有同步到雲端</b><div class="sub" style="font-size:13px;margin-top:4px;line-height:1.6">${E(CL.warn)}。請先到「設定」按「複製全部備份」貼到備忘錄，<b>不要刪掉主畫面的圖示</b>。</div></div>`;
  if(!CL.ok&&/^⚠︎/.test(String(CL.st)))return `<div class="card" style="padding:10px 12px;border-left:4px solid var(--bad)"><b style="font-size:14px">⚠︎ 沒有連到雲端</b><div class="sub" style="font-size:13px;margin-top:4px">${E(CL.st)}${em?'<br>目前登入：'+E(em):''}。先不要新增資料，重新整理或重新登入試試。</div></div>`;
  return ''}
 function today_v(){
@@ -1778,6 +1779,12 @@ document.addEventListener('pointerup',odend);document.addEventListener('pointerc
 const CTR=['ncm','nop','nq','ncf','pno','pnq','pncat','emo','mq','hso','ord','ohl','cfh','cfx','cff','cfo','hlc','thx','prnq','cmo','ci','sto','ste','stq','stf','tq','evco','pedit','rpt','lfe','evq','rp','epx','evx','pold','pmo','prdv','prnv','shf','evc','evf','enf','eip','prc','prt','rsc','fx','lfx','mrk','nxo','nxv','fua','qm','qs','qoff','rco','rcall','mrp','osort','cto','ctall','area','trip','pm','pnew','pkgw','tab','view','q','flt','cf','lv','fb','fs','fl','fc','pn','aq','pkg','pd','cm','av'];
 CL.msg=()=>CL.st;
 const clShow=()=>{const el=document.getElementById('clst');if(el)el.textContent=CL.st};
+const CLCH=200000,CLMAX=40;
+// 把一段文字切成每份最多 CLCH 字，不把 emoji 這類兩格的字切成兩半
+function cutJ(j){const r=[];let i=0;while(i<j.length){let e=Math.min(i+CLCH,j.length);const c=j.charCodeAt(e-1);if(e<j.length&&c>=0xD800&&c<=0xDBFF)e--;r.push(j.slice(i,e));i=e}return r.length?r:['']}
+// 把雲端文件組回每個項目：回傳 {項目: {j: 完整文字, n: 份數}}，缺了某一份就跳過那個項目
+function joinJ(docs){const r={};Object.keys(docs).forEach(id=>{if(!id.startsWith('s_')||id==='s__meta'||id.includes('~'))return;const d=docs[id]||{},n=+d.n||1;let j=typeof d.j==='string'?d.j:null;for(let i=1;i<n&&j!==null;i++){const x=docs[id+'~'+i];j=x&&typeof x.j==='string'?j+x.j:null}if(j!==null)r[id.slice(2)]={j,n}});return r}
+CL.nc={};CL.warn='';
 function cloudQ(){if(!CL.col||!CL.ok)return;clearTimeout(CL.tm);CL.st='☁︎ 等待同步…';clShow();CL.tm=setTimeout(cloudPush,1500)}
 async function cloudPush(){
  if(CL.busy){CL.again=1;return}
@@ -1785,9 +1792,18 @@ async function cloudPush(){
  try{
   if(!localStorage.getItem('roster-t'))localStorage.setItem('roster-t',String(Date.now()));
   const t=+localStorage.getItem('roster-t');
-  for(const k of Object.keys(S)){if(CTR.includes(k))continue;const j=JSON.stringify(S[k]);if(j===undefined||j===CL.last[k])continue;if(j.length>240000){CL.st='⚠︎「'+k+'」資料太大，無法同步';continue}await CL.col.doc('s_'+k).set({j});CL.last[k]=j}
+  const big=[];
+  for(const k of Object.keys(S)){if(CTR.includes(k))continue;const j=JSON.stringify(S[k]);if(j===undefined||j===CL.last[k])continue;
+   // 資料太大時分成好幾份存（每份 20 萬字以內，Firestore 一份文件最多 1MB）：s_k 是第一份，s_k~1、s_k~2…是後面幾份
+   const ps=cutJ(j);if(ps.length>CLMAX){big.push(k);continue}
+   for(let i=1;i<ps.length;i++)await CL.col.doc('s_'+k+'~'+i).set({j:ps[i]});
+   await CL.col.doc('s_'+k).set(ps.length>1?{j:ps[0],n:ps.length}:{j:ps[0]});
+   for(let i=ps.length;i<(CL.nc[k]||1);i++)await CL.col.doc('s_'+k+'~'+i).del();
+   CL.nc[k]=ps.length;CL.last[k]=j}
   await CL.col.doc('s__meta').set({t});
-  CL.st='☁︎ 已同步到雲端 '+new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+  // 有沒同步上去的資料就一直顯示警告，不要被「已同步」蓋掉
+  CL.warn=big.length?'⚠︎「'+big.join('、')+'」資料太大，沒有同步到雲端，只存在這支手機':'';
+  CL.st=CL.warn||'☁︎ 已同步到雲端 '+new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
  }catch(e){CL.st=navigator.onLine?'⚠︎ 雲端同步失敗，資料仍存在這支手機（'+((e&&e.code)||'錯誤')+'）':'📴 離線中：資料先存在這支手機，連上網路會自動同步'}
  CL.busy=0;clShow();if(CL.again){CL.again=0;cloudQ()}
 }
@@ -1804,12 +1820,12 @@ async function cloudPush(){
    let rl='';try{rl=sessionStorage.getItem('rl')}catch(e){}
    if(rl!==String(ct)){
     let o={};try{o=JSON.parse(localStorage.getItem('roster-v2')||'{}');localStorage.setItem('roster-prev',localStorage.getItem('roster-v2')||'')}catch(e){}
-    Object.keys(docs).forEach(id=>{if(id.startsWith('s_')&&id!=='s__meta'){try{o[id.slice(2)]=JSON.parse(docs[id].j)}catch(e){}}});
+    const cj=joinJ(docs);Object.keys(cj).forEach(k=>{try{o[k]=JSON.parse(cj[k].j)}catch(e){}});
     localStorage.setItem('roster-v2',JSON.stringify(o));localStorage.setItem('roster-t',String(ct));
     try{sessionStorage.setItem('rl',String(ct))}catch(e){}
     location.reload();return}
   }
-  Object.keys(docs).forEach(id=>{if(id.startsWith('s_')&&id!=='s__meta')CL.last[id.slice(2)]=docs[id].j});
+  const cj=joinJ(docs);Object.keys(cj).forEach(k=>{CL.last[k]=cj[k].j;CL.nc[k]=cj[k].n});
   CL.ok=1;CL.empty=ct===0;
   if((ct===0&&hasLocal)||lt>ct){cloudPush()}else CL.st='☁︎ 已同步到雲端';
   try{render()}catch(e){}
